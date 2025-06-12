@@ -1,32 +1,23 @@
-from flask import Blueprint, request, jsonify
-
 def create_auth_routes(mysql):
-    auth_bp = Blueprint('auth', __name__)
+    from flask import Blueprint, request, jsonify
 
-    @auth_bp.route('/login', methods=['POST'])
-    def login():
+    auth_routes = Blueprint('auth_routes', __name__)
+
+    @auth_routes.route('/login', methods=['POST'])
+    def faculty_login():
         data = request.json
-        email = data.get('email')
-        password = data.get('password')
-        role = data.get('role')
+        email = data.get("email")
+        password = data.get("password")
 
-        cursor = mysql.connection.cursor()
-        table_map = {
-            "Admin": ("Mst_Admin", "Email"),
-            "Faculty": ("Mst_Faculty", "F_Email"),
-            "Student": ("Mst_Student", "S_Email")
-        }
+        conn = mysql.connection
+        cursor = conn.cursor()
+        cursor.execute("SELECT Faculty_Id, F_Name FROM Mst_Faculty WHERE F_Email = %s AND Password = %s", (email, password))
+        result = cursor.fetchone()
+        cursor.close()
 
-        table, email_col = table_map.get(role)
-        if not table:
-            return jsonify({"error": "Invalid role"}), 400
+        if result:
+            return jsonify({"status": "success", "faculty_id": result[0], "name": result[1]})
+        else:
+            return jsonify({"status": "error", "message": "Invalid credentials"}), 401
 
-        query = f"SELECT * FROM {table} WHERE {email_col}=%s AND Password=%s"
-        cursor.execute(query, (email, password))
-        user = cursor.fetchone()
-
-        if user:
-            return jsonify({"status": "success", "role": role}), 200
-        return jsonify({"status": "fail"}), 401
-
-    return auth_bp
+    return auth_routes
