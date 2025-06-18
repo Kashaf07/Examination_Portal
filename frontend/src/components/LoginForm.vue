@@ -2,7 +2,7 @@
   <div class="min-h-screen flex items-center justify-center bg-cover bg-center bg-no-repeat px-4"
        style="background-image: url('https://i.ibb.co/4Z8nwSwK/Picsart-25-06-11-14-38-24-117.png');">    <div class="bg-white p-8 rounded-2xl shadow-lg w-full max-w-md animate-fade-in">
       <div class="flex justify-center mb-4">
-        <img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTpCQrjNAF4Mn0LHjgvQizYtxEzhovvhVohzw&s" style="height:150px" class="nuvlogo" alt="Navrachna University Logo">
+        <img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTpCQrjNAF4Mn0LHjgvQizYtxEzhovvhVohzw&s" style="height:100px" class="nuvlogo" alt="Navrachna University Logo">
       </div>
       <h2 class="text-3xl font-bold text-center text-gray-800 mb-2">Examination Portal</h2>
       <p class="text-center text-sm text-gray-500 mb-6">Login with your credentials</p>
@@ -70,6 +70,9 @@ const login = async () => {
     })
 
     if (res.data.status === 'success') {
+      // Save to localStorage
+      localStorage.setItem('faculty_email', res.data.email)
+      localStorage.setItem('faculty_name', res.data.name)
       router.push(`/${role.value.toLowerCase()}`)
     } else {
       alert('Invalid credentials')
