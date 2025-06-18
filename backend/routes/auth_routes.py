@@ -1,5 +1,7 @@
 from flask import Blueprint, request, jsonify
 
+from flask import Blueprint, request, jsonify
+
 def create_auth_routes(mysql):
     auth_bp = Blueprint('auth', __name__)
 
