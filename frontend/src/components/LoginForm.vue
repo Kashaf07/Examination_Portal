@@ -70,6 +70,10 @@ const login = async () => {
     })
 
     if (res.data.status === 'success') {
+      // Save to localStorage
+      localStorage.setItem('faculty_email', res.data.email)
+      localStorage.setItem('faculty_name', res.data.name)
+
       router.push(`/${role.value.toLowerCase()}`)
     } else {
       alert('Invalid credentials')
@@ -80,6 +84,7 @@ const login = async () => {
   }
 }
 </script>
+
 
 <style scoped>
 
