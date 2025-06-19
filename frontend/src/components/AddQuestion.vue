@@ -1,25 +1,26 @@
 <template>
-  <div class="p-10 max-w-3xl mx-auto">
-    <h2 class="text-3xl font-semibold mb-6 text-gray-800">Add Question Bank</h2>
-    <p class="text-gray-600 mb-8">You are adding questions for <strong>Exam ID:</strong> {{ $route.params.examId }}</p>
+  <div class="p-10 bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 rounded-2xl shadow-xl">
+    <!-- Header -->
+    <h2 class="text-4xl font-bold text-blue-800 mb-2 text-center">📝 Add Question Bank</h2>
+    <p class="text-black-600 text-center mb-8">
+      Adding questions for <strong class="text-purple-700">Exam ID: {{ $route.params.examId }}</strong>
+    </p>
 
-    <!-- Upload Button -->
-    <div class="mb-6 text-right">
+    <!-- Upload CSV Button -->
+    <div class="mb-8 text-center">
       <router-link
         :to="`/exam/${$route.params.examId}/upload-question-bank`"
-        class="bg-green-600 hover:bg-green-700 text-white px-5 py-2 rounded-md"
+        class="p-10 max-w-4xl mx-auto bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white px-6 py-2 rounded-full shadow-md transition duration-300 ease-in-out"
       >
-        Upload CSV
+        📤 Upload CSV
       </router-link>
     </div>
 
-
-
-
-    <form @submit.prevent="submitForm" class="space-y-6">
+    <!-- Add Question Form -->
+    <form @submit.prevent="submitForm" class="max-w-4xl mx-auto space-y-6 bg-white p-8 rounded-xl shadow-lg">
       <!-- Question Type -->
       <div>
-        <label class="block font-medium mb-1 text-gray-700">Question Type</label>
+        <label class="block text-gray-800 font-semibold mb-2">Question Type</label>
         <select v-model="form.question_type" class="input-box" required>
           <option value="MCQ">MCQ</option>
           <option value="Fill">Fill in the Blanks</option>
@@ -30,8 +31,8 @@
 
       <!-- Question Text -->
       <div>
-        <label class="block font-medium mb-1 text-gray-700">Question</label>
-        <textarea v-model="form.question_text" class="input-box" required></textarea>
+        <label class="block text-gray-800 font-semibold mb-2">Question</label>
+        <textarea v-model="form.question_text" class="input-box h-28 resize-none" required></textarea>
       </div>
 
       <!-- MCQ Options -->
@@ -44,20 +45,25 @@
 
       <!-- Correct Answer -->
       <div>
-        <label class="block font-medium mb-1 text-gray-700">Correct Answer</label>
+        <label class="block text-gray-800 font-semibold mb-2">Correct Answer</label>
         <input v-model="form.correct_answer" class="input-box" required />
       </div>
 
       <!-- Marks -->
       <div>
-        <label class="block font-medium mb-1 text-gray-700">Marks</label>
+        <label class="block text-gray-800 font-semibold mb-2">Marks</label>
         <input v-model="form.marks" type="number" class="input-box" />
       </div>
 
       <!-- Submit Button -->
-      <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-md">
-        Submit
-      </button>
+      <div class="text-center pt-4">
+        <button
+          type="submit"
+          class="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-purple-700 hover:to-blue-700 text-white font-semibold px-8 py-3 rounded-full shadow-lg transition duration-300"
+        >
+           Submit Question
+        </button>
+      </div>
     </form>
   </div>
 </template>
@@ -67,7 +73,7 @@ export default {
   data() {
     return {
       form: {
-        exam_id: '',  // will be set in `mounted()`
+        exam_id: '',
         question_type: 'MCQ',
         question_text: '',
         option_a: '',
@@ -84,9 +90,7 @@ export default {
       try {
         const response = await fetch('http://localhost:5000/api/questions/add', {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          },
+          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(this.form)
         });
 
@@ -116,22 +120,11 @@ export default {
         correct_answer: '',
         marks: 1
       };
-    },
-    examList: []
+    }
   },
   mounted() {
-    // ✅ Set exam_id from route param
     this.form.exam_id = this.$route.params.examId;
   }
 };
 </script>
 
-<style scoped>
-.input-box {
-  width: 100%;
-  border: 1px solid #d1d5db;
-  border-radius: 0.375rem;
-  padding: 0.5rem;
-  margin-top: 0.25rem;
-}
-</style>
