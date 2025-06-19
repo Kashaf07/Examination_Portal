@@ -44,7 +44,7 @@
                 Add Students
               </button>
               <button
-                @click="navigateTo('AddQuestionBank', exam.Exam_Id)"
+                @click="navigateTo('AddQuestion', exam.Exam_Id)"
                 class="bg-green-500 text-white px-2 py-1 rounded hover:bg-green-600 text-xs"
               >
                 Add Question Bank
@@ -104,7 +104,7 @@ const onFormClose = () => {
 const navigateTo = (action, examId) => {
   const routeMap = {
     AddStudents: 'AddStudents',
-    AddQuestionBank: 'AddQuestionBank',
+    AddQuestion: 'AddQuestion',
     MakeQuestionPaper: 'MakeQuestionPaper',
   }
   router.push({ name: routeMap[action], params: { examId } })
