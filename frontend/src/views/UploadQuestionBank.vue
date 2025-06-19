@@ -1,56 +1,60 @@
 <template>
-  <div class="max-w-md mx-auto mt-10 p-6 bg-white shadow-lg rounded-xl">
-    <h2 class="text-2xl font-semibold text-gray-800 mb-6 text-center">
-      Upload Question Bank (CSV)
-    </h2>
+  <!-- Full gradient background -->
+  <div class="min-h-screen p-10 bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50">
 
-    <p class="text-sm text-gray-600 text-center mb-2">
-      Uploading for <strong>Exam ID: {{ examId }}</strong>
-    </p>
-
-
-    <!-- Download Sample as a Link -->
-    <p class="text-sm text-gray-700 mb-4">
-        Need a format?   
-        <a
-            href="http://localhost:5000/static/sample_question_bank.csv"
-            download
-            class="text-blue-600 underline hover:text-blue-800 transition duration-150"
-        >
-            Download Sample CSV Format
-        </a>
-    </p>
-
-
-    <!-- File Input -->
-    <div class="flex items-center border border-green-300 rounded-full overflow-hidden w-full max-w-md shadow-sm">
-      <input
-        type="file"
-        @change="handleFileChange"
-        accept=".csv"
-        class="block w-full text-sm text-gray-500
-               file:mr-4 file:py-2 file:px-4
-               file:rounded file:border-0
-               file:text-sm file:font-semibold
-               file:bg-green-50 file:text-green-700
-               hover:file:bg-green-100"
-      />
-
-      <button
-      @click="uploadCSV"
-      class="ml-auto bg-green-600 hover:bg-green-700 text-white font-medium text-sm px-6 py-2 h-full transition duration-200 rounded-full rounded-l-none"
-      >
-        Upload
-      </button>
+    <!-- Heading & Subheading (OUTSIDE CARD) -->
+    <div class="text-center mb-6">
+      <h2 class="text-4xl font-bold text-blue-800 flex justify-center items-center gap-2">
+        📤 Upload Question Bank (CSV)
+      </h2>
+      <p class="text-gray-600">
+        Uploading for <strong class="text-purple-700">Exam ID: {{ examId }}</strong>
+      </p>
     </div>
 
-  
+    <!-- Card -->
+    <div class="max-w-3xl mx-auto bg-white p-10 rounded-2xl shadow-xl">
 
-     <!-- Optional Message -->
-    <p v-if="message" class="mt-4 text-center text-green-700 fonr-bold">
-      {{ message }}
-    </p>
+      <!-- Download CSV Format -->
+      <div class="mb-6 text-sm text-gray-700 text-center">
+        Need a format?
+        <a
+          href="http://localhost:5000/static/sample_question_bank.csv"
+          download
+          class="text-blue-600 underline hover:text-blue-800 transition duration-150"
+        >
+          Download Sample CSV Format
+        </a>
+      </div>
 
+      <!-- File Input + Upload Button -->
+      <div class="flex items-center border border-green-300 rounded-full overflow-hidden shadow-sm w-full">
+        <input
+          type="file"
+          @change="handleFileChange"
+          accept=".csv"
+          class="block w-full text-sm text-gray-500
+                 file:mr-4 file:py-2 file:px-4
+                 file:rounded-full file:border-0
+                 file:text-sm file:font-semibold
+                 file:bg-green-100 file:text-green-700
+                 hover:file:bg-green-200 transition duration-150"
+        />
+
+        <button
+          @click="uploadCSV"
+          class="ml-auto bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white font-semibold text-sm px-6 py-2 transition duration-200 rounded-full rounded-l-none"
+        >
+          Upload
+        </button>
+      </div>
+
+      <!-- Upload Status Message -->
+      <p v-if="message" class="mt-6 text-center text-green-700 font-semibold">
+        {{ message }}
+      </p>
+
+    </div>
   </div>
 </template>
 
@@ -100,3 +104,4 @@ export default {
   }
 };
 </script>
+
