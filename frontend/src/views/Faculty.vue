@@ -2,16 +2,40 @@
   <div class="p-6">
     <h1 class="text-3xl font-bold mb-6">Welcome, {{ facultyName }}</h1>
 
+    <!-- Button Group -->
+  <div class="flex gap-4 mb-6" >
     <button
       @click="showForm = true"
       v-if="!showForm"
-      class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 mb-6"
+      class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
     >
       Create Exam
     </button>
 
     <!-- Show Create Exam Form -->
     <CreateExamForm v-if="showForm" @closeForm="onFormClose" />
+
+    <button
+      @click="showForm = true"
+      v-if="!showForm"
+      class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+    >
+      Add Applicant
+    </button>
+
+    <!-- Show Create Exam Form -->
+    <CreateExamForm v-if="showForm" @closeForm="onFormClose" />
+
+    <button
+      @click="navigateTo('UploadStudents')"
+      class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+    >
+      Upload Applicants
+    </button>
+  </div>
+
+
+    
 
     <!-- Exam List -->
     <div v-if="exams.length" class="mt-8">
@@ -71,6 +95,7 @@ import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import axios from 'axios'
 import CreateExamForm from '../components/CreateExamForm.vue'
+import UploadStudents from './UploadStudents.vue'
 
 const router = useRouter()
 
@@ -106,8 +131,14 @@ const navigateTo = (action, examId) => {
     AddStudents: 'AddStudents',
     AddQuestion: 'AddQuestion',
     MakeQuestionPaper: 'MakeQuestionPaper',
+    UploadStudents : 'UploadStudents'
   }
   router.push({ name: routeMap[action], params: { examId } })
+  if (action === 'upload_students') {
+    router.push({ name: routeMap[action] }) // No params
+  } else {
+    router.push({ name: routeMap[action], params: { examId } })
+  }
 }
 
 // Load on mount
