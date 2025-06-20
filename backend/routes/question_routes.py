@@ -108,6 +108,155 @@ def create_question_routes(mysql):
 
         finally:
             cursor.close()
+            
+    @question_bp.route('/questions/bank/<int:exam_id>', methods=['GET'])
+    def get_question_bank(exam_id):
+        conn = mysql.connection
+        cursor = conn.cursor()
+        try:
+            cursor.execute("SELECT * FROM entrance_question_bank WHERE Exam_Id = %s", (exam_id,))
+            rows = cursor.fetchall()
+            columns = [desc[0] for desc in cursor.description]
+            results = [dict(zip(columns, row)) for row in rows]
+            return jsonify(results), 200
+        except Exception as e:
+            return jsonify({'error': str(e)}), 500
+        finally:
+            cursor.close()
 
+
+    @question_bp.route('/questions/paper/<int:exam_id>', methods=['GET'])
+    def get_exam_paper_questions(exam_id):
+        conn = mysql.connection
+        cursor = conn.cursor()
+        try:
+            cursor.execute("""
+                SELECT q.*
+                FROM entrance_question_bank q
+                JOIN exam_paper_questions epq ON q.Question_Id = epq.Question_Id
+                JOIN exam_paper ep ON epq.Exam_Paper_Id = ep.Exam_Paper_Id
+                WHERE ep.Exam_Id = %s
+            """, (exam_id,))
+            rows = cursor.fetchall()
+            columns = [desc[0] for desc in cursor.description]
+            results = [dict(zip(columns, row)) for row in rows]
+            return jsonify(results), 200
+        except Exception as e:
+            return jsonify({'error': str(e)}), 500
+        finally:
+            cursor.close()
+
+
+    @question_bp.route('/questions/paper/add', methods=['POST'])
+    def add_question_to_paper():
+        data = request.json
+        exam_paper_id = data['exam_paper_id']
+        question_id = data['question_id']
+
+        conn = mysql.connection
+        cursor = conn.cursor()
+        try:
+            cursor.execute("""
+                INSERT INTO exam_paper_questions (Exam_Paper_Id, Question_Id)
+                VALUES (%s, %s)
+            """, (exam_paper_id, question_id))
+            conn.commit()
+            return jsonify({'message': 'Question added to paper'}), 201
+        except Exception as e:
+            conn.rollback()
+            return jsonify({'error': str(e)}), 500
+        finally:
+            cursor.close()
+
+
+    @question_bp.route('/questions/paper/delete', methods=['POST'])
+    def delete_question_from_paper():
+        data = request.json
+        exam_paper_id = data['exam_paper_id']
+        question_id = data['question_id']
+
+        conn = mysql.connection
+        cursor = conn.cursor()
+        try:
+            cursor.execute("""
+                DELETE FROM exam_paper_questions
+                WHERE Exam_Paper_Id = %s AND Question_Id = %s
+            """, (exam_paper_id, question_id))
+            conn.commit()
+            return jsonify({'message': 'Question removed from paper'}), 200
+        except Exception as e:
+            conn.rollback()
+            return jsonify({'error': str(e)}), 500
+        finally:
+            cursor.close()
+
+
+    @question_bp.route('/questions/paper/randomize/<int:exam_id>', methods=['POST'])
+    def randomize_questions_for_paper(exam_id):
+        data = request.json
+        limit = data.get('limit', 10)
+
+        conn = mysql.connection
+        cursor = conn.cursor()
+        try:
+            # Get the paper ID for the exam
+            cursor.execute("SELECT Exam_Paper_Id FROM exam_paper WHERE Exam_Id = %s", (exam_id,))
+            paper = cursor.fetchone()
+            if not paper:
+                return jsonify({'error': 'No paper found for this exam'}), 404
+            paper_id = paper[0]
+
+            # Get N random questions from bank
+            cursor.execute("""
+                SELECT Question_Id FROM entrance_question_bank
+                WHERE Exam_Id = %s
+                ORDER BY RAND()
+                LIMIT %s
+            """, (exam_id, limit))
+            questions = cursor.fetchall()
+
+            for q in questions:
+                cursor.execute("""
+                    INSERT IGNORE INTO exam_paper_questions (Exam_Paper_Id, Question_Id)
+                    VALUES (%s, %s)
+                """, (paper_id, q[0]))
+
+            conn.commit()
+            return jsonify({'message': f'{len(questions)} questions randomized and added'}), 200
+        except Exception as e:
+            conn.rollback()
+            return jsonify({'error': str(e)}), 500
+        finally:
+            cursor.close()
+            
+            
+    @question_bp.route('/questions/<int:exam_id>', methods=['GET'])
+    def get_questions_by_exam(exam_id):
+        conn = mysql.connection
+        cursor = conn.cursor()
+
+        try:
+            cursor.execute("""
+                SELECT Question_Id, Question_Text, Marks
+                FROM entrance_question_bank
+                WHERE Exam_Id = %s
+            """, (exam_id,))
+            result = cursor.fetchall()
+
+            questions = [
+                {
+                    'question_id': row[0],
+                    'text': row[1],
+                    'marks': row[2]
+                } for row in result
+            ]
+
+            return jsonify(questions), 200
+
+        except Exception as e:
+            return jsonify({'error': str(e)}), 500
+
+        finally:
+            cursor.close()
 
     return question_bp

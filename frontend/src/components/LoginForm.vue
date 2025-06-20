@@ -4,7 +4,7 @@
       <div class="flex justify-center mb-4">
         <img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTpCQrjNAF4Mn0LHjgvQizYtxEzhovvhVohzw&s" style="height:100px" class="nuvlogo" alt="Navrachna University Logo">
       </div>
-      <h2 class="text-3xl font-bold text-center text-gray-800 mb-2">Examination Portal</h2>
+      <h2 class="text-3xl font-bold text-center text-black-800 mb-2">Examination Portal</h2>
       <p class="text-center text-sm text-gray-500 mb-6">Login with your credentials</p>
 
       <div class="space-y-4">

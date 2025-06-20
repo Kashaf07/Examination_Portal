@@ -65,6 +65,9 @@ import { useRoute } from 'vue-router'
 const route = useRoute()
 const examId = route.params.examId
 
+
+
+
 const selectedFile = ref(null)
 const message = ref('')
 const error = ref('')
@@ -81,7 +84,7 @@ const uploadFile = async () => {
   formData.append('exam_id', examId)
 
   try {
-    const response = await fetch('http://localhost:5000/api/add_students', {
+    const response = await fetch('http://localhost:5000/api/upload_students', {
       method: 'POST',
       body: formData
     })
@@ -97,29 +100,6 @@ const uploadFile = async () => {
     }
   } catch (err) {
     error.value = 'Server error or connection failed'
-    message.value = ''
-  }
-}
-
-const sendNotification = async () => {
-  try {
-    const response = await fetch('http://localhost:5000/api/send_exam_notification', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ exam_id: examId })
-    })
-
-    const result = await response.json()
-
-    if (response.ok) {
-      message.value = result.message || 'Notifications sent successfully!'
-      error.value = ''
-    } else {
-      error.value = result.error || 'Failed to send notifications.'
-      message.value = ''
-    }
-  } catch (err) {
-    error.value = 'Error sending notifications.'
     message.value = ''
   }
 }
