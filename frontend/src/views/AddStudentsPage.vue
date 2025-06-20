@@ -1,42 +1,60 @@
 <template>
-  <div class="p-6 bg-white shadow rounded-lg max-w-xl mx-auto">
-    <h2 class="text-2xl font-bold mb-4">Add Students</h2>
-    <p class="mb-4 text-gray-700">
-      Upload student list for Exam ID: <strong>{{ examId }}</strong>
-    </p>
+  <!-- Full gradient background -->
+  <div class="min-h-screen p-10 bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50">
 
-    <!-- File Upload -->
-    <div class="mb-4">
-      <label class="block mb-2 font-semibold">Upload Excel or CSV File</label>
-      <input
-        type="file"
-        @change="handleFileUpload"
-        accept=".xlsx, .csv"
-        class="block w-full p-2 border rounded"
-      />
+    <!-- Heading & Subheading OUTSIDE the card -->
+    <div class="text-center mb-6">
+      <h2 class="text-4xl font-bold text-blue-800 flex justify-center items-center gap-2">
+        🧑‍🎓 Add Students via Upload
+      </h2>      
     </div>
 
-    <!-- Upload Button -->
-    <button
-      :disabled="!selectedFile"
-      @click="uploadFile"
-      class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:bg-gray-400"
-    >
-      Upload Students
-    </button>
+    <!-- Card -->
+    <div class="max-w-3xl mx-auto bg-white p-10 rounded-2xl shadow-xl">
 
-    <!-- Messages -->
-    <p v-if="message" class="mt-4 text-green-600">{{ message }}</p>
-    <p v-if="error" class="mt-4 text-red-600">{{ error }}</p>
+      <!-- Download CSV Format -->
+      <div class="mb-6 text-sm text-gray-700 text-center">
+        Need a format?
+        <a
+          href="/sample/Student_Upload_Template.csv"
+          download
+          class="text-blue-600 underline hover:text-blue-800 transition duration-150"
+        >
+          Download Sample Excel Template
+        </a>
+      </div>
 
-    <!-- Download Template -->
-    <a
-      href="/sample/Student_Upload_Template.xlsx"
-      download
-      class="mt-6 inline-block text-blue-600 underline"
-    >
-      Download Sample Excel Template
-    </a>
+      <!-- File Input + Upload Button -->
+      <div class="flex items-center border border-green-300 rounded-full overflow-hidden shadow-sm w-full">
+        <input
+          type="file"
+          @change="handleFileUpload"
+          accept=".xlsx, .csv"
+          class="block w-full text-sm text-gray-500
+                 file:mr-4 file:py-2 file:px-4
+                 file:rounded-full file:border-0
+                 file:text-sm file:font-semibold
+                 file:bg-green-100 file:text-green-700
+                 hover:file:bg-green-200 transition duration-150"
+        />
+
+        <button
+          @click="uploadFile"
+          :disabled="!selectedFile"
+          class="ml-auto bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white font-semibold text-sm px-6 py-2 transition duration-200 rounded-full rounded-l-none disabled:bg-gray-300 disabled:cursor-not-allowed"
+        >
+          Upload
+        </button>
+      </div>
+
+      <!-- Upload Status Message -->
+      <p v-if="message" class="mt-6 text-center text-green-700 font-semibold">
+        {{ message }}
+      </p>
+      <p v-if="error" class="mt-6 text-center text-red-600 font-semibold">
+        {{ error }}
+      </p>
+    </div>
   </div>
 </template>
 

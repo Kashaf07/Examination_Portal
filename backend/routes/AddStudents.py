@@ -33,8 +33,8 @@ def add_students():
         connection = mysql.connector.connect(
             host='localhost',
             user='root',
-            password='your_db_password',
-            database='your_db_name'
+            password='Diamond@7115',
+            database='entrance_database'
         )
         cursor = connection.cursor()
 
