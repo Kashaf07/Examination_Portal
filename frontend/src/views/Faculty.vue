@@ -34,18 +34,7 @@
     <!-- Show Create Exam Form -->
     <CreateExamForm v-if="showForm" @closeForm="onFormClose" />
 
-    <button
-      @click="showForm = true"
-      v-if="!showForm"
-      class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
-    >
-      Add Applicant
-    </button>
 
-    <!-- Show Create Exam Form -->
-    <CreateExamForm v-if="showForm" @closeForm="onFormClose" />
-
-    
     <button
       @click="navigateTo('UploadStudents')"
       class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
@@ -53,8 +42,6 @@
       Upload Applicants
     </button>
   </div>
-
-
     
 
     <!-- Show Add Applicant Form -->
