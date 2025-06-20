@@ -25,13 +25,21 @@
       Upload Students
     </button>
 
+    <!-- Send Notification Button -->
+    <button
+      @click="sendNotification"
+      class="mt-4 px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"
+    >
+      Send Notification to Applicants
+    </button>
+
     <!-- Messages -->
     <p v-if="message" class="mt-4 text-green-600">{{ message }}</p>
     <p v-if="error" class="mt-4 text-red-600">{{ error }}</p>
 
     <!-- Download Template -->
     <a
-      href="/sample/Student_Upload_Template.xlsx"
+      href="/sample/Student_Upload_Template.csv"
       download
       class="mt-6 inline-block text-blue-600 underline"
     >
@@ -79,6 +87,29 @@ const uploadFile = async () => {
     }
   } catch (err) {
     error.value = 'Server error or connection failed'
+    message.value = ''
+  }
+}
+
+const sendNotification = async () => {
+  try {
+    const response = await fetch('http://localhost:5000/api/send_exam_notification', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ exam_id: examId })
+    })
+
+    const result = await response.json()
+
+    if (response.ok) {
+      message.value = result.message || 'Notifications sent successfully!'
+      error.value = ''
+    } else {
+      error.value = result.error || 'Failed to send notifications.'
+      message.value = ''
+    }
+  } catch (err) {
+    error.value = 'Error sending notifications.'
     message.value = ''
   }
 }

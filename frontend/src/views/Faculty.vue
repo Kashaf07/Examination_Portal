@@ -2,18 +2,52 @@
   <div class="p-6">
     <h1 class="text-3xl font-bold mb-6">Welcome, {{ facultyName }}</h1>
 
+    <!-- Create Exam Button -->
     <button
       @click="showForm = true"
       v-if="!showForm"
-      class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 mb-6"
+      class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 mb-4"
     >
       Create Exam
+    </button>
+
+    <!-- Add Applicants Button -->
+    <button
+      @click="showApplicantForm = !showApplicantForm"
+      class="bg-pink-600 text-white px-4 py-2 rounded hover:bg-pink-700 mb-6 ml-4"
+    >
+      {{ showApplicantForm ? 'Close' : 'Add Applicants' }}
     </button>
 
     <!-- Show Create Exam Form -->
     <CreateExamForm v-if="showForm" @closeForm="onFormClose" />
 
-    <!-- Exam List -->
+    <!-- Show Add Applicant Form -->
+    <div v-if="showApplicantForm" class="bg-white shadow rounded p-4 max-w-xl mb-8">
+      <h2 class="text-xl font-semibold mb-4">Add Applicant</h2>
+      <form @submit.prevent="submitApplicant">
+        <div class="grid grid-cols-2 gap-4">
+          <input v-model="applicant.Full_Name" type="text" placeholder="Full Name" required class="border p-2 rounded" />
+          <input v-model="applicant.Email" type="email" placeholder="Email" required class="border p-2 rounded" />
+          <input v-model="applicant.Password" type="password" placeholder="Password" required class="border p-2 rounded" />
+          <input v-model="applicant.Phone" type="text" placeholder="Phone" class="border p-2 rounded" />
+          <input v-model="applicant.DOB" type="date" placeholder="DOB" class="border p-2 rounded" />
+          <select v-model="applicant.Gender" class="border p-2 rounded">
+            <option disabled value="">Select Gender</option>
+            <option>Male</option>
+            <option>Female</option>
+            <option>Other</option>
+          </select>
+          <textarea v-model="applicant.Address" placeholder="Address" class="border p-2 rounded col-span-2"></textarea>
+        </div>
+        <button type="submit" class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 mt-4">
+          Submit
+        </button>
+        <p v-if="submitMessage" class="mt-2 text-sm text-blue-700">{{ submitMessage }}</p>
+      </form>
+    </div>
+
+    <!-- Exam List Table -->
     <div v-if="exams.length" class="mt-8">
       <h2 class="text-2xl font-semibold mb-4">Your Exams</h2>
       <table class="min-w-full border text-sm text-left">
@@ -36,7 +70,7 @@
             <td class="px-4 py-2">{{ exam.Duration_Minutes }}</td>
             <td class="px-4 py-2">{{ exam.Total_Questions }}</td>
             <td class="px-4 py-2">{{ exam.Max_Marks }}</td>
-            <td class="px-4 py-2 text-center space-y-1 space-x-1">
+            <td class="px-4 py-2 text-center space-x-1">
               <button
                 @click="navigateTo('AddStudents', exam.Exam_Id)"
                 class="bg-blue-500 text-white px-2 py-1 rounded hover:bg-blue-600 text-xs"
@@ -61,8 +95,8 @@
       </table>
     </div>
 
-    <!-- No exams fallback -->
-    <div v-else class="mt-8 text-gray-500">No exams created yet.</div>
+    <!-- No Exams Message -->
+    <div v-else class="mt-8 text-gray-500 text-center text-lg">No exams created yet.</div>
   </div>
 </template>
 
@@ -72,6 +106,7 @@ import { useRouter } from 'vue-router'
 import axios from 'axios'
 import CreateExamForm from '../components/CreateExamForm.vue'
 
+// Router
 const router = useRouter()
 
 // Faculty Info
@@ -80,9 +115,22 @@ const facultyEmail = localStorage.getItem('faculty_email') || ''
 
 // UI State
 const showForm = ref(false)
+const showApplicantForm = ref(false)
 const exams = ref([])
+const submitMessage = ref('')
 
-// Fetch exams created by this faculty
+// Applicant form model
+const applicant = ref({
+  Full_Name: '',
+  Email: '',
+  Password: '',
+  Phone: '',
+  DOB: '',
+  Gender: '',
+  Address: ''
+})
+
+// Fetch Exams
 const fetchExams = async () => {
   try {
     const res = await axios.get(`http://localhost:5000/api/exam/get_exams/${facultyEmail}`)
@@ -94,23 +142,48 @@ const fetchExams = async () => {
   }
 }
 
-// Called when form is closed to refresh the exam list
+// Submit applicant
+const submitApplicant = async () => {
+  try {
+    const res = await axios.post('http://localhost:5000/api/applicants/add', applicant.value)
+    if (res.data.success) {
+      submitMessage.value = 'Applicant added successfully!'
+      // reset form
+      applicant.value = {
+        Full_Name: '',
+        Email: '',
+        Password: '',
+        Phone: '',
+        DOB: '',
+        Gender: '',
+        Address: ''
+      }
+    } else {
+      submitMessage.value = 'Failed to add applicant.'
+    }
+  } catch (err) {
+    console.error('Error adding applicant:', err)
+    submitMessage.value = 'Error occurred while adding applicant.'
+  }
+}
+
+// Form Close
 const onFormClose = () => {
   showForm.value = false
   fetchExams()
 }
 
-// Navigate to action pages with examId
+// Navigate to route
 const navigateTo = (action, examId) => {
   const routeMap = {
     AddStudents: 'AddStudents',
     AddQuestion: 'AddQuestion',
-    MakeQuestionPaper: 'MakeQuestionPaper',
+    MakeQuestionPaper: 'MakeQuestionPaper'
   }
   router.push({ name: routeMap[action], params: { examId } })
 }
 
-// Load on mount
+// On mount
 onMounted(() => {
   facultyName.value = localStorage.getItem('faculty_name') || 'Faculty'
   fetchExams()
@@ -118,108 +191,5 @@ onMounted(() => {
 </script>
 
 <style scoped>
-
-/* Container */
-.p-6 {
-  padding: 1.5rem;
-  background: linear-gradient(to bottom right, #E3F2FD, #F3E5F5, #FCE4EC);
-  min-height: 100vh;
-  font-family: 'Inter', sans-serif;
-}
-
-/* Heading */
-h1 {
-  font-size: 2rem;
-  font-weight: 700;
-  margin-bottom: 1.5rem;
-  background: linear-gradient(to right, #2563eb, #4f46e5);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-}
-
-/* Create Exam Button */
-button.bg-blue-600 {
-  background: linear-gradient(to right, #2563eb, #4f46e5);
-  padding: 0.5rem 1.25rem;
-  border-radius: 1rem;
-  font-weight: 600;
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.08);
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
-}
-
-button.bg-blue-600:hover {
-  background: linear-gradient(to right, #1d4ed8, #4338ca);
-  transform: scale(1.03);
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.12);
-}
-
-/* Table Styling */
-table {
-  width: 100%;
-  border-collapse: separate;
-  border-spacing: 0;
-  border-radius: 1rem;
-  overflow: hidden;
-  box-shadow: 0 0 0 1px #e5e7eb, 0 6px 12px rgba(0, 0, 0, 0.04);
-  background-color: white;
-}
-
-thead {
-  background: linear-gradient(to right, #e0f2fe, #f0f9ff);
-  color: #1e3a8a;
-  font-weight: 600;
-}
-
-th, td {
-  padding: 1rem;
-  border-bottom: 1px solid #e5e7eb;
-}
-
-tbody tr:hover {
-  background-color: #f9fafb;
-  transition: background 0.2s ease;
-}
-
-/* Action Buttons */
-td button {
-  font-size: 0.75rem;
-  font-weight: 600;
-  padding: 0.4rem 0.75rem;
-  border-radius: 0.75rem;
-  transition: transform 0.2s ease;
-}
-
-td button:hover {
-  transform: scale(1.05);
-}
-
-/* Individual Button Colors */
-.bg-blue-500 {
-  background: linear-gradient(to right, #3b82f6, #2563eb);
-}
-.bg-blue-500:hover {
-  background: linear-gradient(to right, #2563eb, #1d4ed8);
-}
-
-.bg-green-500 {
-  background: linear-gradient(to right, #22c55e, #16a34a);
-}
-.bg-green-500:hover {
-  background: linear-gradient(to right, #16a34a, #15803d);
-}
-
-.bg-purple-500 {
-  background: linear-gradient(to right, #a855f7, #7e22ce);
-}
-.bg-purple-500:hover {
-  background: linear-gradient(to right, #7e22ce, #6b21a8);
-}
-
-/* No Exams Fallback */
-.text-gray-500 {
-  text-align: center;
-  font-size: 1.125rem;
-  padding: 2rem 0;
-}
-
+/* Include your styles here or keep as-is */
 </style>

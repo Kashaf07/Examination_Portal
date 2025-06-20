@@ -25,16 +25,19 @@ def add_students():
         else:
             df = pd.read_excel(file)
 
+
         required_columns = ['Full_Name', 'Email', 'Password', 'Phone', 'DOB', 'Gender', 'Address']
         if not all(col in df.columns for col in required_columns):
             return jsonify({'error': 'Missing required columns in uploaded file'}), 400
+        
+        
 
         # Connect to MySQL
         connection = mysql.connector.connect(
             host='localhost',
             user='root',
-            password='your_db_password',
-            database='your_db_name'
+            password='manager',
+            database='entrance_database'
         )
         cursor = connection.cursor()
 
