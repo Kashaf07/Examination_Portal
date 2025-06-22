@@ -1,5 +1,6 @@
 from flask import Blueprint, request, jsonify
 from datetime import datetime
+import traceback
 
 def create_exam_routes(mysql):
     exam_bp = Blueprint('exam', __name__)
@@ -78,5 +79,40 @@ def create_exam_routes(mysql):
         except Exception as e:
             print("Error fetching exams:", e)
             return jsonify({'success': False, 'message': 'Server error'}), 500
+
+    # ✅ NEW: Route to get exam by ID
+    @exam_bp.route('/get_exam_by_id/<int:exam_id>', methods=['GET'])
+    def get_exam_by_id(exam_id):
+        print("Received request for Exam_Id:", exam_id)
+        try:
+            cursor = mysql.connection.cursor()
+            cursor.execute("""
+                SELECT Exam_Id, Exam_Name, Exam_Date, Exam_Time, Duration_Minutes,
+                       Total_Questions, Max_Marks, Faculty_Email
+                FROM Entrance_Exam
+                WHERE Exam_Id = %s
+            """, (exam_id,))
+            row = cursor.fetchone()
+            cursor.close()
+
+            if row:
+                exam = {
+                    'Exam_Id': row[0],
+                    'Exam_Name': row[1],
+                    'Exam_Date': str(row[2]),
+                    'Exam_Time': str(row[3]),
+                    'Duration_Minutes': row[4],
+                    'Total_Questions': row[5],
+                    'Max_Marks': row[6],
+                    'Faculty_Email': row[7]
+                }
+                return jsonify({'exam': exam})
+            else:
+                return jsonify({'error': 'Exam not found'}), 404
+
+        except Exception as e:
+            print("Exception occurred:", e)
+            traceback.print_exc()
+            return jsonify({'error': 'Server error'}), 500
 
     return exam_bp

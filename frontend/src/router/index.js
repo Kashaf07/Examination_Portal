@@ -6,10 +6,11 @@ import Student from '../views/Student.vue'
 import AddQuestion from '../components/AddQuestion.vue'
 import UploadQuestionBank from '../views/UploadQuestionBank.vue';
 import CreateExamForm from '../components/CreateExamForm.vue'
-import AddStudentsPage from '../views/AddStudentsPage.vue'
+
 import MakeQuestionPaperPage from '../views/MakeQuestionPaperPage.vue'
 import UploadStudents from '../views/UploadStudents.vue'
 import AddApplicantsPage from '../views/AddApplicantsPage.vue'
+import AddApplicants_exam from '../views/AddApplicants_exam.vue'
 
 
 const routes = [
@@ -20,7 +21,7 @@ const routes = [
   { path: '/exam/:examId/upload-question-bank', name: 'UploadQuestionBank', component: UploadQuestionBank },
   { path: '/create-exam', component: CreateExamForm },
   { path: '/upload-students', name:'UploadStudents', component: UploadStudents },
-  { path: '/exam/:examId/add-students', name: 'AddStudents', component: AddStudentsPage },
+  { path: '/exam/:examId/add-applicants-exam', name: 'AddApplicantsexam', component: AddApplicants_exam },
   { path: '/exam/:examId/add-question', name: 'AddQuestion', component: AddQuestion },
   { path: '/exam/:examId/make-question-paper', name: 'MakeQuestionPaper', component: MakeQuestionPaperPage },
   {path: '/add-applicants',name: 'AddApplicants',component: AddApplicantsPage}
