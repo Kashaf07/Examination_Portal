@@ -7,6 +7,7 @@ from routes.exam_routes import create_exam_routes
 from routes.AddStudents import add_students_bp
 from routes.ExamNotification import exam_notify_bp
 from routes.applicants import create_applicants_bp
+from routes.exam_paper_routes import create_exam_paper_routes
 
 app = Flask(__name__)
 CORS(app)
@@ -25,6 +26,10 @@ app.register_blueprint(exam_bp, url_prefix="/api/exam")
 app.register_blueprint(add_students_bp, url_prefix="/api")
 
 app.register_blueprint(exam_notify_bp)
+
+exam_paper_bp = create_exam_paper_routes(mysql)
+app.register_blueprint(exam_paper_bp, url_prefix="/api/paper")
+
 
 
 applicants_bp = create_applicants_bp(mysql)
