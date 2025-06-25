@@ -14,6 +14,7 @@ from routes.AddApplicants_exam import create_add_applicants_exam_bp
 from routes.assign_applicants import create_assign_routes
 from routes.send_exam_email import create_send_email_routes  # ✅ UPDATED LINE
 from routes.assigned_applicants_routes import create_assigned_applicants_routes  # ✅
+from routes.exam_paper_routes import create_exam_paper_routes
 
 app = Flask(__name__)
 CORS(app)
@@ -37,6 +38,14 @@ app.register_blueprint(create_question_routes(mysql), url_prefix="/api/questions
 app.register_blueprint(create_exam_routes(mysql), url_prefix="/api/exam")
 app.register_blueprint(add_students_bp, url_prefix="/api")
 app.register_blueprint(exam_notify_bp)
+
+exam_paper_bp = create_exam_paper_routes(mysql)
+app.register_blueprint(exam_paper_bp, url_prefix="/api/paper")
+
+
+exam_paper_bp = create_exam_paper_routes(mysql)
+app.register_blueprint(exam_paper_bp, url_prefix="/api/paper")
+
 app.register_blueprint(create_send_email_routes(mysql))  # ✅ UPDATED LINE
 app.register_blueprint(create_add_applicants_exam_bp(mysql), url_prefix='/api')
 app.register_blueprint(create_assign_routes(mysql))
