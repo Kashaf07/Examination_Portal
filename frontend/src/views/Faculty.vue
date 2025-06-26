@@ -303,13 +303,29 @@ onMounted(() => {
   fetchConductedExams() 
 })
 
-const logout = () => {
+// Logout Button
+const logout = async () => {
+  const email = localStorage.getItem('faculty_email');
+  const role = 'Faculty'; // or detect from storage if needed
+
+  try {
+    // ✅ Call backend logout API
+    await axios.post('http://localhost:5000/api/auth/logout', {
+      email,
+      role
+    });
+
+
   // Clear local storage
   localStorage.removeItem('faculty_email')
   localStorage.removeItem('faculty_name')
 
   // Redirect to login page
   router.push('/')
+  } catch (err) {
+    console.error('Logout error:', err);
+    alert('Logout failed. Try again.');
+  }
 }
 </script>
 

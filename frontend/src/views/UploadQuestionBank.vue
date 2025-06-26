@@ -80,6 +80,9 @@ export default {
       const formData = new FormData();
       formData.append('file', this.file);
       formData.append('exam_id', this.examId); // Form Id 
+      formData.append('email', localStorage.getItem('faculty_email'))
+      formData.append('role', 'Faculty')
+
 
       try {
         const response = await fetch('http://localhost:5000/api/questions/upload-csv', {

@@ -1,6 +1,8 @@
 import csv
 import io
+import os
 from flask import Blueprint, request, jsonify
+from werkzeug.utils import secure_filename
 
 def create_question_routes(mysql):
     question_bp = Blueprint('questions', __name__)
@@ -42,8 +44,31 @@ def create_question_routes(mysql):
             
     @question_bp.route('/upload-csv', methods=['POST'])
     def upload_csv():
+        file = request.files.get('file')
+        exam_id = request.form.get('exam_id')
+        uploaded_by = request.form.get('email')
+        role = request.form.get('role')
+        
         if 'file' not in request.files:
             return jsonify({'error': 'CSV file is required'}), 400
+        
+        filename = secure_filename(file.filename)
+        upload_path = os.path.join('uploads/question_banks', filename)
+        
+         # 🔄 Insert into file_uploads
+        cursor = mysql.connection.cursor()
+        cursor.execute("""
+            INSERT INTO file_uploads (Uploaded_By, Role, File_Name, File_Path)
+            VALUES (%s, %s, %s, %s)
+        """, (uploaded_by, role, filename, upload_path))
+        mysql.connection.commit()
+
+        return jsonify({'message': 'Question Bank uploaded and logged successfully'}), 200
+
+        
+        # Create folder if not exists
+        os.makedirs(os.path.dirname(upload_path), exist_ok=True)
+        file.save(upload_path)
 
         file = request.files['file']
         if file.filename == '':

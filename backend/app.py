@@ -8,6 +8,7 @@ from routes.auth_routes import create_auth_routes
 from routes.question_routes import create_question_routes
 from routes.exam_routes import create_exam_routes
 from routes.AddStudents import add_students_bp
+from routes.admin_routes import create_admin_routes
 from routes.ExamNotification import exam_notify_bp
 from routes.applicants import create_applicants_bp
 from routes.AddApplicants_exam import create_add_applicants_exam_bp
@@ -47,6 +48,9 @@ app.register_blueprint(create_add_applicants_exam_bp(mysql), url_prefix='/api')
 app.register_blueprint(create_assign_routes(mysql))
 app.register_blueprint(create_applicants_bp(mysql))
 app.register_blueprint(create_assigned_applicants_routes(mysql))  # ✅
+
+app.register_blueprint(create_admin_routes(mysql), url_prefix='/api/admin')
+
 
 if __name__ == "__main__":
     app.run(debug=True)

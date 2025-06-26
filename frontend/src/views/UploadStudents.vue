@@ -82,6 +82,9 @@ const uploadFile = async () => {
   const formData = new FormData()
   formData.append('file', selectedFile.value)
   formData.append('exam_id', examId)
+  formData.append('email', localStorage.getItem('faculty_email'))
+  formData.append('role', 'Faculty')
+
 
   try {
     const response = await fetch('http://localhost:5000/api/upload_students', {

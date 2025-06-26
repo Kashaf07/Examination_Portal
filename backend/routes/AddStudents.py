@@ -1,6 +1,7 @@
 from flask import Blueprint, request, jsonify
 import pandas as pd
 import mysql.connector
+import os
 from werkzeug.utils import secure_filename
 
 add_students_bp = Blueprint('add_students', __name__)
@@ -72,3 +73,32 @@ def add_students():
 
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+    
+@add_students_bp.route('/upload_students', methods=['POST'])
+def upload_students():
+    file = request.files.get('file')
+    exam_id = request.form.get('exam_id')
+    uploaded_by = request.form.get('email')
+    role = request.form.get('role')
+
+    if not file:
+        return jsonify({'error': 'No file uploaded'}), 400
+
+    filename = secure_filename(file.filename)
+    upload_path = os.path.join('uploads/students', filename)
+
+    os.makedirs(os.path.dirname(upload_path), exist_ok=True)
+    file.save(upload_path)
+
+    # TODO: Process student data from Excel/CSV and insert into DB here...
+
+    # 🔄 Insert into file_uploads
+    cursor = mysql.connection.cursor()
+    cursor.execute("""
+        INSERT INTO file_uploads (Uploaded_By, Role, File_Name, File_Path)
+        VALUES (%s, %s, %s, %s)
+    """, (uploaded_by, role, filename, upload_path))
+    mysql.connection.commit()
+
+    return jsonify({'message': 'Students uploaded and logged successfully'}), 200
+

@@ -35,6 +35,14 @@ def create_auth_routes(mysql):
         if result:
             name_from_db, email_from_db, password_from_db = result
             if password_from_db == password:
+                # ✅ Insert login log
+                insert_log_query = """
+                INSERT INTO login_log (User_Email, Role)
+                VALUES (%s, %s)
+                """
+                cursor.execute(insert_log_query, (email_from_db, role))
+                mysql.connection.commit()
+                
                 return jsonify({
                     'status': 'success',
                     'role': role,
@@ -58,5 +66,31 @@ def create_auth_routes(mysql):
         except Exception as e:
             print("Error in get_faculty_name:", e)
             return jsonify({"success": False, "message": "Server error"}), 500
+        
+    @auth_bp.route('/logout', methods=['POST'])
+    def logout():
+        data = request.json
+        email = data.get('email')
+        role = data.get('role')
+
+        try:
+            cursor = mysql.connection.cursor()
+
+            # ✅ Update the latest login_log for this user & role
+            update_query = """
+                UPDATE login_log
+                SET Logout_Time = CURRENT_TIMESTAMP
+                WHERE User_Email = %s AND Role = %s
+                ORDER BY Log_ID DESC
+                LIMIT 1
+            """
+            cursor.execute(update_query, (email, role))
+            mysql.connection.commit()
+
+            return jsonify({'success': True, 'message': 'Logout time recorded'})
+        except Exception as e:
+            print("Error in logout route:", e)
+            return jsonify({'success': False, 'message': 'Logout logging failed'}), 500
+
 
     return auth_bp
