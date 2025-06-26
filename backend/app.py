@@ -32,10 +32,6 @@ app.register_blueprint(exam_notify_bp)
 exam_paper_bp = create_exam_paper_routes(mysql)
 app.register_blueprint(exam_paper_bp, url_prefix="/api/paper")
 
-
-exam_paper_bp = create_exam_paper_routes(mysql)
-app.register_blueprint(exam_paper_bp, url_prefix="/api/paper")
-
 app.register_blueprint(create_add_applicants_exam_bp(mysql), url_prefix='/api')
 
 app.register_blueprint(create_assign_routes(mysql))
