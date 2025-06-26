@@ -1,6 +1,17 @@
 <template>
   <div class="p-6">
-    <h1 class="text-3xl font-bold mb-6">Welcome, {{ facultyName }}</h1>
+    <div class="flex justify-between items-center mb-6">
+      <h1 class="text-3xl font-bold mb-6">Welcome, {{ facultyName }}</h1>    
+      <button          
+        @click="logout"
+        class="logout-btn"
+      >
+        Logout      
+      </button> 
+    </div>     
+  
+
+
 
     <!-- Button Group -->
     <div class="flex gap-4 mb-6">
@@ -72,7 +83,7 @@
 
     <!-- Exam Table -->
     <div v-if="exams.length" class="mt-8">
-      <h2 class="text-2xl font-semibold mb-4">Your Exams</h2>
+      <h2 class="text-2xl font-semibold mb-4">Created Exams</h2>
       <table class="min-w-full border text-sm text-left">
         <thead class="bg-gray-200">
           <tr>
@@ -117,9 +128,39 @@
         </tbody>
       </table>
     </div>
-
     <div v-else class="mt-8 text-gray-500 text-center text-lg">No exams created yet.</div>
-  </div>
+
+    <!-- Conducted Exams Table -->
+    <div v-if="conductedExams.length" class="mt-12">
+      <h2 class="text-2xl font-semibold mb-4">📄 Conducted Exams</h2>  
+      <table class="min-w-full border text-sm text-left">
+        <thead class="bg-gray-200">
+          <tr>
+            <th class="px-4 py-2">Exam Name</th>        
+            <th class="px-4 py-2">Date</th>
+            <th class="px-4 py-2">Total Applicants</th>
+            <th class="px-4 py-2 text-center">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr v-for="exam in conductedExams" :key="exam.Exam_Id" class="border-t">
+            <td class="px-4 py-2">{{ exam.Exam_Name }}</td>
+            <td class="px-4 py-2">{{ exam.Exam_Date }}</td>
+            <td class="px-4 py-2">{{ exam.Total_Applicants }}</td>
+            <td class="px-4 py-2 text-center">
+              <button
+                @click="navigateTo('ViewResponses', exam.Exam_Id)"
+                class="bg-purple-600 text-white px-3 py-1 rounded text-sm hover:bg-purple-700"
+              >
+                View Responses
+              </button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <div v-else class="mt-8 text-gray-500 text-center text-lg">No exams conducted yet.</div>
+    </div>
 </template>
 
 <script setup>
@@ -130,6 +171,7 @@ import axios from 'axios'
 const router = useRouter()
 const facultyName = ref('')
 const facultyEmail = localStorage.getItem('faculty_email') || ''
+const conductedExams = ref([])
 
 const showForm = ref(false)
 const showApplicantForm = ref(false)
@@ -226,6 +268,19 @@ const fetchExams = async () => {
   }
 }
 
+// Fetch Conducted Exams
+const fetchConductedExams = async () => {
+  try {
+    const res = await axios.get(`http://localhost:5000/api/faculty/conducted_exams/${facultyEmail}`)
+    if (res.data.success) {
+      conductedExams.value = res.data.exams
+    }
+  } catch (err) {
+    console.error('Failed to fetch conducted exams', err)
+  }
+}
+
+
 // Navigation
 const navigateTo = (action, examId) => {
   const routeMap = {
@@ -245,7 +300,17 @@ const navigateTo = (action, examId) => {
 onMounted(() => {
   facultyName.value = localStorage.getItem('faculty_name') || 'Faculty'
   fetchExams()
+  fetchConductedExams() 
 })
+
+const logout = () => {
+  // Clear local storage
+  localStorage.removeItem('faculty_email')
+  localStorage.removeItem('faculty_name')
+
+  // Redirect to login page
+  router.push('/')
+}
 </script>
 
 <style scoped>
@@ -282,6 +347,24 @@ button.bg-blue-600:hover {
   transform: scale(1.03);
   box-shadow: 0 6px 20px rgba(0, 0, 0, 0.12);
 }
+
+/* Logout Button */
+.logout-btn {
+  background: linear-gradient(to right, #ef4444, #b51a1a); /* red-500 to red-600 */
+  padding: 0.5rem 1.25rem;
+  border-radius: 1rem;
+  font-weight: 600;
+  color: white;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.08);
+  transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+}
+
+.logout-btn:hover {
+  background: linear-gradient(to right, #c02323, #991b1b); /* darker red on hover */
+  transform: scale(1.03);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.12);
+}
+
 
 /* Table Styling */
 table {

@@ -24,7 +24,9 @@ const routes = [
   { path: '/exam/:examId/add-applicants-exam', name: 'AddApplicantsexam', component: AddApplicants_exam },
   { path: '/exam/:examId/add-question', name: 'AddQuestion', component: AddQuestion },
   { path: '/exam/:examId/make-question-paper', name: 'MakeQuestionPaper', component: MakeQuestionPaperPage },
-  {path: '/add-applicants',name: 'AddApplicants',component: AddApplicantsPage}
+  { path: '/add-applicants',name: 'AddApplicants',component: AddApplicantsPage},
+  { path: '/faculty/view-responses/:examId', name: 'ViewResponses', component: () => import('@/views/ViewResponses.vue')},
+
 ]
 
 export default createRouter({
