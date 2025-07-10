@@ -1,7 +1,5 @@
 from flask import Blueprint, request, jsonify
 
-from flask import Blueprint, request, jsonify
-
 def create_auth_routes(mysql):
     auth_bp = Blueprint('auth', __name__)
 
@@ -31,18 +29,34 @@ def create_auth_routes(mysql):
         query = f"SELECT {name_col}, {email_col}, Password FROM {table} WHERE {email_col}=%s"
         cursor.execute(query, (email,))
         result = cursor.fetchone()
-
+        
         if result:
             name_from_db, email_from_db, password_from_db = result
             if password_from_db == password:
+                
                 # ✅ Insert login log
                 insert_log_query = """
-                INSERT INTO login_log (User_Email, Role)
-                VALUES (%s, %s)
+                    INSERT INTO login_log (User_Email, Role)
+                    VALUES (%s, %s)
                 """
                 cursor.execute(insert_log_query, (email_from_db, role))
                 mysql.connection.commit()
-                
+
+                if role == "Student":
+            # Fetch student ID as well
+                    cursor.execute("SELECT Applicant_Id FROM Applicants WHERE Email = %s", (email,))
+                    student_row = cursor.fetchone()
+                    student_id = student_row[0] if student_row else None
+
+                    return jsonify({
+                        'status': 'success',
+                        'role': role,
+                        'id': student_id,
+                        'name': name_from_db,
+                        'email': email_from_db
+                    }), 200
+
+                # ✅ For Admin / Faculty
                 return jsonify({
                     'status': 'success',
                     'role': role,

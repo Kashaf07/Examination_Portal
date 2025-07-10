@@ -70,6 +70,12 @@ const login = async () => {
     })
 
     if (res.data.status === 'success') {
+    if (role.value.toLowerCase() === 'student') {
+        localStorage.setItem('student_email', res.data.email)
+        localStorage.setItem('student_name', res.data.name)
+        localStorage.setItem('applicant_id', res.data.id)
+      }
+      router.push(`/${role.value.toLowerCase()}`)
       // Save to localStorage
       localStorage.setItem('faculty_email', res.data.email)
       localStorage.setItem('faculty_name', res.data.name)

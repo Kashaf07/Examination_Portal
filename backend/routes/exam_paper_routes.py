@@ -84,7 +84,7 @@ def create_exam_paper_routes(mysql):
 
         except Exception as e:
             conn.rollback()
-            print("❌ Error occurred:", e)
+            print("❌ Error occurred:", str(e))
             return jsonify({'error': 'Failed to save question paper'}), 500
         
     @exam_paper_bp.route('/randomize/<int:exam_id>', methods=['POST'])
@@ -132,6 +132,22 @@ def create_exam_paper_routes(mysql):
 
         mysql.connection.commit()
         return jsonify(selected)
+    
+    @exam_paper_bp.route('/selected/<int:exam_id>', methods=['GET'])
+    def get_selected_questions_for_exam(exam_id):
+        cur = mysql.connection.cursor(DictCursor)
+
+        cur.execute("""
+            SELECT epq.Question_Id, eqb.*
+            FROM exam_paper_questions epq
+            JOIN exam_paper ep ON ep.Exam_Paper_Id = epq.Exam_Paper_Id
+            JOIN entrance_question_bank eqb ON eqb.Question_Id = epq.Question_Id
+            WHERE ep.Exam_Id = %s
+        """, (exam_id,))
+
+        questions = cur.fetchall()
+        return jsonify(questions)
+
 
 
     return exam_paper_bp

@@ -94,7 +94,8 @@ export default {
         if (response.ok) {
           this.message = result.message;
         } else {
-          this.message = `Error: ${result.error}`;
+          this.message = result.error ? `Error: ${result.error}` : 'Unknown error occurred.';
+          console.error("Upload error response:", result);
         }
       } catch (err) {
         this.message = 'An error occurred during upload.';

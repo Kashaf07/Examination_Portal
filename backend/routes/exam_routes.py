@@ -114,5 +114,38 @@ def create_exam_routes(mysql):
             print("Exception occurred:", e)
             traceback.print_exc()
             return jsonify({'error': 'Server error'}), 500
+        
+    @exam_bp.route('/delete/<int:exam_id>', methods=['DELETE'])
+    def delete_exam(exam_id):
+        try:
+            cursor = mysql.connection.cursor()
+            
+            # ⚠️ Delete from child tables first (in correct order) 
+            cursor.execute("SET FOREIGN_KEY_CHECKS = 0")
+            cursor.execute("""
+                           DELETE FROM exam_paper_questions 
+                           WHERE Exam_Paper_Id IN (
+                               SELECT Exam_Paper_Id FROM exam_paper WHERE Exam_Id = %s)
+                               """, (exam_id,))   
+            cursor.execute("DELETE FROM exam_paper WHERE Exam_Id = %s", (exam_id,))                
+            cursor.execute("DELETE FROM entrance_question_bank WHERE Exam_Id = %s", (exam_id,))
+            cursor.execute("DELETE FROM applicant_exam_assign WHERE Exam_Id = %s", (exam_id,))
+            
+            cursor.execute("DELETE FROM exam_access_window WHERE Exam_Id = %s", (exam_id,))
+            cursor.execute("DELETE FROM exam_settings WHERE Exam_Id = %s", (exam_id,))
+
+        
+            cursor.execute("DELETE FROM Entrance_Exam WHERE Exam_Id = %s", (exam_id,))
+            cursor.execute("SET FOREIGN_KEY_CHECKS = 1")
+            mysql.connection.commit()
+            cursor.close()
+
+            return jsonify({'success': True, 'message': 'Exam deleted successfully!'})
+
+        except Exception as e:
+            print("Error deleting exam:", e)
+            return jsonify({'success': False, 'message': 'Failed to delete exam'}), 500
+
 
     return exam_bp
+

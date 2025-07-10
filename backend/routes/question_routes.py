@@ -48,14 +48,19 @@ def create_question_routes(mysql):
         exam_id = request.form.get('exam_id')
         uploaded_by = request.form.get('email')
         role = request.form.get('role')
-        
-        if 'file' not in request.files:
+
+        if 'file' not in request.files or file.filename == '':
             return jsonify({'error': 'CSV file is required'}), 400
-        
+
         filename = secure_filename(file.filename)
         upload_path = os.path.join('uploads/question_banks', filename)
-        
-         # 🔄 Insert into file_uploads
+        os.makedirs(os.path.dirname(upload_path), exist_ok=True)
+        # Read contents BEFORE saving
+        content = file.read().decode("UTF8")
+        file.stream.seek(0)
+        file.save(upload_path)
+
+        # 🔄 Insert into file_uploads
         cursor = mysql.connection.cursor()
         cursor.execute("""
             INSERT INTO file_uploads (Uploaded_By, Role, File_Name, File_Path)
@@ -63,22 +68,8 @@ def create_question_routes(mysql):
         """, (uploaded_by, role, filename, upload_path))
         mysql.connection.commit()
 
-        return jsonify({'message': 'Question Bank uploaded and logged successfully'}), 200
-
-        
-        # Create folder if not exists
-        os.makedirs(os.path.dirname(upload_path), exist_ok=True)
-        file.save(upload_path)
-
-        file = request.files['file']
-        if file.filename == '':
-            return jsonify({'error': 'No file selected'}), 400
-        
-        exam_id = request.form.get('exam_id')
-        if not exam_id:
-            return jsonify({'error': 'Missing exam_id in form data'}), 400
-
-        stream = io.StringIO(file.stream.read().decode("UTF8"), newline=None)
+        # ✅ Now process the CSV
+        stream = io.StringIO(content, newline=None)
         csv_input = csv.reader(stream)
 
         conn = mysql.connection
@@ -86,22 +77,21 @@ def create_question_routes(mysql):
 
         try:
             header = next(csv_input)
+            print(f"CSV Header: {header}")
             for row in csv_input:
                 if not row or all(cell.strip() == "" for cell in row):
-                    continue  # skip empty rows
+                    continue
 
                 if len(row) < 7:
                     return jsonify({'error': f'Invalid row: {row}. Expected at least 7 columns.'}), 400
 
                 question_type, question_text, option_a, option_b, option_c, option_d, correct_answer, *rest = row
-                marks = rest[0] if rest else 1  # default marks to 1
-                
+                marks = rest[0] if rest else 1
                 try:
                     marks = int(marks)
                 except ValueError:
                     return jsonify({'error': f'Invalid marks value: {marks}. Must be an integer.'}), 400
 
-                
                 cursor.execute("""
                     INSERT INTO entrance_question_bank 
                     (Exam_Id, Question_Type, Question_Text, Option_A, Option_B, Option_C, Option_D, Correct_Answer, Marks)
@@ -109,14 +99,16 @@ def create_question_routes(mysql):
                 """, (exam_id, question_type, question_text, option_a, option_b, option_c, option_d, correct_answer, marks))
 
             conn.commit()
-            return jsonify({'message': 'Questions uploaded successfully'}), 201
+            return jsonify({'message': 'Question Bank uploaded and logged successfully'}), 200
 
         except Exception as e:
+            print("❌ Error during CSV processing:", str(e))
             conn.rollback()
             return jsonify({'error': str(e)}), 500
         finally:
             cursor.close()
-            
+
+        
     @question_bp.route('/exams', methods=['GET'])
     def get_exams():
         conn = mysql.connection
@@ -148,6 +140,25 @@ def create_question_routes(mysql):
             return jsonify({'error': str(e)}), 500
         finally:
             cursor.close()
+            
+    @question_bp.route('/questionbank/all/<int:exam_id>', methods=['GET'])
+    def get_all_questions_for_exam(exam_id):
+        conn = mysql.connection
+        cursor = conn.cursor()
+        try:
+            cursor.execute("""
+                SELECT Question_Id, Question_Text, Marks 
+                FROM entrance_question_bank 
+                WHERE Exam_Id = %s
+            """, (exam_id,))
+            rows = cursor.fetchall()
+            questions = [{'Question_Id': row[0], 'Question_Text': row[1], 'Marks': row[2]} for row in rows]
+            return jsonify(questions), 200        
+        except Exception as e:
+            return jsonify({'error': str(e)}), 500
+        finally:
+            cursor.close()
+
 
 
     @question_bp.route('/questions/paper/<int:exam_id>', methods=['GET'])

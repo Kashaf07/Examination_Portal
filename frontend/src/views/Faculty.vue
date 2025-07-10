@@ -123,6 +123,12 @@
               >
                 Make Question Paper
               </button>
+              <button
+                @click="deleteExam(exam.Exam_Id)"
+                class="bg-red-500 text-white px-2 py-1 rounded hover:bg-red-600 text-xs"
+              >
+                Delete
+              </button>
             </td>
           </tr>
         </tbody>
@@ -195,6 +201,26 @@ const exam = ref({
   max_marks: '',
   faculty_email: facultyEmail
 })
+
+//Delete Exam
+const deleteExam = async (examId) => {
+  const confirmDelete = confirm('Are you sure you want to delete this exam?');
+  if (!confirmDelete) return;
+
+  try {
+    const res = await axios.delete(`http://localhost:5000/api/exam/delete/${examId}`);
+    if (res.data.success) {
+      alert('Exam deleted successfully!');
+      fetchExams(); // Refresh the list
+    } else {
+      alert('Failed to delete exam: ' + (res.data.message || 'Unknown error'));
+    }
+  } catch (err) {
+    console.error('Error deleting exam:', err);
+    alert('Server error while deleting exam');
+  }
+};
+
 
 // Submit exam
 const submitExam = async () => {
@@ -450,6 +476,15 @@ td button:hover {
   font-size: 1.125rem;
   padding: 2rem 0;
 }
+
+/* Delete */
+.bg-red-500 {
+  background: linear-gradient(to right, #ef4444, #dc2626);
+}
+.bg-red-500:hover {
+  background: linear-gradient(to right, #dc2626, #b91c1c);
+}
+
 
 </style>
 
