@@ -590,13 +590,15 @@ export default {
       this.stage = 'exam'
       this.enterFullscreen()
       this.timer = this.exam.Duration_Minutes * 60
-      this.interval = setInterval(() => {
-        if (this.timer > 0) this.timer--
-        else {
-          clearInterval(this.interval)
-          this.finishExam('⏰ Time up!')
-        }
-      }, 1000)
+this.interval = setInterval(() => {
+  if (this.timer > 0) {
+    this.timer--
+  } else {
+    clearInterval(this.interval)
+    this.handleTimerFinish()
+  }
+}, 1000)
+
 
       document.addEventListener('fullscreenchange', () => {
         if (this.stage === 'exam' && !document.fullscreenElement) {
@@ -605,6 +607,21 @@ export default {
         }
       })
     },
+    handleTimerFinish() {
+  // Fill unanswered questions with "null" (treated as 0 marks by backend)
+  this.answers = this.answers.map((ans, idx) => {
+    if (ans === null) {
+      return {
+        question_id: this.questions[idx].Question_Id,
+        selected_option: ''
+      }
+    }
+    return ans
+  })
+
+  this.finishExam('⏰ Time is up!\nUnanswered questions will get 0 marks.')
+}
+,
     handleNext() {
   const type = this.currentQuestion.Question_Type
   let value = null
@@ -681,9 +698,6 @@ export default {
       this.loadCurrentAnswer()
     },
     async finishExam(msg) {
-      if (this.answers.includes(null)) {
-        return this.showInlineMessage('⚠️ Please answer all questions before submitting.', 'warning')
-      }
       this.stage = 'finished'
       this.finishMessage = msg
       try {
