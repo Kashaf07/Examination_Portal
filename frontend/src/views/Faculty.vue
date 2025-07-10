@@ -137,7 +137,7 @@
     <div v-else class="mt-8 text-gray-500 text-center text-lg">No exams created yet.</div>
 
     <!-- Conducted Exams Table -->
-    <div v-if="conductedExams.length" class="mt-12">
+    <div v-if="conductedExams && conductedExams.length" class="mt-12">
       <h2 class="text-2xl font-semibold mb-4">📄 Conducted Exams</h2>  
       <table class="min-w-full border text-sm text-left">
         <thead class="bg-gray-200">
@@ -149,24 +149,31 @@
           </tr>
         </thead>
         <tbody>
-          <tr v-for="exam in conductedExams" :key="exam.Exam_Id" class="border-t">
-            <td class="px-4 py-2">{{ exam.Exam_Name }}</td>
-            <td class="px-4 py-2">{{ exam.Exam_Date }}</td>
-            <td class="px-4 py-2">{{ exam.Total_Applicants }}</td>
-            <td class="px-4 py-2 text-center">
-              <button
-                @click="navigateTo('ViewResponses', exam.Exam_Id)"
-                class="bg-purple-600 text-white px-3 py-1 rounded text-sm hover:bg-purple-700"
-              >
-                View Responses
-              </button>
-            </td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
-    <div v-else class="mt-8 text-gray-500 text-center text-lg">No exams conducted yet.</div>
-    </div>
+        <tr
+          v-for="exam in conductedExams"
+          :key="exam.Exam_Paper_Id"
+          class="border-t"
+        >
+          <td class="px-4 py-2">{{ exam.Exam_Title || 'N/A' }}</td>
+          <td class="px-4 py-2">{{ formatDate(exam.Exam_Date) }}</td>
+          <td class="px-4 py-2">{{ exam.Students_Attended || 0 }}</td>
+          <td class="px-4 py-2 text-center">
+            <button
+              @click="navigateTo('ViewResponses', exam.Exam_Paper_Id)"
+              class="bg-purple-600 text-white px-3 py-1 rounded text-sm hover:bg-purple-700"
+            >
+              View Responses
+            </button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+  <div v-else class="mt-8 text-gray-500 text-center text-lg">
+    No exams conducted yet.
+  </div>
+</div>
+
 </template>
 
 <script setup>

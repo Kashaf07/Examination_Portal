@@ -16,8 +16,6 @@ from routes.assign_applicants import create_assign_routes
 from routes.send_exam_email import create_send_email_routes  # ✅ UPDATED LINE
 from routes.assigned_applicants_routes import create_assigned_applicants_routes  # ✅
 from routes.exam_paper_routes import create_exam_paper_routes
-from routes.auth_routes import create_auth_routes
-from routes.student_routes import create_student_routes
 
 app = Flask(__name__)
 CORS(app)
@@ -53,14 +51,6 @@ app.register_blueprint(create_assigned_applicants_routes(mysql))  # ✅
 
 app.register_blueprint(create_admin_routes(mysql), url_prefix='/api/admin')
 
-student_bp = create_student_routes(mysql) # Students
-app.register_blueprint(student_bp, url_prefix="/api/student")
-
 
 if __name__ == "__main__":
     app.run(debug=True)
-    
-#print("📋 Registered routes:")
-#for rule in app.url_map.iter_rules():
-#   print(rule)
-

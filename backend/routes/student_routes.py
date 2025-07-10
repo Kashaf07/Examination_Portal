@@ -4,7 +4,7 @@ from datetime import datetime
 def create_student_routes(mysql):
     student_routes = Blueprint('student_routes', __name__)
 
-    # 🔹 Get next upcoming exam
+    # 🔹 Existing: Get next upcoming exam
     @student_routes.route('/exam', methods=['GET'])
     def get_exam_data():
         try:
@@ -17,8 +17,16 @@ def create_student_routes(mysql):
 
             exam_id = exam[0]
 
-            cur.execute("SELECT * FROM entrance_question_bank WHERE Exam_Id = %s", (exam_id,))
+            cur.execute("""
+                        SELECT q.Question_Id, q.Exam_Id, q.Question_Type, q.Question_Text, 
+                        q.Option_A, q.Option_B, q.Option_C, q.Option_D
+                        FROM entrance_question_bank q   
+                        JOIN exam_paper_questions epq ON q.Question_Id = epq.Question_Id
+                        JOIN exam_paper ep ON epq.Exam_Paper_Id = ep.Exam_Paper_Id    
+                        WHERE ep.Exam_Id = %s
+                        """, (exam_id,))
             questions = cur.fetchall()
+            print("🧪 Query result:", exam_id)
 
             cur.execute("SELECT * FROM exam_paper WHERE Exam_Id = %s", (exam_id,))
             exam_paper = cur.fetchone()
@@ -62,20 +70,31 @@ def create_student_routes(mysql):
         except Exception as e:
             return jsonify({"error": str(e)}), 500
 
-    # 🔹 Get exam by ID
+    # 🔹 NEW: Fetch exam data using specific Exam_Id
     @student_routes.route('/exam/<int:exam_id>', methods=['GET'])
     def get_exam_by_id(exam_id):
         try:
             cur = mysql.connection.cursor()
-
+            
+            print("🔍 Exam ID received:", exam_id)
             cur.execute("SELECT * FROM entrance_exam WHERE Exam_Id = %s", (exam_id,))
             exam = cur.fetchone()
+            print("🧪 Query result:", exam)
 
             if not exam:
                 return jsonify({"message": "Invalid Exam ID"}), 404
 
-            cur.execute("SELECT * FROM entrance_question_bank WHERE Exam_Id = %s", (exam_id,))
+            # ✅ Fetch ONLY selected questions
+            cur.execute("""
+                        SELECT q.Question_Id, q.Exam_Id, q.Question_Type, q.Question_Text, 
+                        q.Option_A, q.Option_B, q.Option_C, q.Option_D
+                        FROM entrance_question_bank q   
+                        JOIN exam_paper_questions epq ON q.Question_Id = epq.Question_Id
+                        JOIN exam_paper ep ON epq.Exam_Paper_Id = ep.Exam_Paper_Id    
+                        WHERE ep.Exam_Id = %s
+                        """, (exam_id,))
             questions = cur.fetchall()
+        
 
             cur.execute("SELECT * FROM exam_paper WHERE Exam_Id = %s", (exam_id,))
             exam_paper = cur.fetchone()
@@ -120,7 +139,7 @@ def create_student_routes(mysql):
         except Exception as e:
             return jsonify({"error": str(e)}), 500
 
-    # 🔹 Submit answers and calculate score
+    # 🔹 Submit answers and create attempt
     @student_routes.route('/submit', methods=['POST'])
     def submit_answers():
         try:
@@ -145,38 +164,35 @@ def create_student_routes(mysql):
 
             for ans in answers:
                 question_id = ans['question_id']
-                selected_option = ans['selected_option']  # e.g., 'A', 'B', 'True', or text
-
+                selected_option = ans['selected_option']
                 cur.execute("""
                     SELECT Question_Type, Correct_Answer, Marks,
-                           Option_A, Option_B, Option_C, Option_D
+                        Option_A, Option_B, Option_C, Option_D
                     FROM entrance_question_bank
                     WHERE Question_Id = %s
                 """, (question_id,))
-                row = cur.fetchone()
 
+                row = cur.fetchone()
+  
                 if not row:
                     continue
-
                 q_type, correct_answer, marks, opt_a, opt_b, opt_c, opt_d = row
-
+  
                 # Convert option if needed
                 option_map = {'A': opt_a, 'B': opt_b, 'C': opt_c, 'D': opt_d}
-
+  
                 if q_type in ('MCQ', 'TF'):
                     selected_text = option_map.get(selected_option, "")
                     is_correct = selected_text.strip().lower() == correct_answer.strip().lower()
                 elif q_type in ('Fill', 'OneWord'):
-                    selected_text = selected_option  # User typed input
+                    selected_text = selected_option # User typed input
                     is_correct = selected_text.strip().lower() == correct_answer.strip().lower()
                 else:
                     is_correct = False
-
-
+  
                 # Add marks if correct
                 if is_correct:
                     total_marks += marks
-
                 # Store selected option and answer
                 cur.execute("""
                     INSERT INTO applicant_answers (Attempt_Id, Question_Id, Selected_Option_Id, Answer_Text)
@@ -193,35 +209,36 @@ def create_student_routes(mysql):
                 UPDATE applicant_attempt SET Marks_Obtained = %s WHERE Attempt_Id = %s
             """, (total_marks, attempt_id))
 
+
             # Auto grading logic
             cur.execute("SELECT Total_Marks FROM exam_paper WHERE Exam_Paper_Id = %s", (exam_paper_id,))
             total_possible_marks = cur.fetchone()[0]
-
             grading_status = "Fail"
             if total_possible_marks > 0:
                 percentage = (total_marks / total_possible_marks) * 100
                 grading_status = "Pass" if percentage >= 40 else "Fail"
-
+ 
             cur.execute("""
                 INSERT INTO auto_grading (Attempt_Id, Total_Score, Status)
                 VALUES (%s, %s, %s)
             """, (attempt_id, total_marks, grading_status))
-
             mysql.connection.commit()
             cur.close()
-
+ 
             return jsonify({"message": "Answers submitted successfully", "Attempt_Id": attempt_id})
         except Exception as e:
             mysql.connection.rollback()
             return jsonify({"error": str(e)}), 500
 
-    # 🔹 View all attempts by a student
+
+
+    # 🔹 View all attempts of a student
     @student_routes.route('/attempts/<int:applicant_id>', methods=['GET'])
     def get_attempts(applicant_id):
         try:
             cur = mysql.connection.cursor()
             cur.execute("""
-                SELECT aa.Attempt_Id, aa.Start_Time, aa.End_Time, aa.Status,
+                SELECT aa.Attempt_Id, aa.Start_Time, aa.End_Time, aa.Status, 
                        ep.Title, ee.Exam_Name
                 FROM applicant_attempt aa
                 JOIN exam_paper ep ON aa.Exam_Paper_Id = ep.Exam_Paper_Id
@@ -247,3 +264,5 @@ def create_student_routes(mysql):
             return jsonify({"error": str(e)}), 500
 
     return student_routes
+
+
