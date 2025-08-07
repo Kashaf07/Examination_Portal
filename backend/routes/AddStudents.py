@@ -36,7 +36,7 @@ def create_add_students_bp(mysql):
             connection = mysql.connector.connect(
                 host='localhost',
                 user='root',
-                password='Diamond@7115',
+                password='manager',
                 database='entrance_database'
             )
             cursor = connection.cursor()

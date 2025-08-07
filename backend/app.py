@@ -62,8 +62,3 @@ app.register_blueprint(student_bp, url_prefix="/api/student")
 
 if __name__ == "__main__":
     app.run(debug=True)
-    
-#print("📋 Registered routes:")
-#for rule in app.url_map.iter_rules():
-#   print(rule)
-

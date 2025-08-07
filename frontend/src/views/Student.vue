@@ -44,7 +44,7 @@
 
     <!-- Timer and Question Navigator -->
     <div v-if="stage === 'exam'" class="z-10">
-      <div class="fixed bottom-155 left-7 z-40">
+      <div class="fixed bottom-190 left-7 z-40">
         <span class="text-xl mr-2">⏳</span>
         <span class="font-mono font-bold text-xl text-black bg-white px-4 py-2 rounded-xl shadow-md border border-indigo-100">
           {{ minutes }} : {{ seconds }}
@@ -163,7 +163,7 @@
           </h3>
           <ul class="list-disc list-inside text-gray-700 space-y-2 pl-2">
             <li>Strictly no page refresh/reload allowed</li>
-            <li>No switching tabs/windows (3 attempts max)</li>
+            <li>No switching tabs/windows (2 attempts max)</li>
             <li>No right-click, copy/paste allowed</li>
             <li>No developer tools access (F12/Ctrl+Shift+I)</li>
             <li>Must remain in fullscreen mode</li>
@@ -347,6 +347,16 @@
         <p class="text-lg font-bold text-black">{{ attemptId }}</p>
       </div>
     </div>
+    <!-- Redirect Countdown Display (bottom-left corner) -->
+<!-- Redirect Countdown Display -->
+<div 
+  v-if="stage === 'finished'" 
+  class="fixed bottom-6 left-6 z-50 bg-yellow-100 border-2 border-yellow-400 text-yellow-900 px-6 py-4 rounded-xl shadow-2xl text-lg font-bold tracking-wide animate-blink"
+>
+  ⏳ Redirecting to login page in {{ redirectCountdown }} second<span v-if="redirectCountdown !== 1">s</span>...
+</div>
+
+
 
   </div>
 </template>
@@ -378,7 +388,9 @@ export default {
       inlineMessage: null,
       violationCount: 0,
       maxViolations: 3,
-      fullscreenRecoveryTimeout: null
+      fullscreenRecoveryTimeout: null,
+      redirectCountdown: 10,
+      redirectTimer: null,
     }
   },
   computed: {
@@ -462,25 +474,61 @@ export default {
     window.removeEventListener('beforeunload', this.preventRefresh)
     window.removeEventListener('popstate', this.preventBack)
   },
-  methods: {
-    formatFillQuestion(text) {
-      const value = this.textAnswer || '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;'
-      const safe = value.replace(/</g, '&lt;').replace(/>/g, '&gt;')
-      return text.replace(/____+/g, `
-        <span class="inline-block border-b-2 border-blue-600 min-w-[120px] px-1 text-center align-baseline text-indigo-800 font-medium tracking-wide">
-          ${safe}
-        </span>
-      `)
-    },
-    enterFullscreen() {
+ methods: {
+  formatFillQuestion(text) {
+    const value = this.textAnswer || '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;'
+    const safe = value.replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    return text.replace(/____+/g, `
+      <span class="inline-block border-b-2 border-blue-600 min-w-[120px] px-1 text-center align-baseline text-indigo-800 font-medium tracking-wide">
+        ${safe}
+      </span>
+    `)
+  },
+
+  enterFullscreen() {
     const el = document.documentElement
     setTimeout(() => {
       if (el.requestFullscreen) el.requestFullscreen()
       else if (el.webkitRequestFullscreen) el.webkitRequestFullscreen()
       else if (el.mozRequestFullScreen) el.mozRequestFullScreen()
       else if (el.msRequestFullscreen) el.msRequestFullscreen()
-  }, 800) // Delay helps reduce the black tip in some browsers
-},
+    }, 800)
+  },
+
+  // ✅ ⬇️ Add this method here
+startRedirectCountdown() {
+  this.redirectCountdown = 10; // ⬅️ Initialize the countdown
+  this.redirectTimer = setInterval(async () => {
+    if (this.redirectCountdown > 0) {
+      this.redirectCountdown--;
+    } else {
+      clearInterval(this.redirectTimer);
+
+      // ✅ Send logout time to backend
+      const email = localStorage.getItem('student_email');
+      if (email) {
+        try {
+          await axios.post('http://localhost:5000/api/logout', {
+            email: email,
+            role: 'Student'
+          });
+        } catch (error) {
+          console.error('Logout API failed:', error);
+        }
+      }
+
+      // ✅ Clear localStorage
+      localStorage.removeItem('student_email');
+      localStorage.removeItem('student_name');
+      localStorage.removeItem('applicant_id');
+
+      // ✅ Redirect to login page
+      window.location.href = '/';
+    }
+  }, 1000);
+}
+,
+
     handleBlur() {
       if (this.stage === 'exam') {
         this.handleViolation('Window lost focus')
@@ -503,10 +551,15 @@ export default {
       }
     },
     forceExit(reason) {
-      clearInterval(this.interval)
-      this.stage = 'finished'
-      this.finishMessage = `Exam forcibly ended.\nReason: ${reason}`
-    },
+  clearInterval(this.interval)
+  this.stage = 'finished'
+  this.finishMessage = `Exam forcibly ended.\nReason: ${reason}`
+
+  // ✅ Remove "Leave site?" popup on forced end too
+  window.removeEventListener('beforeunload', this.preventRefresh)
+
+  this.startRedirectCountdown()
+},
     recoverFullscreen() {
       clearTimeout(this.fullscreenRecoveryTimeout)
       this.fullscreenRecoveryTimeout = setTimeout(() => {
@@ -523,32 +576,34 @@ export default {
       window.history.pushState(null, null, location.href)
     },
     handleKeydown(event) {
-      if (this.stage !== 'exam') return
+  if (this.stage !== 'exam') return;
 
-      const qType = this.currentQuestion.Question_Type
-      if (['MCQ', 'TF'].includes(qType)) {
-        const key = event.key
-        if (['ArrowUp', 'ArrowDown'].includes(key)) {
-          event.preventDefault()
-          this.navigateOptions(key === 'ArrowUp' ? -1 : 1)
-        } else if (key === 'Enter') {
-          event.preventDefault()
-          this.handleEnterKey()
-        }
-      }
+  const qType = this.currentQuestion.Question_Type;
+  if (['MCQ', 'TF'].includes(qType)) {
+    const key = event.key;
+    if (['ArrowUp', 'ArrowDown'].includes(key)) {
+      event.preventDefault();
+      this.navigateOptions(key === 'ArrowUp' ? -1 : 1);
+    } else if (key === 'Enter') {
+      event.preventDefault();
+      this.handleEnterKey();
+    }
+  }
 
-      // Block violation keys: Esc, F12, Ctrl+Shift+I/C/J, Ctrl+U, Ctrl+R
-      if (
-        event.key === 'Escape' ||
-        event.key === 'F12' ||
-        (event.ctrlKey && event.shiftKey && ['I', 'C', 'J'].includes(event.key)) ||
-        (event.ctrlKey && ['U', 'R'].includes(event.key))
-      ) {
-        event.preventDefault()
-        this.handleViolation(`Restricted key (${event.key}) pressed`)
-        this.recoverFullscreen()
-      }
-    },
+  // 🚫 Block all restricted keys
+  const isRestrictedCombo =
+    event.key === 'Escape' ||
+    event.key === 'F12' ||
+    (event.ctrlKey && event.shiftKey && ['I', 'C', 'J'].includes(event.key)) ||
+    (event.ctrlKey && ['U', 'R'].includes(event.key)) ||
+    (event.ctrlKey && event.key === 'Tab'); // ✅ This detects Ctrl + Tab
+
+  if (isRestrictedCombo) {
+    event.preventDefault();
+    this.handleViolation(`Restricted key (${event.ctrlKey ? 'Ctrl+' : ''}${event.key}) pressed`);
+    this.recoverFullscreen();
+  }
+},
     navigateOptions(dir) {
   const availableKeys = Object.keys(this.options)
   const index = this.keyboardSelectedOption
@@ -697,20 +752,26 @@ this.interval = setInterval(() => {
       this.currentIndex = idx
       this.loadCurrentAnswer()
     },
-    async finishExam(msg) {
-      this.stage = 'finished'
-      this.finishMessage = msg
-      try {
-        const res = await axios.post('http://localhost:5000/api/student/submit', {
-          applicant_id: this.applicantId,
-          exam_paper_id: this.exam.Exam_Paper_Id,
-          answers: this.answers
-        })
-        this.attemptId = res.data.Attempt_Id
-      } catch {
-        this.showInlineMessage('❌ Submission failed', 'error')
-      }
-    },
+   async finishExam(msg) {
+  this.stage = 'finished'
+  this.finishMessage = msg
+
+  window.removeEventListener('beforeunload', this.preventRefresh)
+
+  this.startRedirectCountdown() // ✅ START countdown logout
+
+  try {
+    const res = await axios.post('http://localhost:5000/api/student/submit', {
+      applicant_id: this.applicantId,
+      exam_paper_id: this.exam.Exam_Paper_Id,
+      answers: this.answers
+    })
+    this.attemptId = res.data.Attempt_Id
+  } catch {
+    this.showInlineMessage('❌ Submission failed', 'error')
+  }
+}
+,
     showInlineMessage(text, type = 'error') {
       this.inlineMessage = { text, type }
       setTimeout(() => {
