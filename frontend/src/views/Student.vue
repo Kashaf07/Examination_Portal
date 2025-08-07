@@ -44,7 +44,7 @@
 
     <!-- Timer and Question Navigator -->
     <div v-if="stage === 'exam'" class="z-10">
-      <div class="fixed bottom-155 left-7 z-40">
+      <div class="fixed bottom-190 left-7 z-40">
         <span class="text-xl mr-2">⏳</span>
         <span class="font-mono font-bold text-xl text-black bg-white px-4 py-2 rounded-xl shadow-md border border-indigo-100">
           {{ minutes }} : {{ seconds }}
@@ -163,7 +163,7 @@
           </h3>
           <ul class="list-disc list-inside text-gray-700 space-y-2 pl-2">
             <li>Strictly no page refresh/reload allowed</li>
-            <li>No switching tabs/windows (3 attempts max)</li>
+            <li>No switching tabs/windows (2 attempts max)</li>
             <li>No right-click, copy/paste allowed</li>
             <li>No developer tools access (F12/Ctrl+Shift+I)</li>
             <li>Must remain in fullscreen mode</li>

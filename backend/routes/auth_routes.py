@@ -99,8 +99,7 @@ def create_auth_routes(mysql):
                 LIMIT 1
             """
             cursor.execute(update_query, (email, role))
-            mysql.connection.commit()          
-            
+            mysql.connection.commit()
 
             return jsonify({'success': True, 'message': 'Logout time recorded'})
         except Exception as e:
