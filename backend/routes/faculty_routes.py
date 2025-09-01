@@ -1,8 +1,11 @@
 from flask import Blueprint, request, jsonify
+import MySQLdb.cursors  # <-- Import DictCursor support
+
 
 def create_faculty_routes(mysql):
-    faculty_bp = Blueprint('faculty_bp', __name__)
+    faculty_bp = Blueprint('faculty_bp', name)
 
+    # ---------------- Faculty Profile ----------------
     @faculty_bp.route('/api/faculty/profile', methods=['GET'])
     def get_faculty_profile():
         email = request.args.get('email')
@@ -22,11 +25,12 @@ def create_faculty_routes(mysql):
             return jsonify({'status': 'error', 'error': str(e)}), 500
         finally:
             cursor.close()
-            
+
+    # ---------------- View Exam Responses ----------------
     @faculty_bp.route('/api/faculty/view_responses/<int:exam_id>', methods=['GET'])
     def view_responses(exam_id):
         try:
-            cursor = mysql.connection.cursor(dictionary=True)
+            cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
 
             query = """
             SELECT 
@@ -42,48 +46,38 @@ def create_faculty_routes(mysql):
             """
             cursor.execute(query, (exam_id,))
             data = cursor.fetchall()
-            return jsonify({'success': True, 'responses': data})
-        except Exception as e:
-            return jsonify({'success': False, 'message': str(e)})
-        finally:
-            cursor.close()
-            
-    @faculty_bp.route('/api/faculty/conducted_exams/<faculty_email>', methods=['GET'])
-    def get_conducted_exams(faculty_email):
-        try:
-            cursor = mysql.connection.cursor(dictionary=True)
-            
-            # Step 1: Get Faculty_Id from email
-            cursor.execute("SELECT Faculty_Id FROM mst_faculty WHERE F_Email = %s", (faculty_email,))
-            faculty_row = cursor.fetchone()
-
-            if not faculty_row:
-                return jsonify({'success': False, 'message': 'Faculty not found'}), 404
-
-            faculty_id = faculty_row['Faculty_Id']
-
-            query = """
-            SELECT 
-                ep.Exam_Paper_Id,
-                ep.Exam_Title,
-                ep.Exam_Date,
-                COUNT(DISTINCT aa.Applicant_Id) AS Students_Attended
-            FROM exam_paper ep
-            LEFT JOIN applicant_attempt aa ON ep.Exam_Paper_Id = aa.Exam_Paper_Id
-            WHERE ep.Faculty_Email = %s
-            GROUP BY ep.Exam_Paper_Id
-            ORDER BY ep.Exam_Date DESC
-            """
-
-            cursor.execute(query, (faculty_email,))
-            exams = cursor.fetchall()
-            return jsonify({'success': True, 'exams': exams}), 200
-
+            return jsonify({'success': True, 'responses': data}), 200
         except Exception as e:
             return jsonify({'success': False, 'message': str(e)}), 500
         finally:
             cursor.close()
 
+    # ---------------- Conducted Exams ----------------
+    @faculty_bp.route('/api/faculty/conducted_exams/<faculty_email>', methods=['GET'])
+    def get_conducted_exams(faculty_email):
+        try:
+            cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
 
+            query = """
+                SELECT 
+                    ee.Exam_Id,
+                    ee.Exam_Name,
+                    ee.Exam_Date,
+                    COUNT(DISTINCT aea.Applicant_Id) AS total_applicants
+                FROM Entrance_Exam ee
+                LEFT JOIN applicant_exam_assign aea 
+                    ON ee.Exam_Id = aea.Exam_Id
+                WHERE ee.faculty_email = %s
+                GROUP BY ee.Exam_Id, ee.Exam_Name, ee.Exam_Date
+                ORDER BY ee.Exam_Date DESC
+            """
+            cursor.execute(query, (faculty_email,))
+            exams = cursor.fetchall()
+
+            return jsonify({'success': True, 'exams': exams}), 200
+        except Exception as e:
+            return jsonify({'success': False, 'message': str(e)}), 500
+        finally:
+            cursor.close()
 
     return faculty_bp
