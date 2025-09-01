@@ -149,7 +149,7 @@
           <tr v-for="exam in conductedExams" :key="exam.Exam_Id" class="border-t">
             <td class="px-4 py-2">{{ exam.Exam_Name || 'N/A' }}</td>
             <td class="px-4 py-2">{{ formatDate(exam.Exam_Date) }}</td>
-            <td class="px-4 py-2">{{ exam.total_applicants || 0 }}</td>
+            <td class="px-4 py-2">{{ exam.total_applicants || 0 }}</td> 
 
             <td class="px-4 py-2 text-center">
               <button
@@ -166,8 +166,6 @@
     <div v-else class="mt-8 text-gray-500 text-center text-lg">
       No exams conducted yet.
     </div>
-
-    
   </div>
 </template>
 
@@ -185,16 +183,6 @@ const submitMessage = ref('')
 const examSubmitMessage = ref('')
 const createdExams = ref([])
 const conductedExams = ref([])
-const takenExams = ref([])
-
-// Date blocking
-const todayDate = computed(() => {
-  const today = new Date()
-  const year = today.getFullYear()
-  const month = String(today.getMonth() + 1).padStart(2, '0')
-  const day = String(today.getDate()).padStart(2, '0')
-  return `${year}-${month}-${day}`
-})
 
 const exam = ref({
   exam_name: '',
@@ -295,14 +283,12 @@ const submitApplicant = async () => {
   }
 }
 
-// Helper function to calculate end time for an exam
 const getExamEndTime = (exam) => {
   if (!exam.Exam_Date || !exam.Exam_Time || !exam.Duration_Minutes) return null
   const start = new Date(`${exam.Exam_Date}T${exam.Exam_Time}`)
   return new Date(start.getTime() + Number(exam.Duration_Minutes) * 60000)
 }
 
-// Fetch all exams for faculty, categorize into created/upcoming and conducted
 const fetchExamsAndCategorize = async () => {
   try {
     const res = await axios.get(`http://localhost:5000/api/exam/get_exams/${facultyEmail}`)
@@ -313,7 +299,7 @@ const fetchExamsAndCategorize = async () => {
       createdExams.value = allExams.filter(exam => {
         const endTime = getExamEndTime(exam)
         if (!endTime) return false
-        return endTime && now < endTime
+        return now < endTime
       })
 
       conductedExams.value = allExams.filter(exam => {
@@ -324,24 +310,6 @@ const fetchExamsAndCategorize = async () => {
     }
   } catch (err) {
     console.error('Failed to fetch exams', err)
-  }
-}
-
-// Fetch "Taken Exams" as in original code
-const fetchTakenExams = async () => {
-  try {
-    const res = await axios.get(`http://localhost:5000/api/exam/taken_exams/${facultyEmail}`)
-    if (res.data.success) {
-      const now = new Date()
-      takenExams.value = res.data.exams
-        ? res.data.exams.filter(exam => {
-            const endTime = getExamEndTime(exam)
-            return endTime && now > endTime
-          })
-        : []
-    }
-  } catch (err) {
-    console.error('Failed to fetch taken exams', err)
   }
 }
 
@@ -363,7 +331,6 @@ const navigateTo = (action, examId) => {
 onMounted(() => {
   facultyName.value = localStorage.getItem('faculty_name') || 'Faculty'
   fetchExamsAndCategorize()
-  fetchTakenExams()
 })
 
 const logout = async () => {
@@ -432,7 +399,6 @@ button.bg-blue-600:hover {
   transform: scale(1.03);
   box-shadow: 0 6px 20px rgba(0, 0, 0, 0.12);
 }
-
 
 /* Table Styling */
 table {
@@ -510,6 +476,4 @@ td button:hover {
 .bg-red-500:hover {
   background: linear-gradient(to right, #dc2626, #b91c1c);
 }
-
-
 </style>

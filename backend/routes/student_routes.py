@@ -1,5 +1,5 @@
 from flask import Blueprint, request, jsonify
-from datetime import datetime
+from datetime import datetime, timedelta
 
 def create_student_routes(mysql):
     student_routes = Blueprint('student_routes', __name__)
@@ -9,14 +9,16 @@ def create_student_routes(mysql):
     def get_exam_data():
         try:
             cur = mysql.connection.cursor()
+            
+            # Get the next upcoming exam
             cur.execute("""
-                        SELECT q.Question_Id, q.Exam_Id, q.Question_Type, q.Question_Text, 
-                        q.Option_A, q.Option_B, q.Option_C, q.Option_D
-                        FROM entrance_question_bank q   
-                        JOIN exam_paper_questions epq ON q.Question_Id = epq.Question_Id
-                        JOIN exam_paper ep ON epq.Exam_Paper_Id = ep.Exam_Paper_Id    
-                        WHERE ep.Exam_Id = %s
-                        """, (exam_id,))
+                SELECT Exam_Id, Exam_Name, Exam_Date, Exam_Time, Duration_Minutes, 
+                       Total_Questions, Max_Marks, Faculty_Email
+                FROM entrance_exam 
+                WHERE Exam_Date >= CURDATE()
+                ORDER BY Exam_Date, Exam_Time 
+                LIMIT 1
+            """)
             exam = cur.fetchone()
 
             if not exam:
@@ -24,17 +26,18 @@ def create_student_routes(mysql):
 
             exam_id = exam[0]
 
+            # Get questions for this exam
             cur.execute("""
-                        SELECT q.Question_Id, q.Exam_Id, q.Question_Type, q.Question_Text, 
-                        q.Option_A, q.Option_B, q.Option_C, q.Option_D
-                        FROM entrance_question_bank q   
-                        JOIN exam_paper_questions epq ON q.Question_Id = epq.Question_Id
-                        JOIN exam_paper ep ON epq.Exam_Paper_Id = ep.Exam_Paper_Id    
-                        WHERE ep.Exam_Id = %s
-                        """, (exam_id,))
+                SELECT q.Question_Id, q.Exam_Id, q.Question_Type, q.Question_Text, 
+                       q.Option_A, q.Option_B, q.Option_C, q.Option_D
+                FROM entrance_question_bank q   
+                JOIN exam_paper_questions epq ON q.Question_Id = epq.Question_Id
+                JOIN exam_paper ep ON epq.Exam_Paper_Id = ep.Exam_Paper_Id    
+                WHERE ep.Exam_Id = %s
+            """, (exam_id,))
             questions = cur.fetchall()
-            print("🧪 Query result:", exam_id)
 
+            # Get or create exam paper
             cur.execute("SELECT * FROM exam_paper WHERE Exam_Id = %s", (exam_id,))
             exam_paper = cur.fetchone()
 
@@ -77,35 +80,115 @@ def create_student_routes(mysql):
         except Exception as e:
             return jsonify({"error": str(e)}), 500
 
-    # 🔹 NEW: Fetch exam data using specific Exam_Id
-    @student_routes.route('/exam/<int:exam_id>', methods=['GET'])
+    # 🔹 UPDATED: Fetch exam data using specific Exam_Id WITH 10-MINUTE LIMIT
+    @student_routes.route('/exam/<int:exam_id>', methods=['POST'])
     def get_exam_by_id(exam_id):
         try:
+            data = request.json
+            applicant_id = data.get('applicant_id')
+            
+            if not applicant_id:
+                return jsonify({"message": "Applicant ID is required"}), 400
+            
             cur = mysql.connection.cursor()
             
             print("🔍 Exam ID received:", exam_id)
+            print("🔍 Applicant ID received:", applicant_id)
             
-            print("🔍 Exam ID received:", exam_id)
+            # ✅ STEP 1: Check if exam exists
             cur.execute("SELECT * FROM entrance_exam WHERE Exam_Id = %s", (exam_id,))
             exam = cur.fetchone()
             print("🧪 Query result:", exam)
-            print("🧪 Query result:", exam)
 
             if not exam:
+                cur.close()
                 return jsonify({"message": "Invalid Exam ID"}), 404
 
-            # ✅ Fetch ONLY selected questions
-            cur.execute("""
-                        SELECT q.Question_Id, q.Exam_Id, q.Question_Type, q.Question_Text, 
-                        q.Option_A, q.Option_B, q.Option_C, q.Option_D
-                        FROM entrance_question_bank q   
-                        JOIN exam_paper_questions epq ON q.Question_Id = epq.Question_Id
-                        JOIN exam_paper ep ON epq.Exam_Paper_Id = ep.Exam_Paper_Id    
-                        WHERE ep.Exam_Id = %s
-                        """, (exam_id,))
-            questions = cur.fetchall()
-        
+            # ✅ STEP 2: TIME VALIDATION - Check if exam is within allowed time window (10 minutes only)
+            exam_date = exam[2]  # Exam_Date
+            exam_time = exam[3]  # Exam_Time
+            duration_minutes = exam[4]  # Duration_Minutes
+            
+            # Combine exam date and time
+            if isinstance(exam_time, timedelta):
+                exam_datetime = datetime.combine(exam_date, (datetime.min + exam_time).time())
+            else:
+                exam_datetime = datetime.combine(exam_date, exam_time)
+            
+            # ✅ UPDATED: Calculate exam end time (exam start + 10 minutes ONLY)
+            exam_end_10_minutes = exam_datetime + timedelta(minutes=10)
+            
+            current_time = datetime.now()
+            
+            print("🕐 Current Time:", current_time)
+            print("🕐 Exam Start Time:", exam_datetime)
+            print("🕐 Exam End Time (10 minutes only):", exam_end_10_minutes)
+            
+            # Check if exam hasn't started yet
+            if current_time < exam_datetime:
+                cur.close()
+                return jsonify({
+                    "error": f"Exam has not started yet. Please wait until {exam_datetime.strftime('%Y-%m-%d %H:%M:%S')}"
+                }), 425  # 425 Too Early
+            
+            # ✅ UPDATED: Check if 10 minutes have passed since exam start
+            if current_time > exam_end_10_minutes:
+                cur.close()
+                return jsonify({
+                    "error": f"Exam entry time has expired. You cannot start the exam after 10 minutes of exam start time."
+                }), 410  # 410 Gone
 
+            # ✅ STEP 3: Check if student is assigned to this exam
+            cur.execute("""
+                SELECT COUNT(*) FROM applicant_exam_assign 
+                WHERE Applicant_Id = %s AND Exam_Id = %s
+            """, (applicant_id, exam_id))
+            
+            is_assigned = cur.fetchone()[0] > 0
+            print("🔐 Is student assigned:", is_assigned)
+            
+            if not is_assigned:
+                cur.close()
+                return jsonify({
+                    "message": "Access Denied", 
+                    "error": "You are not assigned to this exam. Please contact your faculty."
+                }), 403
+
+            # ✅ STEP 4: Check if student has already attempted this exam
+            cur.execute("""
+                SELECT COUNT(*) FROM applicant_attempt aa
+                JOIN exam_paper ep ON aa.Exam_Paper_Id = ep.Exam_Paper_Id
+                WHERE aa.Applicant_Id = %s AND ep.Exam_Id = %s
+            """, (applicant_id, exam_id))
+            
+            already_attempted = cur.fetchone()[0] > 0
+            print("🔄 Already attempted:", already_attempted)
+            
+            if already_attempted:
+                cur.close()
+                return jsonify({
+                    "message": "Already Attempted", 
+                    "error": "You have already attempted this exam. Multiple attempts are not allowed."
+                }), 409
+
+            # ✅ STEP 5: Calculate remaining time for the exam (full duration from current time)
+            # Since student can only enter within 10 minutes, give them full duration from current time
+            remaining_seconds = duration_minutes * 60
+            
+            print(f"⏰ Remaining seconds (full duration): {remaining_seconds}")
+
+            # ✅ STEP 6: Fetch exam questions (only if authorized and within 10-minute window)
+            cur.execute("""
+                SELECT q.Question_Id, q.Exam_Id, q.Question_Type, q.Question_Text, 
+                       q.Option_A, q.Option_B, q.Option_C, q.Option_D
+                FROM entrance_question_bank q   
+                JOIN exam_paper_questions epq ON q.Question_Id = epq.Question_Id
+                JOIN exam_paper ep ON epq.Exam_Paper_Id = ep.Exam_Paper_Id    
+                WHERE ep.Exam_Id = %s
+            """, (exam_id,))
+            questions = cur.fetchall()
+
+            # Get or create exam paper
             cur.execute("SELECT * FROM exam_paper WHERE Exam_Id = %s", (exam_id,))
             exam_paper = cur.fetchone()
 
@@ -132,6 +215,7 @@ def create_student_routes(mysql):
                     "Total_Questions": exam[5],
                     "Max_Marks": exam[6],
                     "Faculty_Email": exam[7],
+                    "Remaining_Seconds": remaining_seconds  # ✅ Full duration from current time
                 },
                 "questions": [
                     {
@@ -149,7 +233,49 @@ def create_student_routes(mysql):
         except Exception as e:
             return jsonify({"error": str(e)}), 500
 
-    # 🔹 Submit answers and create attempt
+    # 🔹 NEW: Get assigned exams for a student
+    @student_routes.route('/assigned-exams/<int:applicant_id>', methods=['GET'])
+    def get_assigned_exams(applicant_id):
+        try:
+            cur = mysql.connection.cursor()
+            cur.execute("""
+                SELECT ee.Exam_Id, ee.Exam_Name, ee.Exam_Date, ee.Exam_Time, 
+                       ee.Duration_Minutes, ee.Total_Questions, ee.Max_Marks,
+                       aea.Assigned_On,
+                       CASE 
+                           WHEN aa.Attempt_Id IS NOT NULL THEN 'Completed'
+                           ELSE 'Pending'
+                       END AS Status
+                FROM applicant_exam_assign aea
+                JOIN entrance_exam ee ON aea.Exam_Id = ee.Exam_Id
+                LEFT JOIN applicant_attempt aa ON aa.Applicant_Id = aea.Applicant_Id 
+                    AND aa.Exam_Paper_Id IN (
+                        SELECT Exam_Paper_Id FROM exam_paper WHERE Exam_Id = ee.Exam_Id
+                    )
+                WHERE aea.Applicant_Id = %s
+                ORDER BY ee.Exam_Date, ee.Exam_Time
+            """, (applicant_id,))
+            
+            assigned_exams = cur.fetchall()
+            cur.close()
+
+            return jsonify({
+                "assigned_exams": [{
+                    "Exam_Id": exam[0],
+                    "Exam_Name": exam[1],
+                    "Exam_Date": str(exam[2]),
+                    "Exam_Time": str(exam[3]),
+                    "Duration_Minutes": exam[4],
+                    "Total_Questions": exam[5],
+                    "Max_Marks": exam[6],
+                    "Assigned_On": str(exam[7]),
+                    "Status": exam[8]
+                } for exam in assigned_exams]
+            })
+        except Exception as e:
+            return jsonify({"error": str(e)}), 500
+
+    # 🔹 FIXED: Submit answers and create attempt WITH STUDENT EMAIL
     @student_routes.route('/submit', methods=['POST'])
     def submit_answers():
         try:
@@ -160,56 +286,73 @@ def create_student_routes(mysql):
 
             cur = mysql.connection.cursor()
 
+            # ✅ FIXED: Get student email from applicants table
+            cur.execute("SELECT Email FROM applicants WHERE Applicant_Id = %s", (applicant_id,))
+            applicant_result = cur.fetchone()
+            
+            if not applicant_result:
+                cur.close()
+                return jsonify({"error": "Applicant not found"}), 404
+            
+            student_email = applicant_result[0]
+
             start_time = datetime.now()
             end_time = datetime.now()
             status = "Submitted"
             
             print("📥 Received data:", data)
             print("📌 Applicant ID:", applicant_id)
+            print("📌 Student Email:", student_email)  # ✅ Added email logging
             print("📌 Exam Paper ID:", exam_paper_id)
             print("📌 Answers:", answers)
 
-
+            # ✅ FIXED: Create attempt record WITH student email
             cur.execute("""
-                INSERT INTO applicant_attempt (Applicant_Id, Exam_Paper_Id, Start_Time, End_Time, Status)
-                VALUES (%s, %s, %s, %s, %s)
-            """, (applicant_id, exam_paper_id, start_time, end_time, status))
+                INSERT INTO applicant_attempt (Applicant_Id, Student_Email, Exam_Paper_Id, Start_Time, End_Time, Status)
+                VALUES (%s, %s, %s, %s, %s, %s)
+            """, (applicant_id, student_email, exam_paper_id, start_time, end_time, status))
 
             attempt_id = cur.lastrowid
             total_marks = 0
 
+            # Process each answer
             for ans in answers:
                 question_id = ans['question_id']
                 selected_option = ans['selected_option']
+                
+                # Get question details
                 cur.execute("""
                     SELECT Question_Type, Correct_Answer, Marks,
-                        Option_A, Option_B, Option_C, Option_D
+                           Option_A, Option_B, Option_C, Option_D
                     FROM entrance_question_bank
                     WHERE Question_Id = %s
                 """, (question_id,))
 
                 row = cur.fetchone()
-  
                 if not row:
                     continue
+                    
                 q_type, correct_answer, marks, opt_a, opt_b, opt_c, opt_d = row
-  
-                # Convert option if needed
+                
+                # Create option mapping
                 option_map = {'A': opt_a, 'B': opt_b, 'C': opt_c, 'D': opt_d}
-  
+                
+                # Determine if answer is correct
                 if q_type in ('MCQ', 'TF'):
                     selected_text = option_map.get(selected_option, "")
                     is_correct = selected_text.strip().lower() == correct_answer.strip().lower()
                 elif q_type in ('Fill', 'OneWord'):
-                    selected_text = selected_option # User typed input
+                    selected_text = selected_option  # User typed input
                     is_correct = selected_text.strip().lower() == correct_answer.strip().lower()
                 else:
                     is_correct = False
-  
+                    selected_text = selected_option
+                
                 # Add marks if correct
                 if is_correct:
                     total_marks += marks
-                # Store selected option and answer
+                
+                # Store answer in database
                 cur.execute("""
                     INSERT INTO applicant_answers (Attempt_Id, Question_Id, Selected_Option_Id, Answer_Text)
                     VALUES (%s, %s, %s, %s)
@@ -220,45 +363,54 @@ def create_student_routes(mysql):
                     selected_text if q_type in ('MCQ', 'TF') else selected_option
                 ))
 
-            # Update total marks
+            # Update total marks in attempt
             cur.execute("""
                 UPDATE applicant_attempt SET Marks_Obtained = %s WHERE Attempt_Id = %s
             """, (total_marks, attempt_id))
-
 
             # Auto grading logic
             cur.execute("SELECT Total_Marks FROM exam_paper WHERE Exam_Paper_Id = %s", (exam_paper_id,))
             total_possible_marks = cur.fetchone()[0]
             grading_status = "Fail"
+            
             if total_possible_marks > 0:
                 percentage = (total_marks / total_possible_marks) * 100
                 grading_status = "Pass" if percentage >= 40 else "Fail"
  
+            # Insert auto grading result
             cur.execute("""
                 INSERT INTO auto_grading (Attempt_Id, Total_Score, Status)
                 VALUES (%s, %s, %s)
             """, (attempt_id, total_marks, grading_status))
+            
             mysql.connection.commit()
             cur.close()
  
-            return jsonify({"message": "Answers submitted successfully", "Attempt_Id": attempt_id})
+            return jsonify({
+                "message": "Answers submitted successfully", 
+                "Attempt_Id": attempt_id,
+                "Student_Email": student_email,  # ✅ Return email in response
+                "Total_Marks": total_marks,
+                "Status": grading_status
+            })
+            
         except Exception as e:
             mysql.connection.rollback()
             return jsonify({"error": str(e)}), 500
 
-
-
-    # 🔹 View all attempts of a student
+    # 🔹 UPDATED: View all attempts of a student WITH EMAIL
     @student_routes.route('/attempts/<int:applicant_id>', methods=['GET'])
     def get_attempts(applicant_id):
         try:
             cur = mysql.connection.cursor()
             cur.execute("""
                 SELECT aa.Attempt_Id, aa.Start_Time, aa.End_Time, aa.Status, 
-                       ep.Title, ee.Exam_Name
+                       aa.Marks_Obtained, aa.Student_Email, ep.Title, ee.Exam_Name, ee.Max_Marks,
+                       ag.Status as Grade_Status
                 FROM applicant_attempt aa
                 JOIN exam_paper ep ON aa.Exam_Paper_Id = ep.Exam_Paper_Id
                 JOIN entrance_exam ee ON ep.Exam_Id = ee.Exam_Id
+                LEFT JOIN auto_grading ag ON aa.Attempt_Id = ag.Attempt_Id
                 WHERE aa.Applicant_Id = %s
                 ORDER BY aa.Start_Time DESC
             """, (applicant_id,))
@@ -271,15 +423,81 @@ def create_student_routes(mysql):
                     "Start_Time": str(a[1]),
                     "End_Time": str(a[2]),
                     "Status": a[3],
-                    "Paper_Title": a[4],
-                    "Exam_Name": a[5]
+                    "Marks_Obtained": a[4],
+                    "Student_Email": a[5],  # ✅ Include email in response
+                    "Paper_Title": a[6],
+                    "Exam_Name": a[7],
+                    "Max_Marks": a[8],
+                    "Grade_Status": a[9]
                 } for a in attempts],
                 "total_attempts": len(attempts)
             })
         except Exception as e:
             return jsonify({"error": str(e)}), 500
-     
+
+    # 🔹 UPDATED: Get exam status for a student (with 10-minute limit)
+    @student_routes.route('/exam-status/<int:exam_id>/<int:applicant_id>', methods=['GET'])
+    def get_exam_status(exam_id, applicant_id):
+        try:
+            cur = mysql.connection.cursor()
+            
+            # Get exam details with time validation
+            cur.execute("SELECT * FROM entrance_exam WHERE Exam_Id = %s", (exam_id,))
+            exam = cur.fetchone()
+            
+            if not exam:
+                return jsonify({"error": "Exam not found"}), 404
+            
+            exam_date = exam[2]
+            exam_time = exam[3]
+            duration_minutes = exam[4]
+            
+            # Calculate exam timing
+            if isinstance(exam_time, timedelta):
+                exam_datetime = datetime.combine(exam_date, (datetime.min + exam_time).time())
+            else:
+                exam_datetime = datetime.combine(exam_date, exam_time)
+            
+            # ✅ UPDATED: Only 10 minutes window for entry
+            exam_end_entry_window = exam_datetime + timedelta(minutes=10)
+            current_time = datetime.now()
+            
+            # Determine status
+            if current_time < exam_datetime:
+                status = "NOT_STARTED"
+                message = f"Exam will start at {exam_datetime.strftime('%Y-%m-%d %H:%M:%S')}"
+            elif current_time > exam_end_entry_window:
+                status = "EXPIRED"
+                message = f"Exam entry time expired. You cannot start the exam after 10 minutes of exam start time."
+            else:
+                status = "ACTIVE"
+                remaining_seconds = int((exam_end_entry_window - current_time).total_seconds())
+                message = f"Exam entry window is active. {remaining_seconds} seconds remaining to enter."
+            
+            # Check if already attempted
+            cur.execute("""
+                SELECT COUNT(*) FROM applicant_attempt aa
+                JOIN exam_paper ep ON aa.Exam_Paper_Id = ep.Exam_Paper_Id
+                WHERE aa.Applicant_Id = %s AND ep.Exam_Id = %s
+            """, (applicant_id, exam_id))
+            
+            already_attempted = cur.fetchone()[0] > 0
+            
+            if already_attempted:
+                status = "COMPLETED"
+                message = "You have already completed this exam."
+            
+            cur.close()
+            
+            return jsonify({
+                "status": status,
+                "message": message,
+                "exam_datetime": exam_datetime.strftime('%Y-%m-%d %H:%M:%S'),
+                "exam_end_entry_window": exam_end_entry_window.strftime('%Y-%m-%d %H:%M:%S'),
+                "current_time": current_time.strftime('%Y-%m-%d %H:%M:%S')
+            })
+            
+        except Exception as e:
+            return jsonify({"error": str(e)}), 500
      
     return student_routes
-
-

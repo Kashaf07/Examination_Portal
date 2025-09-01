@@ -1,63 +1,73 @@
 from flask import Blueprint, request, jsonify
-import MySQLdb.cursors  # <-- Import DictCursor support
-
+import MySQLdb.cursors  # Using flask-mysqldb DictCursor
 
 def create_faculty_routes(mysql):
-    faculty_bp = Blueprint('faculty_bp', name)
+    faculty_bp = Blueprint("faculty_bp", __name__)
 
-    # ---------------- Faculty Profile ----------------
-    @faculty_bp.route('/api/faculty/profile', methods=['GET'])
-    def get_faculty_profile():
-        email = request.args.get('email')
+    # -------------------------
+    # Faculty Login
+    # -------------------------
+    @faculty_bp.route("/login", methods=["POST"])
+    def faculty_login():
+        data = request.get_json()
+        email = data.get("email")
+        password = data.get("password")
 
-        if not email:
-            return jsonify({'error': 'Email is required'}), 400
-
-        try:
-            cursor = mysql.connection.cursor()
-            cursor.execute("SELECT F_Name FROM Mst_Faculty WHERE F_Email = %s", (email,))
-            result = cursor.fetchone()
-            if result:
-                return jsonify({'status': 'success', 'name': result[0]}), 200
-            else:
-                return jsonify({'status': 'fail', 'error': 'Faculty not found'}), 404
-        except Exception as e:
-            return jsonify({'status': 'error', 'error': str(e)}), 500
-        finally:
-            cursor.close()
-
-    # ---------------- View Exam Responses ----------------
-    @faculty_bp.route('/api/faculty/view_responses/<int:exam_id>', methods=['GET'])
-    def view_responses(exam_id):
         try:
             cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
-
-            query = """
-            SELECT 
-                aa.Attempt_Id,
-                ap.Full_Name,
-                ap.Email,
-                aa.Start_Time,
-                aa.End_Time,
-                aa.Status
-            FROM applicant_attempt aa
-            JOIN applicants ap ON aa.Applicant_Id = ap.Applicant_Id
-            WHERE aa.Exam_Paper_Id = %s
-            """
-            cursor.execute(query, (exam_id,))
-            data = cursor.fetchall()
-            return jsonify({'success': True, 'responses': data}), 200
-        except Exception as e:
-            return jsonify({'success': False, 'message': str(e)}), 500
-        finally:
+            cursor.execute("SELECT * FROM Mst_Faculty WHERE F_Email = %s", (email,))
+            faculty = cursor.fetchone()
             cursor.close()
 
-    # ---------------- Conducted Exams ----------------
-    @faculty_bp.route('/api/faculty/conducted_exams/<faculty_email>', methods=['GET'])
+            if not faculty:
+                return jsonify({"success": False, "message": "Faculty not found"}), 404
+
+            # If you use plain text passwords (⚠️ insecure but works for now)
+            if faculty["F_Password"] == password:
+                return jsonify({
+                    "success": True,
+                    "faculty": {
+                        "id": faculty["F_ID"],
+                        "name": faculty["F_Name"],
+                        "email": faculty["F_Email"]
+                    }
+                })
+            else:
+                return jsonify({"success": False, "message": "Invalid password"}), 401
+
+        except Exception as e:
+            return jsonify({"success": False, "message": str(e)}), 500
+
+    # -------------------------
+    # Faculty Profile
+    # -------------------------
+    @faculty_bp.route("/profile", methods=["GET"])
+    def get_faculty_profile():
+        email = request.args.get("email")
+        if not email:
+            return jsonify({"error": "Email is required"}), 400
+
+        try:
+            cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+            cursor.execute("SELECT F_Name FROM Mst_Faculty WHERE F_Email = %s", (email,))
+            faculty = cursor.fetchone()
+            cursor.close()
+
+            if faculty:
+                return jsonify({"success": True, "name": faculty["F_Name"]})
+            else:
+                return jsonify({"success": False, "message": "Faculty not found"}), 404
+
+        except Exception as e:
+            return jsonify({"success": False, "message": str(e)}), 500
+
+    # -------------------------
+    # Conducted Exams
+    # -------------------------
+    @faculty_bp.route("/conducted_exams/<faculty_email>", methods=["GET"])
     def get_conducted_exams(faculty_email):
         try:
             cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
-
             query = """
                 SELECT 
                     ee.Exam_Id,
@@ -73,11 +83,9 @@ def create_faculty_routes(mysql):
             """
             cursor.execute(query, (faculty_email,))
             exams = cursor.fetchall()
-
-            return jsonify({'success': True, 'exams': exams}), 200
-        except Exception as e:
-            return jsonify({'success': False, 'message': str(e)}), 500
-        finally:
             cursor.close()
+            return jsonify({"success": True, "exams": exams})
+        except Exception as e:
+            return jsonify({"success": False, "message": str(e)}), 500
 
     return faculty_bp
