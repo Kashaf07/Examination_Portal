@@ -49,21 +49,21 @@
           </div>
 
           <!-- Faculty Table -->
-          <div class="bg-blue-50/50 rounded-xl p-6 border border-blue-100">
+          <div class="bg-purple-100 rounded-xl p-6 border border-purple-200">
             <div class="overflow-x-auto">
               <table class="w-full">
                 <thead>
-                  <tr class="border-b border-blue-200">
-                    <th class="text-left py-4 px-4 font-semibold text-blue-800">ID</th>
-                    <th class="text-left py-4 px-4 font-semibold text-blue-800">Name</th>
-                    <th class="text-left py-4 px-4 font-semibold text-blue-800">Email</th>
-                    <th class="text-left py-4 px-4 font-semibold text-blue-800">School</th>
-                    <th class="text-left py-4 px-4 font-semibold text-blue-800">Designation</th>
-                    <th class="text-left py-4 px-4 font-semibold text-blue-800">Actions</th>
+                  <tr class="border-b border-purple-200">
+                    <th class="text-left py-4 px-4 font-semibold text-purple-800">ID</th>
+                    <th class="text-left py-4 px-4 font-semibold text-purple-800">Name</th>
+                    <th class="text-left py-4 px-4 font-semibold text-purple-800">Email</th>
+                    <th class="text-left py-4 px-4 font-semibold text-purple-800">School</th>
+                    <th class="text-left py-4 px-4 font-semibold text-purple-800">Designation</th>
+                    <th class="text-left py-4 px-4 font-semibold text-purple-800">Actions</th>
                   </tr>
                 </thead>
                 <tbody>
-                  <tr v-for="faculty in facultyList" :key="faculty.Faculty_Id" class="border-b border-blue-100 hover:bg-blue-50/50">
+                  <tr v-for="faculty in facultyList" :key="faculty.Faculty_Id" class="border-b border-purple-200 hover:bg-purple-50">
                     <td class="py-4 px-4 text-gray-700">{{ faculty.Faculty_Id }}</td>
                     <td class="py-4 px-4 text-gray-700">{{ faculty.F_Name }}</td>
                     <td class="py-4 px-4 text-gray-700">{{ faculty.F_Email }}</td>
@@ -105,19 +105,19 @@
           </div>
 
           <!-- Schools Table -->
-          <div class="bg-blue-50/50 rounded-xl p-6 border border-blue-100">
+          <div class="bg-purple-100 rounded-xl p-6 border border-purple-200">
             <div class="overflow-x-auto">
               <table class="w-full">
                 <thead>
-                  <tr class="border-b border-blue-200">
-                    <th class="text-left py-4 px-4 font-semibold text-blue-800">ID</th>
-                    <th class="text-left py-4 px-4 font-semibold text-blue-800">School Name</th>
-                    <th class="text-left py-4 px-4 font-semibold text-blue-800">Short Name</th>
-                    <th class="text-left py-4 px-4 font-semibold text-blue-800">Actions</th>
+                  <tr class="border-b border-purple-200">
+                    <th class="text-left py-4 px-4 font-semibold text-purple-800">ID</th>
+                    <th class="text-left py-4 px-4 font-semibold text-purple-800">School Name</th>
+                    <th class="text-left py-4 px-4 font-semibold text-purple-800">Short Name</th>
+                    <th class="text-left py-4 px-4 font-semibold text-purple-800">Actions</th>
                   </tr>
                 </thead>
                 <tbody>
-                  <tr v-for="school in schoolsList" :key="school.School_Id" class="border-b border-blue-100 hover:bg-blue-50/50">
+                  <tr v-for="school in schoolsList" :key="school.School_Id" class="border-b border-purple-200 hover:bg-purple-50">
                     <td class="py-4 px-4 text-gray-700">{{ school.School_Id }}</td>
                     <td class="py-4 px-4 text-gray-700">{{ school.School_Name }}</td>
                     <td class="py-4 px-4 text-gray-700">{{ school.School_Short }}</td>
@@ -269,36 +269,36 @@
           </div>
 
           <!-- Applicants Table -->
-          <div class="bg-blue-50/50 rounded-b-2xl p-6">
+          <div class="bg-purple-100 rounded-b-2xl p-6">
             <div class="overflow-x-auto">
               <table class="w-full">
                 <thead>
-                  <tr class="border-b border-blue-200">
-                    <th class="text-left py-4 px-4 font-semibold text-blue-800">
+                  <tr class="border-b border-purple-200">
+                    <th class="text-left py-4 px-4 font-semibold text-purple-800">
                       <input 
                         type="checkbox" 
                         @change="toggleAllApplicants"
                         :checked="selectedApplicants.length === applicantsList.length && applicantsList.length > 0"
-                        class="rounded border-blue-300 text-blue-600 focus:ring-blue-500"
+                        class="rounded border-purple-300 text-purple-600 focus:ring-purple-500"
                       >
                     </th>
-                    <th class="text-left py-4 px-4 font-semibold text-blue-800">ID</th>
-                    <th class="text-left py-4 px-4 font-semibold text-blue-800">Name</th>
-                    <th class="text-left py-4 px-4 font-semibold text-blue-800">Email</th>
-                    <th class="text-left py-4 px-4 font-semibold text-blue-800">Phone</th>
-                    <th class="text-left py-4 px-4 font-semibold text-blue-800">Gender</th>
-                    <th class="text-left py-4 px-4 font-semibold text-blue-800">Registration Date</th>
-                    <th class="text-left py-4 px-4 font-semibold text-blue-800">Actions</th>
+                    <th class="text-left py-4 px-4 font-semibold text-purple-800">ID</th>
+                    <th class="text-left py-4 px-4 font-semibold text-purple-800">Name</th>
+                    <th class="text-left py-4 px-4 font-semibold text-purple-800">Email</th>
+                    <th class="text-left py-4 px-4 font-semibold text-purple-800">Phone</th>
+                    <th class="text-left py-4 px-4 font-semibold text-purple-800">Gender</th>
+                    <th class="text-left py-4 px-4 font-semibold text-purple-800">Registration Date</th>
+                    <th class="text-left py-4 px-4 font-semibold text-purple-800">Actions</th>
                   </tr>
                 </thead>
                 <tbody>
-                  <tr v-for="applicant in applicantsList" :key="applicant.Applicant_Id" class="border-b border-blue-100 hover:bg-blue-50/50">
+                  <tr v-for="applicant in applicantsList" :key="applicant.Applicant_Id" class="border-b border-purple-200 hover:bg-purple-50">
                     <td class="py-4 px-4">
                       <input 
                         type="checkbox" 
                         :value="applicant.Applicant_Id"
                         v-model="selectedApplicants"
-                        class="rounded border-blue-300 text-blue-600 focus:ring-blue-500"
+                        class="rounded border-purple-300 text-purple-600 focus:ring-purple-500"
                       >
                     </td>
                     <td class="py-4 px-4 text-gray-700">{{ applicant.Applicant_Id }}</td>
@@ -346,19 +346,19 @@
             </button>
           </div>
 
-          <div class="bg-blue-50/50 rounded-xl p-6 border border-blue-100">
+          <div class="bg-purple-100 rounded-xl p-6 border border-purple-200">
             <div class="overflow-x-auto">
               <table class="w-full">
                 <thead>
-                  <tr class="border-b border-blue-200">
-                    <th class="text-left py-4 px-4 font-semibold text-blue-800">ID</th>
-                    <th class="text-left py-4 px-4 font-semibold text-blue-800">Name</th>
-                    <th class="text-left py-4 px-4 font-semibold text-blue-800">Email</th>
-                    <th class="text-left py-4 px-4 font-semibold text-blue-800">Actions</th>
+                  <tr class="border-b border-purple-200">
+                    <th class="text-left py-4 px-4 font-semibold text-purple-800">ID</th>
+                    <th class="text-left py-4 px-4 font-semibold text-purple-800">Name</th>
+                    <th class="text-left py-4 px-4 font-semibold text-purple-800">Email</th>
+                    <th class="text-left py-4 px-4 font-semibold text-purple-800">Actions</th>
                   </tr>
                 </thead>
                 <tbody>
-                  <tr v-for="admin in adminsList" :key="admin.Admin_ID" class="border-b border-blue-100 hover:bg-blue-50/50">
+                  <tr v-for="admin in adminsList" :key="admin.Admin_ID" class="border-b border-purple-200 hover:bg-purple-50">
                     <td class="py-4 px-4 text-gray-700">{{ admin.Admin_ID }}</td>
                     <td class="py-4 px-4 text-gray-700">{{ admin.Name }}</td>
                     <td class="py-4 px-4 text-gray-700">{{ admin.Email }}</td>
@@ -379,21 +379,21 @@
         <div class="bg-white/80 backdrop-blur-sm shadow-xl rounded-2xl p-8 border border-white/20">
           <h2 class="text-2xl font-bold text-gray-800 mb-6">Login Logs</h2>
 
-          <div class="bg-blue-50/50 rounded-xl p-6 border border-blue-100">
+          <div class="bg-purple-100 rounded-xl p-6 border border-purple-200">
             <div class="overflow-x-auto">
               <table class="w-full">
                 <thead>
-                  <tr class="border-b border-blue-200">
-                    <th class="text-left py-4 px-4 font-semibold text-blue-800">Log ID</th>
-                    <th class="text-left py-4 px-4 font-semibold text-blue-800">User Email</th>
-                    <th class="text-left py-4 px-4 font-semibold text-blue-800">Role</th>
-                    <th class="text-left py-4 px-4 font-semibold text-blue-800">Login Time</th>
-                    <th class="text-left py-4 px-4 font-semibold text-blue-800">Logout Time</th>
-                    <th class="text-left py-4 px-4 font-semibold text-blue-800">Actions</th>
+                  <tr class="border-b border-purple-200">
+                    <th class="text-left py-4 px-4 font-semibold text-purple-800">Log ID</th>
+                    <th class="text-left py-4 px-4 font-semibold text-purple-800">User Email</th>
+                    <th class="text-left py-4 px-4 font-semibold text-purple-800">Role</th>
+                    <th class="text-left py-4 px-4 font-semibold text-purple-800">Login Time</th>
+                    <th class="text-left py-4 px-4 font-semibold text-purple-800">Logout Time</th>
+                    <th class="text-left py-4 px-4 font-semibold text-purple-800">Actions</th>
                   </tr>
                 </thead>
                 <tbody>
-                  <tr v-for="log in logsList" :key="log.Log_ID" class="border-b border-blue-100 hover:bg-blue-50/50">
+                  <tr v-for="log in logsList" :key="log.Log_ID" class="border-b border-purple-200 hover:bg-purple-50">
                     <td class="py-4 px-4 text-gray-700">{{ log.Log_ID }}</td>
                     <td class="py-4 px-4 text-gray-700">{{ log.User_Email }}</td>
                     <td class="py-4 px-4">
@@ -401,8 +401,8 @@
                         {{ log.Role }}
                       </span>
                     </td>
-                    <td class="py-4 px-4 text-gray-700">{{ formatDateTime(log.Login_Time) }}</td>
-                    <td class="py-4 px-4 text-gray-700">{{ formatDateTime(log.Logout_Time) }}</td>
+                    <td class="py-4 px-4 text-gray-700">{{ log.Login_Time || 'N/A' }}</td>
+                    <td class="py-4 px-4 text-gray-700">{{ log.Logout_Time || 'N/A' }}</td>
                     <td class="py-4 px-4 space-x-2">
                       <button @click="viewLog(log)" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 transform hover:scale-105">View</button>
                       <button @click="deleteLog(log.Log_ID)" class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 transform hover:scale-105">Delete</button>
@@ -418,37 +418,37 @@
 
     <!-- All modals with updated styling -->
     <!-- Add/Edit Faculty Modal -->
-    <div v-if="showAddFacultyModal || showEditFacultyModal" class="fixed inset-0 bg-black/50 backdrop-blur-sm overflow-y-auto h-full w-full z-50 flex items-center justify-center">
-      <div class="bg-white/90 backdrop-blur-sm shadow-2xl rounded-2xl p-8 w-96 border border-white/20">
-        <h3 class="text-2xl font-bold text-gray-800 mb-6">
+    <div v-if="showAddFacultyModal || showEditFacultyModal" class="fixed inset-0 bg-black/60 backdrop-blur-md overflow-y-auto h-full w-full z-50 flex items-center justify-center p-4">
+      <div class="bg-white shadow-2xl rounded-3xl p-8 w-full max-w-md mx-auto border-0 relative">
+        <h3 class="text-2xl font-bold text-gray-800 mb-8 text-center">
           {{ showAddFacultyModal ? 'Add Faculty' : 'Edit Faculty' }}
         </h3>
         <form @submit.prevent="showAddFacultyModal ? addFaculty() : updateFaculty()">
           <div class="space-y-4">
             <div>
-              <label class="block text-sm font-semibold text-gray-700 mb-2">Name</label>
+              <label class="block text-sm font-semibold text-gray-700 mb-3">Name</label>
               <input
                 v-model="facultyForm.F_Name"
                 type="text"
                 required
-                class="w-full border border-gray-300 rounded-xl px-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
+                class="w-full border border-gray-200 rounded-2xl px-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-purple-50 focus:bg-white"
               >
             </div>
             <div>
-              <label class="block text-sm font-semibold text-gray-700 mb-2">Email</label>
+              <label class="block text-sm font-semibold text-gray-700 mb-3">Email</label>
               <input
                 v-model="facultyForm.F_Email"
                 type="email"
                 required
-                class="w-full border border-gray-300 rounded-xl px-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
+                class="w-full border border-gray-200 rounded-2xl px-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-purple-50 focus:bg-white"
               >
             </div>
             <div>
-              <label class="block text-sm font-semibold text-gray-700 mb-2">School</label>
+              <label class="block text-sm font-semibold text-gray-700 mb-3">School</label>
               <select
                 v-model="facultyForm.School_Id"
                 required
-                class="w-full border border-gray-300 rounded-xl px-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
+                class="w-full border border-gray-200 rounded-2xl px-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-purple-50 focus:bg-white"
               >
                 <option value="">Select School</option>
                 <option v-for="school in schoolsList" :key="school.School_Id" :value="school.School_Id">
@@ -457,35 +457,35 @@
               </select>
             </div>
             <div>
-              <label class="block text-sm font-semibold text-gray-700 mb-2">Designation</label>
+              <label class="block text-sm font-semibold text-gray-700 mb-3">Designation</label>
               <input
                 v-model="facultyForm.Designation"
                 type="text"
                 required
-                class="w-full border border-gray-300 rounded-xl px-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
+                class="w-full border border-gray-200 rounded-2xl px-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-purple-50 focus:bg-white"
               >
             </div>
             <div v-if="showAddFacultyModal">
-              <label class="block text-sm font-semibold text-gray-700 mb-2">Password</label>
+              <label class="block text-sm font-semibold text-gray-700 mb-3">Password</label>
               <input
                 v-model="facultyForm.Password"
                 type="password"
                 required
-                class="w-full border border-gray-300 rounded-xl px-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
+                class="w-full border border-gray-200 rounded-2xl px-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-purple-50 focus:bg-white"
               >
             </div>
           </div>
-          <div class="flex justify-end space-x-4 mt-8">
+          <div class="flex justify-center space-x-4 mt-8 pt-4">
             <button
               type="button"
               @click="closeFacultyModal"
-              class="px-6 py-3 text-sm font-semibold text-gray-700 bg-gray-200 hover:bg-gray-300 rounded-full transition-all duration-200 transform hover:scale-105"
+              class="px-8 py-3 text-sm font-semibold text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-full transition-all duration-200 transform hover:scale-105 min-w-[100px]"
             >
               Cancel
             </button>
             <button
               type="submit"
-              class="px-6 py-3 text-sm font-semibold text-white bg-blue-500 hover:bg-blue-600 rounded-full transition-all duration-200 transform hover:scale-105"
+              class="px-8 py-3 text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-full transition-all duration-200 transform hover:scale-105 min-w-[100px]"
             >
               {{ showAddFacultyModal ? 'Add' : 'Update' }}
             </button>
@@ -495,43 +495,43 @@
     </div>
 
     <!-- Add/Edit School Modal -->
-    <div v-if="showAddSchoolModal || showEditSchoolModal" class="fixed inset-0 bg-black/50 backdrop-blur-sm overflow-y-auto h-full w-full z-50 flex items-center justify-center">
-      <div class="bg-white/90 backdrop-blur-sm shadow-2xl rounded-2xl p-8 w-96 border border-white/20">
-        <h3 class="text-2xl font-bold text-gray-800 mb-6">
+    <div v-if="showAddSchoolModal || showEditSchoolModal" class="fixed inset-0 bg-black/60 backdrop-blur-md overflow-y-auto h-full w-full z-50 flex items-center justify-center p-4">
+      <div class="bg-white shadow-2xl rounded-3xl p-8 w-full max-w-md mx-auto border-0 relative">
+        <h3 class="text-2xl font-bold text-gray-800 mb-8 text-center">
           {{ showAddSchoolModal ? 'Add School' : 'Edit School' }}
         </h3>
         <form @submit.prevent="showAddSchoolModal ? addSchool() : updateSchool()">
           <div class="space-y-4">
             <div>
-              <label class="block text-sm font-semibold text-gray-700 mb-2">School Name</label>
+              <label class="block text-sm font-semibold text-gray-700 mb-3">School Name</label>
               <input
                 v-model="schoolForm.School_Name"
                 type="text"
                 required
-                class="w-full border border-gray-300 rounded-xl px-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
+                class="w-full border border-gray-200 rounded-2xl px-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-purple-50 focus:bg-white"
               >
             </div>
             <div>
-              <label class="block text-sm font-semibold text-gray-700 mb-2">Short Name</label>
+              <label class="block text-sm font-semibold text-gray-700 mb-3">Short Name</label>
               <input
                 v-model="schoolForm.School_Short"
                 type="text"
                 required
-                class="w-full border border-gray-300 rounded-xl px-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
+                class="w-full border border-gray-200 rounded-2xl px-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-purple-50 focus:bg-white"
               >
             </div>
           </div>
-          <div class="flex justify-end space-x-4 mt-8">
+          <div class="flex justify-center space-x-4 mt-8 pt-4">
             <button
               type="button"
               @click="closeSchoolModal"
-              class="px-6 py-3 text-sm font-semibold text-gray-700 bg-gray-200 hover:bg-gray-300 rounded-full transition-all duration-200 transform hover:scale-105"
+              class="px-8 py-3 text-sm font-semibold text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-full transition-all duration-200 transform hover:scale-105 min-w-[100px]"
             >
               Cancel
             </button>
             <button
               type="submit"
-              class="px-6 py-3 text-sm font-semibold text-white bg-blue-500 hover:bg-blue-600 rounded-full transition-all duration-200 transform hover:scale-105"
+              class="px-8 py-3 text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-full transition-all duration-200 transform hover:scale-105 min-w-[100px]"
             >
               {{ showAddSchoolModal ? 'Add' : 'Update' }}
             </button>
@@ -541,22 +541,43 @@
     </div>
 
     <!-- View Applicant Modal -->
-    <div v-if="showViewApplicantModal" class="fixed inset-0 bg-black/50 backdrop-blur-sm overflow-y-auto h-full w-full z-50 flex items-center justify-center">
-      <div class="bg-white/90 backdrop-blur-sm shadow-2xl rounded-2xl p-8 w-96 border border-white/20">
-        <h3 class="text-2xl font-bold text-gray-800 mb-6">Applicant Details</h3>
-        <div v-if="selectedApplicant" class="space-y-4">
-          <div class="flex justify-between"><span class="font-semibold">Name:</span> <span>{{ selectedApplicant.Full_Name }}</span></div>
-          <div class="flex justify-between"><span class="font-semibold">Email:</span> <span>{{ selectedApplicant.Email }}</span></div>
-          <div class="flex justify-between"><span class="font-semibold">Phone:</span> <span>{{ selectedApplicant.Phone }}</span></div>
-          <div class="flex justify-between"><span class="font-semibold">DOB:</span> <span>{{ formatDate(selectedApplicant.DOB) }}</span></div>
-          <div class="flex justify-between"><span class="font-semibold">Gender:</span> <span>{{ selectedApplicant.Gender }}</span></div>
-          <div class="flex justify-between"><span class="font-semibold">Address:</span> <span>{{ selectedApplicant.Address }}</span></div>
-          <div class="flex justify-between"><span class="font-semibold">Registration Date:</span> <span>{{ formatDate(selectedApplicant.Registration_Date) }}</span></div>
+    <div v-if="showViewApplicantModal" class="fixed inset-0 bg-black/60 backdrop-blur-md overflow-y-auto h-full w-full z-50 flex items-center justify-center p-4">
+      <div class="bg-white shadow-2xl rounded-3xl p-8 w-full max-w-md mx-auto border-0 relative">
+        <h3 class="text-2xl font-bold text-gray-800 mb-8 text-center">Applicant Details</h3>
+        <div v-if="selectedApplicant" class="space-y-6">
+          <div class="flex justify-between items-center py-2 border-b border-gray-100">
+            <span class="font-semibold text-gray-700">Name:</span>
+            <span class="text-gray-800 font-medium">{{ selectedApplicant.Full_Name }}</span>
+          </div>
+          <div class="flex justify-between items-center py-2 border-b border-gray-100">
+            <span class="font-semibold text-gray-700">Email:</span>
+            <span class="text-gray-800 font-medium">{{ selectedApplicant.Email }}</span>
+          </div>
+          <div class="flex justify-between items-center py-2 border-b border-gray-100">
+            <span class="font-semibold text-gray-700">Phone:</span>
+            <span class="text-gray-800 font-medium">{{ selectedApplicant.Phone }}</span>
+          </div>
+          <div class="flex justify-between items-center py-2 border-b border-gray-100">
+            <span class="font-semibold text-gray-700">DOB:</span>
+            <span class="text-gray-800 font-medium">{{ formatDate(selectedApplicant.DOB) }}</span>
+          </div>
+          <div class="flex justify-between items-center py-2 border-b border-gray-100">
+            <span class="font-semibold text-gray-700">Gender:</span>
+            <span class="text-gray-800 font-medium">{{ selectedApplicant.Gender }}</span>
+          </div>
+          <div class="flex justify-between items-center py-2 border-b border-gray-100">
+            <span class="font-semibold text-gray-700">Address:</span>
+            <span class="text-gray-800 font-medium">{{ selectedApplicant.Address }}</span>
+          </div>
+          <div class="flex justify-between items-center py-2 border-b border-gray-100">
+            <span class="font-semibold text-gray-700">Registration Date:</span>
+            <span class="text-gray-800 font-medium">{{ formatDate(selectedApplicant.Registration_Date) }}</span>
+          </div>
         </div>
-        <div class="flex justify-end mt-8">
+        <div class="flex justify-center space-x-4 mt-8 pt-4">
           <button
             @click="showViewApplicantModal = false"
-            class="px-6 py-3 text-sm font-semibold text-gray-700 bg-gray-200 hover:bg-gray-300 rounded-full transition-all duration-200 transform hover:scale-105"
+            class="px-8 py-3 text-sm font-semibold text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-full transition-all duration-200 transform hover:scale-105 min-w-[100px]"
           >
             Close
           </button>
@@ -565,29 +586,29 @@
     </div>
 
     <!-- Add/Edit Admin Modal -->
-    <div v-if="showAddAdminModal || showEditAdminModal" class="fixed inset-0 bg-black/50 backdrop-blur-sm overflow-y-auto h-full w-full z-50 flex items-center justify-center">
-      <div class="bg-white/90 backdrop-blur-sm shadow-2xl rounded-2xl p-8 w-96 border border-white/20">
-        <h3 class="text-2xl font-bold text-gray-800 mb-6">
+    <div v-if="showAddAdminModal || showEditAdminModal" class="fixed inset-0 bg-black/60 backdrop-blur-md overflow-y-auto h-full w-full z-50 flex items-center justify-center p-4">
+      <div class="bg-white shadow-2xl rounded-3xl p-8 w-full max-w-md mx-auto border-0 relative">
+        <h3 class="text-2xl font-bold text-gray-800 mb-8 text-center">
           {{ showAddAdminModal ? 'Add Admin' : 'Edit Admin' }}
         </h3>
         <form @submit.prevent="showAddAdminModal ? addAdmin() : updateAdmin()">
           <div class="space-y-4">
             <div>
-              <label class="block text-sm font-semibold text-gray-700 mb-2">Name</label>
-              <input v-model="adminForm.Name" type="text" required class="w-full border border-gray-300 rounded-xl px-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200">
+              <label class="block text-sm font-semibold text-gray-700 mb-3">Name</label>
+              <input v-model="adminForm.Name" type="text" required class="w-full border border-gray-200 rounded-2xl px-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-purple-50 focus:bg-white">
             </div>
             <div>
-              <label class="block text-sm font-semibold text-gray-700 mb-2">Email</label>
-              <input v-model="adminForm.Email" type="email" required class="w-full border border-gray-300 rounded-xl px-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200">
+              <label class="block text-sm font-semibold text-gray-700 mb-3">Email</label>
+              <input v-model="adminForm.Email" type="email" required class="w-full border border-gray-200 rounded-2xl px-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-purple-50 focus:bg-white">
             </div>
             <div v-if="showAddAdminModal">
-              <label class="block text-sm font-semibold text-gray-700 mb-2">Password</label>
-              <input v-model="adminForm.Password" type="password" required class="w-full border border-gray-300 rounded-xl px-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200">
+              <label class="block text-sm font-semibold text-gray-700 mb-3">Password</label>
+              <input v-model="adminForm.Password" type="password" required class="w-full border border-gray-200 rounded-2xl px-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-purple-50 focus:bg-white">
             </div>
           </div>
-          <div class="flex justify-end space-x-4 mt-8">
-            <button type="button" @click="closeAdminModal" class="px-6 py-3 text-sm font-semibold text-gray-700 bg-gray-200 hover:bg-gray-300 rounded-full transition-all duration-200 transform hover:scale-105">Cancel</button>
-            <button type="submit" class="px-6 py-3 text-sm font-semibold text-white bg-blue-500 hover:bg-blue-600 rounded-full transition-all duration-200 transform hover:scale-105">
+          <div class="flex justify-center space-x-4 mt-8 pt-4">
+            <button type="button" @click="closeAdminModal" class="px-8 py-3 text-sm font-semibold text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-full transition-all duration-200 transform hover:scale-105 min-w-[100px]">Cancel</button>
+            <button type="submit" class="px-8 py-3 text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-full transition-all duration-200 transform hover:scale-105 min-w-[100px]">
               {{ showAddAdminModal ? 'Add' : 'Update' }}
             </button>
           </div>
@@ -596,34 +617,58 @@
     </div>
 
     <!-- View Log Modal -->
-    <div v-if="showViewLogModal" class="fixed inset-0 bg-black/50 backdrop-blur-sm overflow-y-auto h-full w-full z-50 flex items-center justify-center">
-      <div class="bg-white/90 backdrop-blur-sm shadow-2xl rounded-2xl p-8 w-96 border border-white/20">
-        <h3 class="text-2xl font-bold text-gray-800 mb-6">Login Log Details</h3>
-        <div v-if="selectedLog" class="space-y-4">
-          <div class="flex justify-between"><span class="font-semibold">Log ID:</span> <span>{{ selectedLog.Log_ID }}</span></div>
-          <div class="flex justify-between"><span class="font-semibold">User Email:</span> <span>{{ selectedLog.User_Email }}</span></div>
-          <div class="flex justify-between"><span class="font-semibold">Role:</span> <span>{{ selectedLog.Role }}</span></div>
-          <div class="flex justify-between"><span class="font-semibold">Login Time:</span> <span>{{ formatDateTime(selectedLog.Login_Time) }}</span></div>
-          <div class="flex justify-between"><span class="font-semibold">Logout Time:</span> <span>{{ formatDateTime(selectedLog.Logout_Time) }}</span></div>
-          <div v-if="selectedLog.Student_ID" class="flex justify-between"><span class="font-semibold">Student ID:</span> <span>{{ selectedLog.Student_ID }}</span></div>
-          <div v-if="selectedLog.Student_Name" class="flex justify-between"><span class="font-semibold">Student Name:</span> <span>{{ selectedLog.Student_Name }}</span></div>
-          <div v-if="selectedLog.Applicant_ID" class="flex justify-between"><span class="font-semibold">Applicant ID:</span> <span>{{ selectedLog.Applicant_ID }}</span></div>
+    <div v-if="showViewLogModal" class="fixed inset-0 bg-black/60 backdrop-blur-md overflow-y-auto h-full w-full z-50 flex items-center justify-center p-4">
+      <div class="bg-white shadow-2xl rounded-3xl p-8 w-full max-w-md mx-auto border-0 relative">
+        <h3 class="text-2xl font-bold text-gray-800 mb-8 text-center">Login Log Details</h3>
+        <div v-if="selectedLog" class="space-y-6">
+          <div class="flex justify-between items-center py-2 border-b border-gray-100">
+            <span class="font-semibold text-gray-700">Log ID:</span>
+            <span>{{ selectedLog.Log_ID }}</span>
+          </div>
+          <div class="flex justify-between items-center py-2 border-b border-gray-100">
+            <span class="font-semibold text-gray-700">User Email:</span>
+            <span>{{ selectedLog.User_Email }}</span>
+          </div>
+          <div class="flex justify-between items-center py-2 border-b border-gray-100">
+            <span class="font-semibold text-gray-700">Role:</span>
+            <span>{{ selectedLog.Role }}</span>
+          </div>
+          <div class="flex justify-between items-center py-2 border-b border-gray-100">
+            <span class="font-semibold text-gray-700">Login Time:</span>
+            <span>{{ selectedLog.Login_Time || 'N/A' }}</span>
+          </div>
+          <div class="flex justify-between items-center py-2 border-b border-gray-100">
+            <span class="font-semibold text-gray-700">Logout Time:</span>
+            <span>{{ selectedLog.Logout_Time || 'N/A' }}</span>
+          </div>
+          <div v-if="selectedLog.Student_ID" class="flex justify-between items-center py-2 border-b border-gray-100">
+            <span class="font-semibold text-gray-700">Student ID:</span>
+            <span>{{ selectedLog.Student_ID }}</span>
+          </div>
+          <div v-if="selectedLog.Student_Name" class="flex justify-between items-center py-2 border-b border-gray-100">
+            <span class="font-semibold text-gray-700">Student Name:</span>
+            <span>{{ selectedLog.Student_Name }}</span>
+          </div>
+          <div v-if="selectedLog.Applicant_ID" class="flex justify-between items-center py-2 border-b border-gray-100">
+            <span class="font-semibold text-gray-700">Applicant ID:</span>
+            <span>{{ selectedLog.Applicant_ID }}</span>
+          </div>
         </div>
-        <div class="flex justify-end mt-8">
-          <button @click="showViewLogModal = false" class="px-6 py-3 text-sm font-semibold text-gray-700 bg-gray-200 hover:bg-gray-300 rounded-full transition-all duration-200 transform hover:scale-105">Close</button>
+        <div class="flex justify-center space-x-4 mt-8 pt-4">
+          <button @click="showViewLogModal = false" class="px-8 py-3 text-sm font-semibold text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-full transition-all duration-200 transform hover:scale-105 min-w-[100px]">Close</button>
         </div>
       </div>
     </div>
 
     <!-- Upload Applicants Modal -->
-    <div v-if="showUploadApplicantsModal" class="fixed inset-0 bg-black/50 backdrop-blur-sm overflow-y-auto h-full w-full z-50 flex items-center justify-center">
-      <div class="bg-white/90 backdrop-blur-sm shadow-2xl rounded-2xl p-8 w-96 border border-white/20">
-        <h3 class="text-2xl font-bold text-gray-800 mb-6">Upload Applicants</h3>
+    <div v-if="showUploadApplicantsModal" class="fixed inset-0 bg-black/60 backdrop-blur-md overflow-y-auto h-full w-full z-50 flex items-center justify-center p-4">
+      <div class="bg-white shadow-2xl rounded-3xl p-8 w-full max-w-md mx-auto border-0 relative">
+        <h3 class="text-2xl font-bold text-gray-800 mb-8 text-center">Upload Applicants</h3>
         
         <!-- File Upload Section -->
         <div class="space-y-4">
           <div>
-            <label class="block text-sm font-semibold text-gray-700 mb-2">
+            <label class="block text-sm font-semibold text-gray-700 mb-3">
               Select CSV/Excel File
             </label>
             <input
@@ -636,7 +681,7 @@
           </div>
           
           <!-- Sample Format -->
-          <div class="bg-blue-50 p-4 rounded-xl border border-blue-200">
+          <div class="bg-purple-100 p-4 rounded-xl border border-purple-200">
             <p class="text-sm font-semibold text-gray-700 mb-2">Expected CSV Format:</p>
             <code class="text-xs text-gray-600">
               Full_Name,Email,Password,Phone,DOB,Gender,Address<br>
@@ -671,18 +716,18 @@
           </div>
         </div>
         
-        <div class="flex justify-end space-x-4 mt-8">
+        <div class="flex justify-center space-x-4 mt-8 pt-4">
           <button
             type="button"
             @click="closeUploadModal"
-            class="px-6 py-3 text-sm font-semibold text-gray-700 bg-gray-200 hover:bg-gray-300 rounded-full transition-all duration-200 transform hover:scale-105"
+            class="px-8 py-3 text-sm font-semibold text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-full transition-all duration-200 transform hover:scale-105 min-w-[100px]"
           >
             Close
           </button>
           <button
             @click="uploadApplicants"
             :disabled="!selectedFile || isUploading"
-            class="px-6 py-3 text-sm font-semibold text-white bg-purple-500 hover:bg-purple-600 disabled:bg-gray-400 rounded-full transition-all duration-200 transform hover:scale-105"
+            class="px-8 py-3 text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-full transition-all duration-200 transform hover:scale-105 min-w-[100px]"
           >
             {{ isUploading ? 'Uploading...' : 'Upload' }}
           </button>

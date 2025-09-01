@@ -19,6 +19,13 @@ from routes.exam_paper_routes import create_exam_paper_routes
 from routes.auth_routes import create_auth_routes
 from routes.student_routes import create_student_routes
 from routes.AddStudents import create_add_students_bp
+from routes.faculty_routes import create_faculty_routes
+from routes.ViewResponses import create_view_responses_bp
+from routes.ViewAnswers import create_view_answers_bp
+
+
+
+
 
 
 app = Flask(__name__)
@@ -42,6 +49,9 @@ app.register_blueprint(create_auth_routes(mysql), url_prefix="/api/auth")
 app.register_blueprint(create_question_routes(mysql), url_prefix="/api/questions")
 app.register_blueprint(create_exam_routes(mysql), url_prefix="/api/exam")
 app.register_blueprint(create_add_students_bp(mysql), url_prefix="/api")
+app.register_blueprint(create_faculty_routes(mysql))
+app.register_blueprint(create_view_responses_bp(mysql), url_prefix='/responses')
+
 #app.register_blueprint(add_students_bp, url_prefix="/api")
 app.register_blueprint(exam_notify_bp)
 
@@ -53,7 +63,7 @@ app.register_blueprint(create_add_applicants_exam_bp(mysql), url_prefix='/api')
 app.register_blueprint(create_assign_routes(mysql))
 app.register_blueprint(create_applicants_bp(mysql))
 app.register_blueprint(create_assigned_applicants_routes(mysql))  # ✅
-
+app.register_blueprint(create_view_answers_bp(mysql))
 app.register_blueprint(create_admin_routes(mysql), url_prefix='/api/admin')
 
 student_bp = create_student_routes(mysql) # Students

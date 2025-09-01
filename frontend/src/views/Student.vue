@@ -44,12 +44,25 @@
 
     <!-- Timer and Question Navigator -->
     <div v-if="stage === 'exam'" class="z-10">
-      <div class="fixed bottom-190 left-7 z-40">
-        <span class="text-xl mr-2">⏳</span>
-        <span class="font-mono font-bold text-xl text-black bg-white px-4 py-2 rounded-xl shadow-md border border-indigo-100">
-          {{ minutes }} : {{ seconds }}
-        </span>
-      </div>
+  <div class="fixed bottom-190 left-7 z-40">
+    <span class="text-xl mr-2">⏳</span>
+    <span 
+      class="font-mono font-bold text-xl px-4 py-2 rounded-xl shadow-md border"
+      :class="{
+        'text-black bg-white border-indigo-100': timer > 300,
+        'text-yellow-800 bg-yellow-100 border-yellow-400 animate-pulse': timer <= 300 && timer > 60,
+        'text-red-800 bg-red-100 border-red-400 animate-bounce': timer <= 60
+      }"
+    >
+      {{ minutes }} : {{ seconds }}
+    </span>
+    
+    <!-- Time warning text -->
+    <div v-if="timer <= 300" class="mt-2 text-sm font-semibold">
+      <span v-if="timer > 60" class="text-yellow-700">⚠️ Less than 5 minutes!</span>
+      <span v-else class="text-red-700">🚨 Less than 1 minute!</span>
+    </div>
+  </div>
       <div class="absolute top-1/2 right-6 transform -translate-y-1/2 z-40">
         <div class="grid grid-cols-3 gap-3 bg-white p-4 rounded-xl shadow-md border border-indigo-100">
           <div
@@ -96,10 +109,13 @@
           Please enter your unique Exam ID provided by the examiner. Double-check before submitting. This will start your official attempt.
         </p>
 
-        <!-- Error Message for Invalid Exam ID -->
-        <div v-if="examIdError" class="w-full mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
-          <p class="text-red-700 text-lg font-bold">❌ Invalid Exam ID</p>
-        </div>
+<!-- Error Message for Invalid Exam ID -->
+<div v-if="examIdError" class="w-full mb-4 p-4 bg-red-50 border border-red-200 rounded-lg">
+  <p class="text-red-700 text-lg font-bold">❌ Unable to Access Exam</p>
+  <div v-if="inlineMessage && inlineMessage.type === 'error'" class="mt-2">
+    <p class="text-red-600 text-base font-medium">{{ inlineMessage.text }}</p>
+  </div>      
+</div>
 
         <form @submit.prevent="fetchExam" class="w-full flex flex-col items-center">
           <input v-model="examId" type="text" inputmode="numeric" pattern="[0-9]*"
@@ -629,54 +645,136 @@ startRedirectCountdown() {
       this.keyboardSelectedOption = null
       this.clearInlineMessage()
     },
-    async fetchExam() {
-      try {
-        this.examIdError = false
-        const res = await axios.get(`http://localhost:5000/api/student/exam/${this.examId}`)
-        this.exam = res.data.exam
-        this.questions = res.data.questions
-        this.answers = new Array(this.questions.length).fill(null)
-        this.stage = 'instructions'
-      } catch {
-        this.examIdError = true
-      }
-    },
-    startExam() {
-      this.stage = 'exam'
-      this.enterFullscreen()
+   async fetchExam() {
+  try {
+    this.examIdError = false
+    this.clearInlineMessage()
+    
+    // Send applicant_id along with exam_id for authorization
+    const res = await axios.post(`http://localhost:5000/api/student/exam/${this.examId}`, {
+      applicant_id: this.applicantId
+    })
+    
+    this.exam = res.data.exam
+    this.questions = res.data.questions
+    this.answers = new Array(this.questions.length).fill(null)
+    
+    // ✅ Use remaining time from backend (full duration since within 10-minute window)
+    if (res.data.exam.Remaining_Seconds !== undefined) {
+      this.timer = res.data.exam.Remaining_Seconds
+      console.log("⏰ Timer set to full duration:", this.timer)
+    } else {
       this.timer = this.exam.Duration_Minutes * 60
-this.interval = setInterval(() => {
-  if (this.timer > 0) {
-    this.timer--
-  } else {
-    clearInterval(this.interval)
-    this.handleTimerFinish()
+    }
+    
+    this.stage = 'instructions'
+    this.clearInlineMessage()
+    
+  } catch (error) {
+    this.examIdError = true
+    console.error("❌ Fetch exam error:", error)
+    
+    // ✅ Enhanced error handling for 10-minute limit
+    if (error.response) {
+      const status = error.response.status
+      const errorData = error.response.data
+      
+      switch (status) {
+        case 425: // Too Early - Exam hasn't started yet
+          this.showInlineMessage(
+            errorData.error || 'Exam has not started yet. Please wait until the scheduled time.',
+            'error'
+          )
+          break
+          
+        case 410: // Gone - 10 minutes have passed
+          this.showInlineMessage(
+            errorData.error || 'Exam entry time has expired. You cannot start the exam after 10 minutes of exam start time.',
+            'error'
+          )
+          break
+          
+        case 403: // Forbidden - Not assigned to exam
+          this.showInlineMessage(
+            errorData.error || 'Access Denied: You are not assigned to this exam',
+            'error'
+          )
+          break
+          
+        case 409: // Conflict - Already attempted
+          this.showInlineMessage(
+            errorData.error || 'You have already attempted this exam',
+            'error'
+          )
+          break
+          
+        case 404: // Not Found - Invalid exam ID
+          this.showInlineMessage('Invalid Exam ID', 'error')
+          break
+          
+        default:
+          this.showInlineMessage(
+            errorData.error || 'Failed to load exam. Please try again.',
+            'error'
+          )
+      }
+    } else {
+      this.showInlineMessage('Network error. Please check your connection.', 'error')
+    }
   }
-}, 1000)
+},
 
+startExam() {
+  this.stage = 'exam'
+  this.enterFullscreen()
+  
+  console.log("🚀 Starting exam with timer:", this.timer, "seconds")
+  
+  // Timer is already set correctly in fetchExam() method from backend response
+  // No need to recalculate duration
+  
+  this.interval = setInterval(() => {
+    if (this.timer > 0) {
+      this.timer--
+      
+      // Show time warnings
+      if (this.timer === 300) { // 5 minutes
+        this.showInlineMessage('⚠️ Only 5 minutes remaining!', 'warning')
+      } else if (this.timer === 60) { // 1 minute
+        this.showInlineMessage('🚨 Only 1 minute remaining!', 'warning')
+      }
+      
+    } else {
+      clearInterval(this.interval)
+      this.handleTimerFinish()
+    }
+  }, 1000)
 
-      document.addEventListener('fullscreenchange', () => {
-        if (this.stage === 'exam' && !document.fullscreenElement) {
-          this.handleViolation('Exited fullscreen')
-          this.recoverFullscreen()
-        }
-      })
-    },
-    handleTimerFinish() {
-  // Fill unanswered questions with "null" (treated as 0 marks by backend)
+  document.addEventListener('fullscreenchange', () => {
+    if (this.stage === 'exam' && !document.fullscreenElement) {
+      this.handleViolation('Exited fullscreen')
+      this.recoverFullscreen()
+    }
+  })
+},
+
+handleTimerFinish() {
+  console.log("⏰ Timer finished - auto submitting exam")
+  
+  // Fill unanswered questions with empty responses
   this.answers = this.answers.map((ans, idx) => {
     if (ans === null) {
       return {
         question_id: this.questions[idx].Question_Id,
-        selected_option: ''
+        selected_option: '' // Empty response for unanswered questions
       }
     }
     return ans
   })
 
-  this.finishExam('⏰ Time is up!\nUnanswered questions will get 0 marks.')
-}
-,
+  this.finishExam('⏰ Time is up!\nYour exam has been auto-submitted.')
+},
+
     handleNext() {
   const type = this.currentQuestion.Question_Type
   let value = null

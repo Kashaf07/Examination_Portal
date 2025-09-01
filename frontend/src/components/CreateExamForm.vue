@@ -2,7 +2,7 @@
 import { ref, watch } from 'vue'
 import axios from 'axios'
 
-// Get today's date in YYYY-MM-DD format
+// Today's date in YYYY-MM-DD format
 const today = ref(new Date().toISOString().split('T')[0])
 
 const exam = ref({
@@ -17,28 +17,52 @@ const exam = ref({
 
 const message = ref('')
 const success = ref(false)
-
-// Reactive minTime for today
 const minTime = ref('00:00')
 
-// Watch date changes to adjust time limits
+// Live validation: watch date changes
 watch(() => exam.value.exam_date, (newDate) => {
-  const now = new Date()
+  message.value = ''
+  success.value = false
+
+  if (!newDate) return
+
+  const selectedDateOnly = new Date(newDate)
+  const todayOnly = new Date(today.value)
+
+  if (selectedDateOnly < todayOnly) {
+    message.value = '❌ Past dates are not allowed'
+    return
+  }
+
+  // Update min time if today is selected
   if (newDate === today.value) {
-    // If today is selected, set min time to current time
-    minTime.value = now.toTimeString().slice(0, 5)
+    minTime.value = new Date().toTimeString().slice(0, 5)
   } else {
-    // If future date is selected, reset min time
     minTime.value = '00:00'
   }
 })
 
-const submitExam = async () => {
-  const now = new Date()
-  const selectedDate = new Date(`${exam.value.exam_date}T${exam.value.exam_time}`)
+// Live validation: watch time changes (only if today)
+watch(() => exam.value.exam_time, (newTime) => {
+  if (!newTime) return
 
-  if (selectedDate < now) {
-    message.value = '❌ Exam date/time cannot be in the past'
+  if (exam.value.exam_date === today.value) {
+    const now = new Date()
+    const selectedDateTime = new Date(`${exam.value.exam_date}T${newTime}`)
+    if (selectedDateTime < now) {
+      message.value = '❌ Exam time cannot be in the past'
+      return
+    }
+  }
+
+  // Clear only time-related errors
+  if (message.value.includes('time')) {
+    message.value = ''
+  }
+})
+
+const submitExam = async () => {
+  if (message.value.startsWith('❌')) {
     success.value = false
     return
   }
@@ -64,7 +88,6 @@ const submitExam = async () => {
   } catch (err) {
     success.value = false
     message.value = err.response?.data?.message || 'Server error occurred'
-    console.error(err)
   }
 }
 </script>
@@ -85,7 +108,6 @@ const submitExam = async () => {
           v-model="exam.exam_date"
           type="date"
           class="w-full p-2 border rounded"
-          :min="today"  <!-- This ensures past dates are not selectable -->
           required
         />
       </div>
@@ -121,10 +143,17 @@ const submitExam = async () => {
       </div>
 
       <div class="flex gap-4">
-        <button type="submit" class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700">
+        <button
+          type="submit"
+          class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700"
+        >
           Submit Exam
         </button>
-        <button @click="$emit('closeForm')" type="button" class="bg-gray-400 text-white px-4 py-2 rounded hover:bg-gray-500">
+        <button
+          @click="$emit('closeForm')"
+          type="button"
+          class="bg-gray-400 text-white px-4 py-2 rounded hover:bg-gray-500"
+        >
           Cancel
         </button>
       </div>
