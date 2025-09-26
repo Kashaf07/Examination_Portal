@@ -1,6 +1,7 @@
 from flask import Blueprint, request, jsonify
-from datetime import datetime
+from datetime import datetime, timedelta
 import traceback
+import MySQLdb.cursors
 
 def create_exam_routes(mysql):
     exam_bp = Blueprint('exam', __name__)
@@ -11,17 +12,15 @@ def create_exam_routes(mysql):
         exam_name = data.get('exam_name')
         exam_date = data.get('exam_date')      # format: YYYY-MM-DD
         exam_time = data.get('exam_time')      # format: HH:MM
-        duration = data.get('duration')        # integer
+        duration = data.get('duration')         # integer
         total_questions = data.get('total_questions')
         max_marks = data.get('max_marks')
         faculty_email = data.get('faculty_email')
 
-        # Validate required fields
         if not all([exam_name, exam_date, exam_time, duration, total_questions, max_marks, faculty_email]):
             return jsonify({'success': False, 'message': 'Missing required fields'}), 400
 
         try:
-            # Combine exam date and time to check if it's in the past
             exam_datetime_str = f"{exam_date} {exam_time}"
             exam_datetime = datetime.strptime(exam_datetime_str, "%Y-%m-%d %H:%M")
             current_datetime = datetime.now()
@@ -36,8 +35,7 @@ def create_exam_routes(mysql):
                 VALUES (%s, %s, %s, %s, %s, %s, %s)
             """, (exam_name, exam_date, exam_time, duration, total_questions, max_marks, faculty_email))
             mysql.connection.commit()
-
-            exam_id = cursor.lastrowid  # Get the auto-incremented ID
+            exam_id = cursor.lastrowid
             cursor.close()
 
             return jsonify({
@@ -76,14 +74,13 @@ def create_exam_routes(mysql):
                 })
 
             return jsonify({'success': True, 'exams': exam_list})
+
         except Exception as e:
             print("Error fetching exams:", e)
             return jsonify({'success': False, 'message': 'Server error'}), 500
 
-    # ✅ NEW: Route to get exam by ID
     @exam_bp.route('/get_exam_by_id/<int:exam_id>', methods=['GET'])
     def get_exam_by_id(exam_id):
-        print("Received request for Exam_Id:", exam_id)
         try:
             cursor = mysql.connection.cursor()
             cursor.execute("""
@@ -114,29 +111,28 @@ def create_exam_routes(mysql):
             print("Exception occurred:", e)
             traceback.print_exc()
             return jsonify({'error': 'Server error'}), 500
-        
+
     @exam_bp.route('/delete/<int:exam_id>', methods=['DELETE'])
     def delete_exam(exam_id):
         try:
             cursor = mysql.connection.cursor()
-            
-            # ⚠️ Delete from child tables first (in correct order) 
+
             cursor.execute("SET FOREIGN_KEY_CHECKS = 0")
+
             cursor.execute("""
-                           DELETE FROM exam_paper_questions 
-                           WHERE Exam_Paper_Id IN (
-                               SELECT Exam_Paper_Id FROM exam_paper WHERE Exam_Id = %s)
-                               """, (exam_id,))   
-            cursor.execute("DELETE FROM exam_paper WHERE Exam_Id = %s", (exam_id,))                
+                DELETE FROM exam_paper_questions 
+                WHERE Exam_Paper_Id IN (
+                    SELECT Exam_Paper_Id FROM exam_paper WHERE Exam_Id = %s)
+            """, (exam_id,))
+            cursor.execute("DELETE FROM exam_paper WHERE Exam_Id = %s", (exam_id,))
             cursor.execute("DELETE FROM entrance_question_bank WHERE Exam_Id = %s", (exam_id,))
             cursor.execute("DELETE FROM applicant_exam_assign WHERE Exam_Id = %s", (exam_id,))
-            
             cursor.execute("DELETE FROM exam_access_window WHERE Exam_Id = %s", (exam_id,))
             cursor.execute("DELETE FROM exam_settings WHERE Exam_Id = %s", (exam_id,))
-
-        
             cursor.execute("DELETE FROM Entrance_Exam WHERE Exam_Id = %s", (exam_id,))
+
             cursor.execute("SET FOREIGN_KEY_CHECKS = 1")
+
             mysql.connection.commit()
             cursor.close()
 
@@ -146,6 +142,6 @@ def create_exam_routes(mysql):
             print("Error deleting exam:", e)
             return jsonify({'success': False, 'message': 'Failed to delete exam'}), 500
 
+   
 
     return exam_bp
-

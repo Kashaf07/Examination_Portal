@@ -116,6 +116,13 @@
     <p class="text-red-600 text-base font-medium">{{ inlineMessage.text }}</p>
   </div>      
 </div>
+<!-- Error Message for Invalid Exam ID -->
+<div v-if="examIdError" class="w-full mb-4 p-4 bg-red-50 border border-red-200 rounded-lg">
+  <p class="text-red-700 text-lg font-bold">❌ Unable to Access Exam</p>
+  <div v-if="inlineMessage && inlineMessage.type === 'error'" class="mt-2">
+    <p class="text-red-600 text-base font-medium">{{ inlineMessage.text }}</p>
+  </div>      
+</div>
 
         <form @submit.prevent="fetchExam" class="w-full flex flex-col items-center">
           <input v-model="examId" type="text" inputmode="numeric" pattern="[0-9]*"
@@ -179,6 +186,7 @@
           </h3>
           <ul class="list-disc list-inside text-gray-700 space-y-2 pl-2">
             <li>Strictly no page refresh/reload allowed</li>
+            <li>No switching tabs/windows (2 attempts max)</li>
             <li>No switching tabs/windows (2 attempts max)</li>
             <li>No right-click, copy/paste allowed</li>
             <li>No developer tools access (F12/Ctrl+Shift+I)</li>
