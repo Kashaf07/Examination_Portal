@@ -40,7 +40,7 @@
       <form @submit.prevent="submitExam">
         <div class="grid grid-cols-2 gap-4">
           <input v-model="exam.exam_name" type="text" placeholder="Exam Name" required class="border p-2 rounded" />
-          <input v-model="exam.exam_date" type="date" placeholder="Exam Date" required class="border p-2 rounded" />
+          <input v-model="exam.exam_date" type="date" placeholder="Exam Date" required class="border p-2 rounded" :min="todayDate" />
           <input v-model="exam.exam_time" type="time" placeholder="Exam Time" required class="border p-2 rounded" />
           <input v-model="exam.duration" type="number" placeholder="Duration (Minutes)" required class="border p-2 rounded" />
           <input v-model="exam.total_questions" type="number" placeholder="Total Questions" required class="border p-2 rounded" />
@@ -135,21 +135,23 @@
 
     <!-- Conducted Exams Table -->
     <div v-if="conductedExams && conductedExams.length" class="mt-12">
-      <h2 class="text-2xl font-semibold mb-4">📄 Conducted Exams</h2>  
+      <h2 class="text-2xl font-semibold mb-4">Conducted Exams</h2>
       <table class="min-w-full border text-sm text-left">
         <thead class="bg-gray-200">
           <tr>
             <th class="px-4 py-2">Exam Name</th>        
             <th class="px-4 py-2">Date</th>
             <th class="px-4 py-2">Total Applicants</th>
+            <th class="px-4 py-2">Applicants Attempted</th>
             <th class="px-4 py-2 text-center">Actions</th>
           </tr>
         </thead>
         <tbody>
           <tr v-for="exam in conductedExams" :key="exam.Exam_Id" class="border-t">
             <td class="px-4 py-2">{{ exam.Exam_Name || 'N/A' }}</td>
-          <td class="px-4 py-2">{{ formatDate(exam.Exam_Date) }}</td>
-          <td class="px-4 py-2">{{ exam.total_applicants || 0 }}</td>
+            <td class="px-4 py-2">{{ formatDate(exam.Exam_Date) }}</td>
+            <td class="px-4 py-2">{{ exam.total_applicants || 0 }}</td> 
+            <td class="px-4 py-2">{{ exam.attempted_applicants || 0 }}</td>
 
           <td class="px-4 py-2 text-center">
             <button
@@ -170,7 +172,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import axios from 'axios'
 
@@ -183,6 +185,15 @@ const submitMessage = ref('')
 const examSubmitMessage = ref('')
 const createdExams = ref([])
 const conductedExams = ref([])
+
+// Date blocking
+const todayDate = computed(() => {
+  const today = new Date()
+  const year = today.getFullYear()
+  const month = String(today.getMonth() + 1).padStart(2, '0')
+  const day = String(today.getDate()).padStart(2, '0')
+  return `${year}-${month}-${day}`
+})
 
 const exam = ref({
   exam_name: '',

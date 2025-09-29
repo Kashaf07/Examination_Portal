@@ -59,7 +59,7 @@
     
     <!-- Time warning text -->
     <div v-if="timer <= 300" class="mt-2 text-sm font-semibold">
-      <span v-if="timer > 60" class="text-yellow-700">⚠️ Less than 5 minutes!</span>
+      <span v-if="timer > 60" class="text-black-700"></span>
       <span v-else class="text-red-700">🚨 Less than 1 minute!</span>
     </div>
   </div>
@@ -109,6 +109,13 @@
           Please enter your unique Exam ID provided by the examiner. Double-check before submitting. This will start your official attempt.
         </p>
 
+<!-- Error Message for Invalid Exam ID -->
+<div v-if="examIdError" class="w-full mb-4 p-4 bg-red-50 border border-red-200 rounded-lg">
+  <p class="text-red-700 text-lg font-bold">❌ Unable to Access Exam</p>
+  <div v-if="inlineMessage && inlineMessage.type === 'error'" class="mt-2">
+    <p class="text-red-600 text-base font-medium">{{ inlineMessage.text }}</p>
+  </div>      
+</div>
 <!-- Error Message for Invalid Exam ID -->
 <div v-if="examIdError" class="w-full mb-4 p-4 bg-red-50 border border-red-200 rounded-lg">
   <p class="text-red-700 text-lg font-bold">❌ Unable to Access Exam</p>
@@ -179,6 +186,7 @@
           </h3>
           <ul class="list-disc list-inside text-gray-700 space-y-2 pl-2">
             <li>Strictly no page refresh/reload allowed</li>
+            <li>No switching tabs/windows (2 attempts max)</li>
             <li>No switching tabs/windows (2 attempts max)</li>
             <li>No right-click, copy/paste allowed</li>
             <li>No developer tools access (F12/Ctrl+Shift+I)</li>
@@ -381,34 +389,35 @@
 import axios from 'axios'
 
 export default {
-  data() {
-    return {
-      examId: '',
-      exam: null,
-      questions: [],
-      currentIndex: 0,
-      selectedOption: null,
-      keyboardSelectedOption: null,
-      textAnswer: '',
-      timer: 0,
-      stage: 'enter',
-      finishMessage: '',
-      attemptId: null,
-      answers: [],
-      optionKeys: ['A', 'B', 'C', 'D'],
-      studentEmail: '',
-      studentName: '',
-      applicantId: null,
-      interval: null,
-      examIdError: false,
-      inlineMessage: null,
-      violationCount: 0,
-      maxViolations: 3,
-      fullscreenRecoveryTimeout: null,
-      redirectCountdown: 10,
-      redirectTimer: null,
-    }
-  },
+ data() {
+  return {
+    examId: '',
+    exam: null,
+    questions: [],
+    currentIndex: 0,
+    selectedOption: null,
+    keyboardSelectedOption: null,
+    textAnswer: '',
+    timer: 0,
+    stage: 'enter',
+    finishMessage: '',
+    attemptId: null,
+    examAttemptId: null, // NEW: Store attempt ID from backend
+    answers: [],
+    optionKeys: ['A', 'B', 'C', 'D'],
+    studentEmail: '',
+    studentName: '',
+    applicantId: null,
+    interval: null,
+    examIdError: false,
+    inlineMessage: null,
+    violationCount: 0,
+    maxViolations: 3,
+    fullscreenRecoveryTimeout: null,
+    redirectCountdown: 10,
+    redirectTimer: null,
+  }
+},
   computed: {
   // Get current question
   currentQuestion() {
@@ -484,6 +493,7 @@ export default {
   beforeUnmount() {
     clearInterval(this.interval)
     clearTimeout(this.fullscreenRecoveryTimeout)
+    clearInterval(this.redirectTimer)
     window.removeEventListener('keydown', this.handleKeydown)
     window.removeEventListener('blur', this.handleBlur)
     document.removeEventListener('visibilitychange', this.handleVisibilityChange)
@@ -511,52 +521,39 @@ export default {
     }, 800)
   },
 
-  // ✅ ⬇️ Add this method here
-startRedirectCountdown() {
-  this.redirectCountdown = 10; // ⬅️ Initialize the countdown
-  this.redirectTimer = setInterval(async () => {
-    if (this.redirectCountdown > 0) {
-      this.redirectCountdown--;
-    } else {
-      clearInterval(this.redirectTimer);
+  // ✅ Updated: Remove duplicate logout call since it's handled in finishExam/forceExit
+  startRedirectCountdown() {
+    this.redirectCountdown = 10;
+    this.redirectTimer = setInterval(() => {
+      if (this.redirectCountdown > 0) {
+        this.redirectCountdown--;
+      } else {
+        clearInterval(this.redirectTimer);
 
-      // ✅ Send logout time to backend
-      const email = localStorage.getItem('student_email');
-      if (email) {
-        try {
-          await axios.post('http://localhost:5000/api/logout', {
-            email: email,
-            role: 'Student'
-          });
-        } catch (error) {
-          console.error('Logout API failed:', error);
-        }
+        // ✅ Clear localStorage (logout call already made in finishExam/forceExit)
+        localStorage.removeItem('student_email');
+        localStorage.removeItem('student_name');
+        localStorage.removeItem('applicant_id');
+
+        // ✅ Redirect to login page
+        window.location.href = '/';
       }
-
-      // ✅ Clear localStorage
-      localStorage.removeItem('student_email');
-      localStorage.removeItem('student_name');
-      localStorage.removeItem('applicant_id');
-
-      // ✅ Redirect to login page
-      window.location.href = '/';
-    }
-  }, 1000);
-}
-,
+    }, 1000);
+  },
 
     handleBlur() {
-      if (this.stage === 'exam') {
-        this.handleViolation('Window lost focus')
-        this.recoverFullscreen()
-      }
-    },
-    handleVisibilityChange() {
-      if (document.hidden && this.stage === 'exam') {
-        this.handleViolation('Tab switch detected')
-        this.recoverFullscreen()
-      }
-    },
+  if (this.stage === 'exam') {
+    this.handleViolation('Window lost focus')
+    this.recoverFullscreen(2000)
+  }
+},
+handleVisibilityChange() {
+  if (document.hidden && this.stage === 'exam') {
+    this.handleViolation('Tab switch detected')
+    this.recoverFullscreen(2000)
+  }
+},
+
     handleViolation(reason) {
       this.violationCount++
       if (this.violationCount >= this.maxViolations) {
@@ -566,24 +563,44 @@ startRedirectCountdown() {
         this.showInlineMessage(`⚠️ Warning ${this.violationCount}/2: ${reason}. You have ${left} attempt(s) left.`, 'warning')
       }
     },
-    forceExit(reason) {
-  clearInterval(this.interval)
-  this.stage = 'finished'
-  this.finishMessage = `Exam forcibly ended.\nReason: ${reason}`
+    
+    // ✅ Updated: Send logout time immediately when exam is forcibly ended
+    async forceExit(reason) {
+      clearInterval(this.interval)
+      this.stage = 'finished'
+      this.finishMessage = `Exam forcibly ended.\nReason: ${reason}`
 
-  // ✅ Remove "Leave site?" popup on forced end too
-  window.removeEventListener('beforeunload', this.preventRefresh)
+      // Remove "Leave site?" popup on forced end
+      window.removeEventListener('beforeunload', this.preventRefresh)
 
-  this.startRedirectCountdown()
-},
-    recoverFullscreen() {
-      clearTimeout(this.fullscreenRecoveryTimeout)
-      this.fullscreenRecoveryTimeout = setTimeout(() => {
-        if (this.stage === 'exam' && !document.fullscreenElement) {
-          this.enterFullscreen()
+      // ✅ SEND LOGOUT TIME IMMEDIATELY WHEN EXAM IS FORCIBLY ENDED
+      const email = localStorage.getItem('student_email');
+      if (email) {
+        try {
+          await axios.post('http://localhost:5000/api/logout', {
+            email: email,
+            role: 'Student'
+          });
+          console.log('Logout time recorded for forcibly ended exam:', email);
+        } catch (error) {
+          console.error('Logout API failed during forced exit:', error);
         }
-      }, 1200)
+      }
+
+      this.startRedirectCountdown()
     },
+    
+    recoverFullscreen(delay = 2000) {
+  clearTimeout(this.fullscreenRecoveryTimeout)
+  this.fullscreenRecoveryTimeout = setTimeout(() => {
+    if (this.stage === 'exam' && !document.fullscreenElement) {
+      console.warn("Re-entering fullscreen after delay:", delay)
+      this.enterFullscreen()
+    }
+  }, delay)
+},
+
+
     preventRefresh(e) {
       e.preventDefault()
       e.returnValue = ''
@@ -592,44 +609,45 @@ startRedirectCountdown() {
       window.history.pushState(null, null, location.href)
     },
     handleKeydown(event) {
-  if (this.stage !== 'exam') return;
+      if (this.stage !== 'exam') return;
 
-  const qType = this.currentQuestion.Question_Type;
-  if (['MCQ', 'TF'].includes(qType)) {
-    const key = event.key;
-    if (['ArrowUp', 'ArrowDown'].includes(key)) {
-      event.preventDefault();
-      this.navigateOptions(key === 'ArrowUp' ? -1 : 1);
-    } else if (key === 'Enter') {
-      event.preventDefault();
-      this.handleEnterKey();
-    }
-  }
+      const qType = this.currentQuestion.Question_Type;
+      if (['MCQ', 'TF'].includes(qType)) {
+        const key = event.key;
+        if (['ArrowUp', 'ArrowDown'].includes(key)) {
+          event.preventDefault();
+          this.navigateOptions(key === 'ArrowUp' ? -1 : 1);
+        } else if (key === 'Enter') {
+          event.preventDefault();
+          this.handleEnterKey();
+        }
+      }
 
-  // 🚫 Block all restricted keys
-  const isRestrictedCombo =
-    event.key === 'Escape' ||
-    event.key === 'F12' ||
-    (event.ctrlKey && event.shiftKey && ['I', 'C', 'J'].includes(event.key)) ||
-    (event.ctrlKey && ['U', 'R'].includes(event.key)) ||
-    (event.ctrlKey && event.key === 'Tab'); // ✅ This detects Ctrl + Tab
+      // 🚫 Block all restricted keys
+      const isRestrictedCombo =
+        event.key === 'Escape' ||
+        event.key === 'F12' ||
+        (event.ctrlKey && event.shiftKey && ['I', 'C', 'J'].includes(event.key)) ||
+        (event.ctrlKey && ['U', 'R'].includes(event.key)) ||
+        (event.ctrlKey && event.key === 'Tab');
 
-  if (isRestrictedCombo) {
-    event.preventDefault();
-    this.handleViolation(`Restricted key (${event.ctrlKey ? 'Ctrl+' : ''}${event.key}) pressed`);
-    this.recoverFullscreen();
-  }
-},
+      if (isRestrictedCombo) {
+        event.preventDefault();
+        this.handleViolation(`Restricted key (${event.ctrlKey ? 'Ctrl+' : ''}${event.key}) pressed`);
+        this.recoverFullscreen(2000); // ⏱ Wait 2s before re-entering fullscreen
+
+      }
+    },
     navigateOptions(dir) {
-  const availableKeys = Object.keys(this.options)
-  const index = this.keyboardSelectedOption
-    ? availableKeys.indexOf(this.keyboardSelectedOption)
-    : (this.selectedOption ? availableKeys.indexOf(this.selectedOption) : -1)
-  let newIndex = index + dir
-  if (newIndex < 0) newIndex = availableKeys.length - 1
-  if (newIndex >= availableKeys.length) newIndex = 0
-  this.keyboardSelectedOption = availableKeys[newIndex]
-},
+      const availableKeys = Object.keys(this.options)
+      const index = this.keyboardSelectedOption
+        ? availableKeys.indexOf(this.keyboardSelectedOption)
+        : (this.selectedOption ? availableKeys.indexOf(this.selectedOption) : -1)
+      let newIndex = index + dir
+      if (newIndex < 0) newIndex = availableKeys.length - 1
+      if (newIndex >= availableKeys.length) newIndex = 0
+      this.keyboardSelectedOption = availableKeys[newIndex]
+    },
     handleEnterKey() {
       if (this.keyboardSelectedOption) {
         this.selectOption(this.keyboardSelectedOption)
@@ -645,186 +663,190 @@ startRedirectCountdown() {
       this.keyboardSelectedOption = null
       this.clearInlineMessage()
     },
-   async fetchExam() {
-  try {
-    this.examIdError = false
-    this.clearInlineMessage()
-    
-    // Send applicant_id along with exam_id for authorization
-    const res = await axios.post(`http://localhost:5000/api/student/exam/${this.examId}`, {
-      applicant_id: this.applicantId
-    })
-    
-    this.exam = res.data.exam
-    this.questions = res.data.questions
-    this.answers = new Array(this.questions.length).fill(null)
-    
-    // ✅ Use remaining time from backend (full duration since within 10-minute window)
-    if (res.data.exam.Remaining_Seconds !== undefined) {
-      this.timer = res.data.exam.Remaining_Seconds
-      console.log("⏰ Timer set to full duration:", this.timer)
-    } else {
-      this.timer = this.exam.Duration_Minutes * 60
-    }
-    
-    this.stage = 'instructions'
-    this.clearInlineMessage()
-    
-  } catch (error) {
-    this.examIdError = true
-    console.error("❌ Fetch exam error:", error)
-    
-    // ✅ Enhanced error handling for 10-minute limit
-    if (error.response) {
-      const status = error.response.status
-      const errorData = error.response.data
-      
-      switch (status) {
-        case 425: // Too Early - Exam hasn't started yet
-          this.showInlineMessage(
-            errorData.error || 'Exam has not started yet. Please wait until the scheduled time.',
-            'error'
-          )
-          break
+    async fetchExam() {
+      try {
+        this.examIdError = false
+        this.clearInlineMessage()
+        
+        // Send applicant_id along with exam_id for authorization
+        const res = await axios.post(`http://localhost:5000/api/student/exam/${this.examId}`, {
+          applicant_id: this.applicantId
+        })
+        
+        this.exam = res.data.exam
+        this.questions = res.data.questions
+        this.answers = new Array(this.questions.length).fill(null)
+        
+        // Store attempt_id from backend response
+        this.examAttemptId = res.data.exam.Attempt_Id
+        console.log("Stored attempt ID:", this.examAttemptId)
+        
+        // Use remaining time from backend (full duration since within 10-minute window)
+        if (res.data.exam.Remaining_Seconds !== undefined) {
+          this.timer = res.data.exam.Remaining_Seconds
+          console.log("Timer set to full duration:", this.timer)
+        } else {
+          this.timer = this.exam.Duration_Minutes * 60
+        }
+        
+        this.stage = 'instructions'
+        this.clearInlineMessage()
+        
+      } catch (error) {
+        this.examIdError = true
+        console.error("Fetch exam error:", error)
+        
+        // Enhanced error handling for 10-minute limit
+        if (error.response) {
+          const status = error.response.status
+          const errorData = error.response.data
           
-        case 410: // Gone - 10 minutes have passed
-          this.showInlineMessage(
-            errorData.error || 'Exam entry time has expired. You cannot start the exam after 10 minutes of exam start time.',
-            'error'
-          )
-          break
-          
-        case 403: // Forbidden - Not assigned to exam
-          this.showInlineMessage(
-            errorData.error || 'Access Denied: You are not assigned to this exam',
-            'error'
-          )
-          break
-          
-        case 409: // Conflict - Already attempted
-          this.showInlineMessage(
-            errorData.error || 'You have already attempted this exam',
-            'error'
-          )
-          break
-          
-        case 404: // Not Found - Invalid exam ID
-          this.showInlineMessage('Invalid Exam ID', 'error')
-          break
-          
-        default:
-          this.showInlineMessage(
-            errorData.error || 'Failed to load exam. Please try again.',
-            'error'
-          )
+          switch (status) {
+            case 425: // Too Early - Exam hasn't started yet
+              this.showInlineMessage(
+                errorData.error || 'Exam has not started yet. Please wait until the scheduled time.',
+                'error'
+              )
+              break
+              
+            case 410: // Gone - 10 minutes have passed
+              this.showInlineMessage(
+                errorData.error || 'Exam entry time has expired. You cannot start the exam after 10 minutes of exam start time.',
+                'error'
+              )
+              break
+              
+            case 403: // Forbidden - Not assigned to exam
+              this.showInlineMessage(
+                errorData.error || 'Access Denied: You are not assigned to this exam',
+                'error'
+              )
+              break
+              
+            case 409: // Conflict - Already attempted
+              this.showInlineMessage(
+                errorData.error || 'You have already attempted this exam',
+                'error'
+              )
+              break
+              
+            case 404: // Not Found - Invalid exam ID
+              this.showInlineMessage('Invalid Exam ID', 'error')
+              break
+              
+            default:
+              this.showInlineMessage(
+                errorData.error || 'Failed to load exam. Please try again.',
+                'error'
+              )
+          }
+        } else {
+          this.showInlineMessage('Network error. Please check your connection.', 'error')
+        }
       }
-    } else {
-      this.showInlineMessage('Network error. Please check your connection.', 'error')
-    }
-  }
-},
+    },
 
-startExam() {
-  this.stage = 'exam'
-  this.enterFullscreen()
-  
-  console.log("🚀 Starting exam with timer:", this.timer, "seconds")
-  
-  // Timer is already set correctly in fetchExam() method from backend response
-  // No need to recalculate duration
-  
-  this.interval = setInterval(() => {
-    if (this.timer > 0) {
-      this.timer--
+    startExam() {
+      this.stage = 'exam'
+      this.enterFullscreen()
       
-      // Show time warnings
-      if (this.timer === 300) { // 5 minutes
-        this.showInlineMessage('⚠️ Only 5 minutes remaining!', 'warning')
-      } else if (this.timer === 60) { // 1 minute
-        this.showInlineMessage('🚨 Only 1 minute remaining!', 'warning')
-      }
+      console.log("🚀 Starting exam with timer:", this.timer, "seconds")
       
-    } else {
-      clearInterval(this.interval)
-      this.handleTimerFinish()
-    }
-  }, 1000)
+      // Timer is already set correctly in fetchExam() method from backend response
+      // No need to recalculate duration
+      
+      this.interval = setInterval(() => {
+        if (this.timer > 0) {
+          this.timer--
+          
+          // Show time warnings
+          if (this.timer === 300) { // 5 minutes
+            this.showInlineMessage('⚠️ Only 5 minutes remaining!', 'warning')
+          } else if (this.timer === 60) { // 1 minute
+            this.showInlineMessage('🚨 Only 1 minute remaining!', 'warning')
+          }
+          
+        } else {
+          clearInterval(this.interval)
+          this.handleTimerFinish()
+        }
+      }, 1000)
 
-  document.addEventListener('fullscreenchange', () => {
-    if (this.stage === 'exam' && !document.fullscreenElement) {
-      this.handleViolation('Exited fullscreen')
-      this.recoverFullscreen()
-    }
-  })
-},
+      document.addEventListener('fullscreenchange', () => {
+        if (this.stage === 'exam' && !document.fullscreenElement) {
+          this.handleViolation('Exited fullscreen')
+          this.recoverFullscreen()
+        }
+      })
+    },
 
-handleTimerFinish() {
-  console.log("⏰ Timer finished - auto submitting exam")
-  
-  // Fill unanswered questions with empty responses
-  this.answers = this.answers.map((ans, idx) => {
-    if (ans === null) {
-      return {
-        question_id: this.questions[idx].Question_Id,
-        selected_option: '' // Empty response for unanswered questions
-      }
-    }
-    return ans
-  })
+    handleTimerFinish() {
+      console.log("⏰ Timer finished - auto submitting exam")
+      
+      // Fill unanswered questions with empty responses
+      this.answers = this.answers.map((ans, idx) => {
+        if (ans === null) {
+          return {
+            question_id: this.questions[idx].Question_Id,
+            selected_option: '' // Empty response for unanswered questions
+          }
+        }
+        return ans
+      })
 
-  this.finishExam('⏰ Time is up!\nYour exam has been auto-submitted.')
-},
+      this.finishExam('⏰ Time is up!\nYour exam has been auto-submitted.')
+    },
 
     handleNext() {
-  const type = this.currentQuestion.Question_Type
-  let value = null
+      const type = this.currentQuestion.Question_Type
+      let value = null
 
-  // ✅ Step 1: Validate based on question type
-  if (type === 'MCQ' || type === 'TF') {
-    if (!this.selectedOption) {
-      this.showInlineMessage('⚠️ Select an option first', 'warning')
-      return
-    }
-    value = this.selectedOption
-  } else if (type === 'Fill' || type === 'OneWord') {
-    if (!this.textAnswer.trim()) {
-      this.showInlineMessage('⚠️ Please provide an answer', 'warning')
-      return
-    }
-    value = this.textAnswer.trim()
-  }
+      // ✅ Step 1: Validate based on question type
+      if (type === 'MCQ' || type === 'TF') {
+        if (!this.selectedOption) {
+          this.showInlineMessage('⚠️ Select an option first', 'warning')
+          return
+        }
+        value = this.selectedOption
+      } else if (type === 'Fill' || type === 'OneWord') {
+        if (!this.textAnswer.trim()) {
+          this.showInlineMessage('⚠️ Please provide an answer', 'warning')
+          return
+        }
+        value = this.textAnswer.trim()
+      }
 
-  // ✅ Step 2: Save answer only if valid
-  this.answers[this.currentIndex] = {
-    question_id: this.currentQuestion.Question_Id,
-    selected_option: value
-  }
+      // ✅ Step 2: Save answer only if valid
+      this.answers[this.currentIndex] = {
+        question_id: this.currentQuestion.Question_Id,
+        selected_option: value
+      }
 
-  const last = this.currentIndex + 1 === this.questions.length
+      const last = this.currentIndex + 1 === this.questions.length
 
-  // ✅ Step 3: If it's the last question, check if any unanswered
-  if (last) {
-    const anyUnanswered = this.answers.some(ans => ans === null)
-    if (anyUnanswered) {
-      this.showInlineMessage('⚠️ Please answer all questions.', 'warning')
-      return
-    }
+      // ✅ Step 3: If it's the last question, check if any unanswered
+      if (last) {
+        const anyUnanswered = this.answers.some(ans => ans === null)
+        if (anyUnanswered) {
+          this.showInlineMessage('⚠️ Please answer all questions.', 'warning')
+          return
+        }
 
-    // ✅ All answered → finish exam
-    clearInterval(this.interval)
-    this.finishExam('✅ All questions submitted!')
-  } else {
-    // ✅ Step 4: Clear and move to next question
-    this.selectedOption = null
-    this.textAnswer = ''
-    this.keyboardSelectedOption = null
-    this.clearInlineMessage()
+        // ✅ All answered → finish exam
+        clearInterval(this.interval)
+        this.finishExam('✅ All questions submitted!')
+      } else {
+        // ✅ Step 4: Clear and move to next question
+        this.selectedOption = null
+        this.textAnswer = ''
+        this.keyboardSelectedOption = null
+        this.clearInlineMessage()
 
-    this.currentIndex++
-    this.loadCurrentAnswer()
-    this.focusTextInput()
-  }
-},
+        this.currentIndex++
+        this.loadCurrentAnswer()
+        this.focusTextInput()
+      }
+    },
     loadCurrentAnswer() {
       const ans = this.answers[this.currentIndex]
       const type = this.currentQuestion.Question_Type
@@ -838,38 +860,55 @@ handleTimerFinish() {
       this.keyboardSelectedOption = null
       this.clearInlineMessage()
       this.$nextTick(() => {
-  if (this.currentQuestion.Question_Type === 'Fill' && this.$refs.fillInput) {
-    this.$refs.fillInput.focus()
-  } else if (this.currentQuestion.Question_Type === 'OneWord' && this.$refs.oneWordInput) {
-    this.$refs.oneWordInput.focus()
-  }
-})
-
+        if (this.currentQuestion.Question_Type === 'Fill' && this.$refs.fillInput) {
+          this.$refs.fillInput.focus()
+        } else if (this.currentQuestion.Question_Type === 'OneWord' && this.$refs.oneWordInput) {
+          this.$refs.oneWordInput.focus()
+        }
+      })
     },
     jumpToQuestion(idx) {
       this.currentIndex = idx
       this.loadCurrentAnswer()
     },
-   async finishExam(msg) {
-  this.stage = 'finished'
-  this.finishMessage = msg
+    
+    // ✅ Updated: Send logout time immediately when exam finishes
+    async finishExam(msg) {
+      this.stage = 'finished'
+      this.finishMessage = msg
 
-  window.removeEventListener('beforeunload', this.preventRefresh)
+      window.removeEventListener('beforeunload', this.preventRefresh)
 
-  this.startRedirectCountdown() // ✅ START countdown logout
+      // ✅ SEND LOGOUT TIME IMMEDIATELY WHEN EXAM FINISHES
+      const email = localStorage.getItem('student_email');
+      if (email) {
+        try {
+          await axios.post('http://localhost:5000/api/logout', {
+            email: email,
+            role: 'Student'
+          });
+          console.log('Logout time recorded for student:', email);
+        } catch (error) {
+          console.error('Logout API failed:', error);
+        }
+      }
 
-  try {
-    const res = await axios.post('http://localhost:5000/api/student/submit', {
-      applicant_id: this.applicantId,
-      exam_paper_id: this.exam.Exam_Paper_Id,
-      answers: this.answers
-    })
-    this.attemptId = res.data.Attempt_Id
-  } catch {
-    this.showInlineMessage('❌ Submission failed', 'error')
-  }
-}
-,
+      this.startRedirectCountdown()
+
+      try {
+        const res = await axios.post('http://localhost:5000/api/student/submit', {
+          applicant_id: this.applicantId,
+          exam_paper_id: this.exam.Exam_Paper_Id,
+          answers: this.answers,
+          attempt_id: this.examAttemptId  // Send the attempt_id from when exam was fetched
+        })
+        this.attemptId = res.data.Attempt_Id
+        console.log("Submission successful, attempt ID:", this.attemptId)
+      } catch (error) {
+        console.error("Submission error:", error)
+        this.showInlineMessage('Submission failed', 'error')
+      }
+    },
     showInlineMessage(text, type = 'error') {
       this.inlineMessage = { text, type }
       setTimeout(() => {
