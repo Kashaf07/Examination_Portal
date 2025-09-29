@@ -83,6 +83,7 @@ def create_faculty_routes(mysql):
             """
             cursor.execute(query, (faculty_email,))
             exams = cursor.fetchall()
+            print("Returned exams:", exams)  # Debug print
             cursor.close()
             return jsonify({"success": True, "exams": exams})
         except Exception as e:
