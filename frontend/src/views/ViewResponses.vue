@@ -4,7 +4,7 @@
   >
     <div class="w-full max-w-full px-6">
       <h1
-        class="text-4xl font-extrabold mb-8 text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-purple-700 tracking-tight"
+        class="text-3xl font-bold mb-6 text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-purple-700 tracking-tight"
       >
         Applicant Attempts for Exam {{ examId }}
       </h1>

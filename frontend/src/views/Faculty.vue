@@ -135,13 +135,14 @@
 
     <!-- Conducted Exams Table -->
     <div v-if="conductedExams && conductedExams.length" class="mt-12">
-      <h2 class="text-2xl font-semibold mb-4">📄 Conducted Exams</h2>
+      <h2 class="text-2xl font-semibold mb-4">Conducted Exams</h2>
       <table class="min-w-full border text-sm text-left">
         <thead class="bg-gray-200">
           <tr>
             <th class="px-4 py-2">Exam Name</th>
             <th class="px-4 py-2">Date</th>
             <th class="px-4 py-2">Total Applicants</th>
+            <th class="px-4 py-2">Applicants Attempted</th>
             <th class="px-4 py-2 text-center">Actions</th>
           </tr>
         </thead>
@@ -150,6 +151,7 @@
             <td class="px-4 py-2">{{ exam.Exam_Name || 'N/A' }}</td>
             <td class="px-4 py-2">{{ formatDate(exam.Exam_Date) }}</td>
             <td class="px-4 py-2">{{ exam.total_applicants || 0 }}</td> 
+            <td class="px-4 py-2">{{ exam.attempted_applicants || 0 }}</td>
 
             <td class="px-4 py-2 text-center">
               <button
@@ -183,6 +185,15 @@ const submitMessage = ref('')
 const examSubmitMessage = ref('')
 const createdExams = ref([])
 const conductedExams = ref([])
+
+// Date blocking
+const todayDate = computed(() => {
+  const today = new Date()
+  const year = today.getFullYear()
+  const month = String(today.getMonth() + 1).padStart(2, '0')
+  const day = String(today.getDate()).padStart(2, '0')
+  return `${year}-${month}-${day}`
+})
 
 const exam = ref({
   exam_name: '',
