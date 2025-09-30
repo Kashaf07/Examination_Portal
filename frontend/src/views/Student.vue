@@ -116,13 +116,6 @@
     <p class="text-red-600 text-base font-medium">{{ inlineMessage.text }}</p>
   </div>      
 </div>
-<!-- Error Message for Invalid Exam ID -->
-<div v-if="examIdError" class="w-full mb-4 p-4 bg-red-50 border border-red-200 rounded-lg">
-  <p class="text-red-700 text-lg font-bold">❌ Unable to Access Exam</p>
-  <div v-if="inlineMessage && inlineMessage.type === 'error'" class="mt-2">
-    <p class="text-red-600 text-base font-medium">{{ inlineMessage.text }}</p>
-  </div>      
-</div>
 
         <form @submit.prevent="fetchExam" class="w-full flex flex-col items-center">
           <input v-model="examId" type="text" inputmode="numeric" pattern="[0-9]*"

@@ -21,7 +21,7 @@
       <!-- Question Type -->
       <div>
         <label class="block text-gray-800 font-semibold mb-2">Question Type</label>
-        <select v-model="form.question_type" class="input-box" required>
+        <select v-model="form.question_type" @change="handleTypeChange" class="input-box" required>
           <option value="MCQ">MCQ</option>
           <option value="Fill">Fill in the Blanks</option>
           <option value="TF">True/False</option>
@@ -43,10 +43,31 @@
         <input v-model="form.option_d" placeholder="Option D" class="input-box" />
       </div>
 
+      <!-- True/False Options (auto handled, so only show info) -->
+      <div v-if="form.question_type === 'TF'" class="p-4 bg-gray-100 rounded-md text-gray-700">
+        Options will be automatically set as: <br />
+        <strong>Option A = True</strong>, <strong>Option B = False</strong>
+      </div>
+
       <!-- Correct Answer -->
       <div>
         <label class="block text-gray-800 font-semibold mb-2">Correct Answer</label>
-        <input v-model="form.correct_answer" class="input-box" required />
+        <input 
+          v-if="form.question_type !== 'TF'" 
+          v-model="form.correct_answer" 
+          placeholder="Enter correct answer" 
+          class="input-box" 
+          required 
+        />
+        <select 
+          v-else 
+          v-model="form.correct_answer" 
+          class="input-box" 
+          required
+        >
+          <option value="True">True</option>
+          <option value="False">False</option>
+        </select>
       </div>
 
       <!-- Marks -->
@@ -86,6 +107,21 @@ export default {
     };
   },
   methods: {
+    handleTypeChange() {
+      if (this.form.question_type === 'TF') {
+        // Auto-set True/False options
+        this.form.option_a = 'True';
+        this.form.option_b = 'False';
+        this.form.option_c = null;
+        this.form.option_d = null;
+        this.form.correct_answer = ''; // reset so faculty picks again
+      } else if (this.form.question_type === 'MCQ') {
+        this.form.option_a = '';
+        this.form.option_b = '';
+        this.form.option_c = '';
+        this.form.option_d = '';
+      }
+    },
     async submitForm() {
       try {
         const response = await fetch('http://localhost:5000/api/questions/add', {
