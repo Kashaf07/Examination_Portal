@@ -1,29 +1,10 @@
-from flask import Blueprint, jsonify
-
 from flask import Blueprint, request, jsonify
+import pandas as pd
+import os
+from werkzeug.utils import secure_filename
 
 def create_admin_routes(mysql):
     admin_bp = Blueprint('admin_routes', __name__)
-    
-    # File Uploads 
-    @admin_bp.route('/uploaded-files', methods=['GET'])
-    def view_uploaded_files():
-        try:
-            cursor = mysql.connection.cursor()
-            query = """
-                SELECT File_ID, Uploaded_By, Role, File_Name, File_Path, Upload_Date 
-                FROM file_uploads 
-                ORDER BY Upload_Date DESC
-            """
-            cursor.execute(query)
-            files = cursor.fetchall()
-            columns = [desc[0] for desc in cursor.description]
-            result = [dict(zip(columns, row)) for row in files]
-            cursor.close()
-            return jsonify(result), 200
-        except Exception as e:
-            print("Admin file view error:", e)
-            return jsonify({"error": "Unable to fetch files"}), 500
 
     # ID Management Route
     @admin_bp.route('/reorganize-ids', methods=['POST'])
@@ -556,9 +537,10 @@ def create_admin_routes(mysql):
         try:
             cursor = mysql.connection.cursor()
             cursor.execute("""
-                SELECT Log_ID, User_Email, Role, Login_Time, Logout_Time
+                SELECT Log_ID, User_Email, Role, Login_Time, Logout_Time,
+                       Student_ID, Student_Name, Applicant_ID
                 FROM login_log 
-                ORDER BY Log_ID;
+                ORDER BY Log_ID
             """)
             logs = cursor.fetchall()
             columns = [desc[0] for desc in cursor.description]
@@ -655,5 +637,154 @@ def create_admin_routes(mysql):
             print("Error in bulk delete:", e)
             mysql.connection.rollback()
             return jsonify({"error": f"Bulk delete failed: {str(e)}"}), 500
+
+    # Student Upload Routes
+    ALLOWED_EXTENSIONS = {'csv', 'xlsx'}
+
+    def allowed_file(filename):
+        return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
+    @admin_bp.route('/add_students', methods=['POST'])
+    def add_students():
+        file = request.files.get('file')
+        exam_id = request.form.get('exam_id')  # optional exam linkage
+
+        if not file or not allowed_file(file.filename):
+            return jsonify({'error': 'Invalid or missing file'}), 400
+
+        try:
+            # Read Excel or CSV file
+            if file.filename.endswith('.csv'):
+                df = pd.read_csv(file)
+            else:
+                df = pd.read_excel(file)
+
+            required_columns = ['Full_Name', 'Email', 'Password', 'Phone', 'DOB', 'Gender', 'Address']
+            if not all(col in df.columns for col in required_columns):
+                return jsonify({'error': 'Missing required columns in uploaded file'}), 400
+
+            cursor = mysql.connection.cursor()
+            successful_uploads = 0
+            errors = []
+
+            for index, row in df.iterrows():
+                try:
+                    cursor.execute("""
+                        INSERT INTO applicants (Full_Name, Email, Password, Phone, DOB, Gender, Address)
+                        VALUES (%s, %s, %s, %s, %s, %s, %s)
+                    """, (
+                        row['Full_Name'],
+                        row['Email'],
+                        row['Password'],
+                        row['Phone'],
+                        row['DOB'],
+                        row['Gender'],
+                        row['Address']
+                    ))
+                    successful_uploads += 1
+
+                    # OPTIONAL: Insert into exam_applicants/exam_student mapping table
+                    # if exam_id:
+                    #     applicant_id = cursor.lastrowid
+                    #     cursor.execute("INSERT INTO exam_applicants (exam_id, applicant_id) VALUES (%s, %s)", (exam_id, applicant_id))
+
+                except Exception as e:
+                    errors.append(f"Row {index + 1}: {str(e)}")
+                    continue  # Skip duplicate emails or other errors
+
+            mysql.connection.commit()
+            cursor.close()
+
+            return jsonify({
+                'success': True,
+                'message': f'Successfully uploaded {successful_uploads} students',
+                'successful_uploads': successful_uploads,
+                'errors': errors
+            }), 200
+
+        except Exception as e:
+            print("Upload Error:", e)
+            return jsonify({'error': str(e)}), 500
+
+    @admin_bp.route('/upload_students', methods=['POST'])
+    def upload_students():
+        file = request.files.get('file')
+        exam_id = request.form.get('exam_id')
+        uploaded_by = request.form.get('email')
+        role = request.form.get('role', 'Admin')
+
+        if not file or not allowed_file(file.filename):
+            return jsonify({'error': 'Invalid or missing file'}), 400
+
+        try:
+            # Save uploaded file
+            filename = secure_filename(file.filename)
+            upload_path = os.path.join('uploads/students', filename)
+            os.makedirs(os.path.dirname(upload_path), exist_ok=True)
+            file.save(upload_path)
+
+            # Read Excel or CSV
+            if filename.endswith('.csv'):
+                df = pd.read_csv(upload_path)
+            else:
+                df = pd.read_excel(upload_path)
+
+            required_columns = ['Full_Name', 'Email', 'Password', 'Phone', 'DOB', 'Gender', 'Address']
+            if not all(col in df.columns for col in required_columns):
+                return jsonify({'error': 'Missing required columns in uploaded file'}), 400
+
+            cursor = mysql.connection.cursor()
+            successful_uploads = 0
+            errors = []
+
+            for index, row in df.iterrows():
+                try:
+                    cursor.execute("""
+                        INSERT INTO applicants (Full_Name, Email, Password, Phone, DOB, Gender, Address)
+                        VALUES (%s, %s, %s, %s, %s, %s, %s)
+                    """, (
+                        row['Full_Name'],
+                        row['Email'],
+                        row['Password'],
+                        row['Phone'],
+                        row['DOB'],
+                        row['Gender'],
+                        row['Address']
+                    ))
+                    successful_uploads += 1
+
+                    # Optional: Insert into exam_applicants
+                    # if exam_id:
+                    #     applicant_id = cursor.lastrowid
+                    #     cursor.execute("INSERT INTO exam_applicants (exam_id, applicant_id) VALUES (%s, %s)", (exam_id, applicant_id))
+
+                except Exception as e:
+                    errors.append(f"Row {index + 1}: {str(e)}")
+                    continue  # skip duplicates or bad rows
+
+            # Log the upload (if file_uploads table exists)
+            try:
+                cursor.execute("""
+                    INSERT INTO file_uploads (Uploaded_By, Role, File_Name, File_Path)
+                    VALUES (%s, %s, %s, %s)
+                """, (uploaded_by, role, filename, upload_path))
+            except Exception as e:
+                print("Logging upload failed:", e)
+                # Continue even if logging fails
+
+            mysql.connection.commit()
+            cursor.close()
+
+            return jsonify({
+                'success': True,
+                'message': f'Successfully uploaded {successful_uploads} students and logged the upload',
+                'successful_uploads': successful_uploads,
+                'errors': errors
+            }), 200
+
+        except Exception as e:
+            print("Upload Error:", e)
+            return jsonify({'error': str(e)}), 500
+         
 
     return admin_bp

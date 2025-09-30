@@ -1,5 +1,6 @@
 <template>
-  <div class="min-h-screen bg-gradient-to-br from-purple-100 to-pink-100">
+  <!-- Updated background to use custom linear gradient with specified colors -->
+  <div class="min-h-screen" style="background: linear-gradient(to bottom right, #E3F2FD, #F3E5F5, #FCE4EC);">
     <!-- Header -->
     <div class="px-6 py-6">
       <div class="flex justify-between items-center mb-8">
@@ -29,12 +30,6 @@
         </button>
       </div>
 
-      <!-- Error/Success Messages -->
-      <div v-if="message" class="mb-6 p-4 rounded-xl shadow-lg" :class="messageType === 'error' ? 'bg-red-100 text-red-700 border border-red-200' : 'bg-green-100 text-green-700 border border-green-200'">
-        {{ message }}
-        <button @click="message = ''" class="float-right text-lg font-bold hover:opacity-70">&times;</button>
-      </div>
-
       <!-- Faculty Management -->
       <div v-if="activeTab === 'faculty'" class="space-y-6">
         <div class="bg-white/80 backdrop-blur-sm shadow-xl rounded-2xl p-8 border border-white/20">
@@ -49,36 +44,37 @@
           </div>
 
           <!-- Faculty Table -->
-          <div class="bg-purple-100 rounded-xl p-6 border border-purple-200">
+          <!-- Updated faculty table to match modern design with light blue header -->
+          <div class="bg-white rounded-2xl shadow-lg overflow-hidden border border-gray-200">
             <div class="overflow-x-auto">
               <table class="w-full">
-                <thead>
-                  <tr class="border-b border-purple-200">
-                    <th class="text-left py-4 px-4 font-semibold text-purple-800">ID</th>
-                    <th class="text-left py-4 px-4 font-semibold text-purple-800">Name</th>
-                    <th class="text-left py-4 px-4 font-semibold text-purple-800">Email</th>
-                    <th class="text-left py-4 px-4 font-semibold text-purple-800">School</th>
-                    <th class="text-left py-4 px-4 font-semibold text-purple-800">Designation</th>
-                    <th class="text-left py-4 px-4 font-semibold text-purple-800">Actions</th>
+                <thead class="bg-gradient-to-r from-blue-50 to-blue-100">
+                  <tr>
+                    <th class="text-left py-4 px-6 font-semibold text-blue-900">ID</th>
+                    <th class="text-left py-4 px-6 font-semibold text-blue-900">Name</th>
+                    <th class="text-left py-4 px-6 font-semibold text-blue-900">Email</th>
+                    <th class="text-left py-4 px-6 font-semibold text-blue-900">School</th>
+                    <th class="text-left py-4 px-6 font-semibold text-blue-900">Designation</th>
+                    <th class="text-left py-4 px-6 font-semibold text-blue-900">Actions</th>
                   </tr>
                 </thead>
-                <tbody>
-                  <tr v-for="faculty in facultyList" :key="faculty.Faculty_Id" class="border-b border-purple-200 hover:bg-purple-50">
-                    <td class="py-4 px-4 text-gray-700">{{ faculty.Faculty_Id }}</td>
-                    <td class="py-4 px-4 text-gray-700">{{ faculty.F_Name }}</td>
-                    <td class="py-4 px-4 text-gray-700">{{ faculty.F_Email }}</td>
-                    <td class="py-4 px-4 text-gray-700">{{ getSchoolName(faculty.School_Id) }}</td>
-                    <td class="py-4 px-4 text-gray-700">{{ faculty.Designation }}</td>
-                    <td class="py-4 px-4 space-x-2">
+                <tbody class="bg-white divide-y divide-gray-100">
+                  <tr v-for="faculty in facultyList" :key="faculty.Faculty_Id" class="hover:bg-gray-50 transition-colors duration-200">
+                    <td class="py-4 px-6 text-gray-900">{{ faculty.Faculty_Id }}</td>
+                    <td class="py-4 px-6 text-gray-900">{{ faculty.F_Name }}</td>
+                    <td class="py-4 px-6 text-gray-900">{{ faculty.F_Email }}</td>
+                    <td class="py-4 px-6 text-gray-900">{{ getSchoolName(faculty.School_Id) }}</td>
+                    <td class="py-4 px-6 text-gray-900">{{ faculty.Designation }}</td>
+                    <td class="py-4 px-6 space-x-2">
                       <button
                         @click="editFaculty(faculty)"
-                        class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 transform hover:scale-105"
+                        class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 transform hover:scale-105"
                       >
                         Edit
                       </button>
                       <button
                         @click="deleteFaculty(faculty.Faculty_Id)"
-                        class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 transform hover:scale-105"
+                        class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 transform hover:scale-105"
                       >
                         Delete
                       </button>
@@ -105,32 +101,33 @@
           </div>
 
           <!-- Schools Table -->
-          <div class="bg-purple-100 rounded-xl p-6 border border-purple-200">
+          <!-- Updated schools table to match modern design -->
+          <div class="bg-white rounded-2xl shadow-lg overflow-hidden border border-gray-200">
             <div class="overflow-x-auto">
               <table class="w-full">
-                <thead>
-                  <tr class="border-b border-purple-200">
-                    <th class="text-left py-4 px-4 font-semibold text-purple-800">ID</th>
-                    <th class="text-left py-4 px-4 font-semibold text-purple-800">School Name</th>
-                    <th class="text-left py-4 px-4 font-semibold text-purple-800">Short Name</th>
-                    <th class="text-left py-4 px-4 font-semibold text-purple-800">Actions</th>
+                <thead class="bg-gradient-to-r from-blue-50 to-blue-100">
+                  <tr>
+                    <th class="text-left py-4 px-6 font-semibold text-blue-900">ID</th>
+                    <th class="text-left py-4 px-6 font-semibold text-blue-900">School Name</th>
+                    <th class="text-left py-4 px-6 font-semibold text-blue-900">Short Name</th>
+                    <th class="text-left py-4 px-6 font-semibold text-blue-900">Actions</th>
                   </tr>
                 </thead>
-                <tbody>
-                  <tr v-for="school in schoolsList" :key="school.School_Id" class="border-b border-purple-200 hover:bg-purple-50">
-                    <td class="py-4 px-4 text-gray-700">{{ school.School_Id }}</td>
-                    <td class="py-4 px-4 text-gray-700">{{ school.School_Name }}</td>
-                    <td class="py-4 px-4 text-gray-700">{{ school.School_Short }}</td>
-                    <td class="py-4 px-4 space-x-2">
+                <tbody class="bg-white divide-y divide-gray-100">
+                  <tr v-for="school in schoolsList" :key="school.School_Id" class="hover:bg-gray-50 transition-colors duration-200">
+                    <td class="py-4 px-6 text-gray-900">{{ school.School_Id }}</td>
+                    <td class="py-4 px-6 text-gray-900">{{ school.School_Name }}</td>
+                    <td class="py-4 px-6 text-gray-900">{{ school.School_Short }}</td>
+                    <td class="py-4 px-6 space-x-2">
                       <button
                         @click="editSchool(school)"
-                        class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 transform hover:scale-105"
+                        class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 transform hover:scale-105"
                       >
                         Edit
                       </button>
                       <button
                         @click="deleteSchool(school.School_Id)"
-                        class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 transform hover:scale-105"
+                        class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 transform hover:scale-105"
                       >
                         Delete
                       </button>
@@ -154,7 +151,7 @@
             {{ showAddApplicantForm ? 'Close' : 'Add Applicants' }}
           </button>
           <button
-            @click="showUploadApplicantsModal = true"
+            @click="navigateTo('UploadStudents')"
             class="bg-purple-500 hover:bg-purple-600 text-white font-semibold px-6 py-3 rounded-full shadow-lg transition-all duration-200 transform hover:scale-105"
           >
             Upload Applicants
@@ -254,80 +251,247 @@
         </div>
 
         <!-- Applicants Table -->
-        <div class="bg-white/80 backdrop-blur-sm shadow-xl rounded-2xl border border-white/20">
-          <div class="flex justify-between items-center p-8 border-b border-gray-200">
-            <h2 class="text-2xl font-bold text-gray-800">Applicants Management</h2>
-            <div class="space-x-2">
-              <button
-                v-if="selectedApplicants.length > 0"
-                @click="bulkDeleteApplicants"
-                class="bg-red-500 hover:bg-red-600 text-white font-semibold px-6 py-3 rounded-full shadow-lg transition-all duration-200 transform hover:scale-105"
-              >
-                Delete Selected ({{ selectedApplicants.length }})
-              </button>
-            </div>
+        <!-- Updated applicants table to match modern design -->
+        <div class="bg-white rounded-2xl shadow-lg overflow-hidden border border-gray-200">
+          <div class="overflow-x-auto">
+            <table class="w-full">
+              <thead class="bg-gradient-to-r from-blue-50 to-blue-100">
+                <tr>
+                  <th class="text-left py-4 px-6 font-semibold text-blue-900">
+                  </th>
+                  <th class="text-left py-4 px-6 font-semibold text-blue-900">ID</th>
+                  <th class="text-left py-4 px-6 font-semibold text-blue-900">Name</th>
+                  <th class="text-left py-4 px-6 font-semibold text-blue-900">Email</th>
+                  <th class="text-left py-4 px-6 font-semibold text-blue-900">Phone</th>
+                  <th class="text-left py-4 px-6 font-semibold text-blue-900">Gender</th>
+                  <th class="text-left py-4 px-6 font-semibold text-blue-900">Registration Date</th>
+                  <th class="text-left py-4 px-6 font-semibold text-blue-900">Actions</th>
+                </tr>
+              </thead>
+              <tbody class="bg-white divide-y divide-gray-100">
+                <tr v-for="applicant in applicantsList" :key="applicant.Applicant_Id" class="hover:bg-gray-50 transition-colors duration-200">
+                  <td class="py-4 px-6">
+                  
+                  </td>
+                  <td class="py-4 px-6 text-gray-900">{{ applicant.Applicant_Id }}</td>
+                  <td class="py-4 px-6 text-gray-900">{{ applicant.Full_Name }}</td>
+                  <td class="py-4 px-6 text-gray-900">{{ applicant.Email }}</td>
+                  <td class="py-4 px-6 text-gray-900">{{ applicant.Phone }}</td>
+                  <td class="py-4 px-6 text-gray-900">{{ applicant.Gender }}</td>
+                  <td class="py-4 px-6 text-gray-900">{{ formatDate(applicant.Registration_Date) }}</td>
+                  <td class="py-4 px-6 space-x-2">
+                    <button
+                      @click="viewApplicant(applicant)"
+                      class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 transform hover:scale-105"
+                    >
+                      View
+                    </button>
+                    <button
+                      @click="deleteApplicant(applicant.Applicant_Id)"
+                      class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 transform hover:scale-105"
+                    >
+                      Delete
+                    </button>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
           </div>
 
-          <!-- Applicants Table -->
+          <div v-if="applicantsList.length === 0" class="text-center py-12 text-gray-500">
+            No applicants found. Add some applicants to get started.
+          </div>
+        </div>
+      </div>
+
+      <!-- Exams Management -->
+      <div v-if="activeTab === 'exams'" class="space-y-6">
+        <!-- Action Buttons -->
+        <div class="flex gap-4 mb-6">
+          <button
+            @click="showCreateExamForm = !showCreateExamForm"
+            class="bg-blue-500 hover:bg-blue-600 text-white font-semibold px-6 py-3 rounded-full shadow-lg transition-all duration-200 transform hover:scale-105"
+          >
+            {{ showCreateExamForm ? 'Close' : 'Create Exam' }}
+          </button>
+          
+        </div>
+
+        <!-- Create Exam Form -->
+        <div v-if="showCreateExamForm" class="bg-white/80 backdrop-blur-sm shadow-xl rounded-2xl p-8 border border-white/20 mb-6">
+          <h3 class="text-2xl font-bold text-gray-800 mb-6">Create New Exam</h3>
+          <form @submit.prevent="submitExam">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <label class="block text-sm font-semibold text-gray-700 mb-2">Exam Name</label>
+                <input
+                  v-model="examForm.exam_name"
+                  type="text"
+                  required
+                  class="w-full border border-gray-300 rounded-xl px-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
+                  placeholder="Enter exam name"
+                >
+              </div>
+              <div>
+                <label class="block text-sm font-semibold text-gray-700 mb-2">Exam Date</label>
+                <input
+                  v-model="examForm.exam_date"
+                  type="date"
+                  required
+                  class="w-full border border-gray-300 rounded-xl px-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
+                >
+              </div>
+              <div>
+                <label class="block text-sm font-semibold text-gray-700 mb-2">Exam Time</label>
+                <input
+                  v-model="examForm.exam_time"
+                  type="time"
+                  required
+                  class="w-full border border-gray-300 rounded-xl px-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
+                >
+              </div>
+              <div>
+                <label class="block text-sm font-semibold text-gray-700 mb-2">Duration (Minutes)</label>
+                <input
+                  v-model="examForm.duration"
+                  type="number"
+                  required
+                  class="w-full border border-gray-300 rounded-xl px-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
+                  placeholder="Enter duration in minutes"
+                >
+              </div>
+              <div>
+                <label class="block text-sm font-semibold text-gray-700 mb-2">Total Questions</label>
+                <input
+                  v-model="examForm.total_questions"
+                  type="number"
+                  required
+                  class="w-full border border-gray-300 rounded-xl px-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
+                  placeholder="Enter total questions"
+                >
+              </div>
+              <div>
+                <label class="block text-sm font-semibold text-gray-700 mb-2">Maximum Marks</label>
+                <input
+                  v-model="examForm.max_marks"
+                  type="number"
+                  required
+                  class="w-full border border-gray-300 rounded-xl px-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
+                  placeholder="Enter maximum marks"
+                >
+              </div>
+            </div>
+            <div class="flex justify-end space-x-4 mt-8">
+              <button
+                type="button"
+                @click="showCreateExamForm = false"
+                class="px-6 py-3 text-sm font-semibold text-gray-700 bg-gray-200 hover:bg-gray-300 rounded-full transition-all duration-200 transform hover:scale-105"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                class="px-6 py-3 text-sm font-semibold text-white bg-blue-500 hover:bg-blue-600 rounded-full transition-all duration-200 transform hover:scale-105"
+              >
+                Create Exam
+              </button>
+            </div>
+          </form>
+        </div>
+
+        <!-- Created Exams Table -->
+        <!-- Updated exams table to match modern design with colored action buttons -->
+        <div class="bg-white rounded-2xl shadow-lg overflow-hidden border border-gray-200">
+          <div class="overflow-x-auto">
+            <table class="w-full">
+              <thead class="bg-gradient-to-r from-blue-50 to-blue-100">
+                <tr>
+                  <th class="text-left py-4 px-6 font-semibold text-blue-900">Exam Name</th>
+                  <th class="text-left py-4 px-6 font-semibold text-blue-900">Date</th>
+                  <th class="text-left py-4 px-6 font-semibold text-blue-900">Time</th>
+                  <th class="text-left py-4 px-6 font-semibold text-blue-900">Duration (Min)</th>
+                  <th class="text-left py-4 px-6 font-semibold text-blue-900">Questions</th>
+                  <th class="text-left py-4 px-6 font-semibold text-blue-900">Max Marks</th>
+                  <th class="text-left py-4 px-6 font-semibold text-blue-900">Actions</th>
+                </tr>
+              </thead>
+              <tbody class="bg-white divide-y divide-gray-100">
+                <tr v-for="exam in examsList" :key="exam.Exam_Id" class="hover:bg-gray-50 transition-colors duration-200">
+                  <td class="py-4 px-6 text-gray-900">{{ exam.Exam_Name }}</td>
+                  <td class="py-4 px-6 text-gray-900">{{ formatDate(exam.Exam_Date) }}</td>
+                  <td class="py-4 px-6 text-gray-900">{{ exam.Exam_Time }}</td>
+                  <td class="py-4 px-6 text-gray-900">{{ exam.Duration_Minutes }}</td>
+                  <td class="py-4 px-6 text-gray-900">{{ exam.Total_Questions }}</td>
+                  <td class="py-4 px-6 text-gray-900">{{ exam.Max_Marks }}</td>
+                  <td class="py-4 px-6 space-x-2">
+                    <button
+                      @click="navigateToAddStudents(exam.Exam_Id)"
+                      class="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1.5 rounded-lg text-xs font-medium transition-all duration-200 transform hover:scale-105"
+                    >
+                      Add Students
+                    </button>
+                    <button
+                      @click="navigateToAddQuestions(exam.Exam_Id)"
+                      class="bg-green-500 hover:bg-green-600 text-white px-3 py-1.5 rounded-lg text-xs font-medium transition-all duration-200 transform hover:scale-105"
+                    >
+                      Add Question Bank
+                    </button>
+                    <button
+                      @click="navigateToMakeQuestionPaper(exam.Exam_Id)"
+                      class="bg-purple-500 hover:bg-purple-600 text-white px-3 py-1.5 rounded-lg text-xs font-medium transition-all duration-200 transform hover:scale-105"
+                    >
+                      Make Question Paper
+                    </button>
+                    <button
+                      @click="deleteExam(exam.Exam_Id)"
+                      class="bg-red-500 hover:bg-red-600 text-white px-3 py-1.5 rounded-lg text-xs font-medium transition-all duration-200 transform hover:scale-105"
+                    >
+                      Delete
+                    </button>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div v-if="examsList.length === 0" class="text-center py-12 text-gray-500">
+            No exams created yet. Create your first exam to get started.
+          </div>
+        </div>
+
+        <!-- Conducted Exams Table -->
+        <div v-if="conductedExamsList.length > 0" class="bg-white/80 backdrop-blur-sm shadow-xl rounded-2xl border border-white/20">
+          <div class="flex justify-between items-center p-8 border-b border-gray-200">
+            <h2 class="text-2xl font-bold text-gray-800">Conducted Exams</h2>
+          </div>
+
           <div class="bg-purple-100 rounded-b-2xl p-6">
             <div class="overflow-x-auto">
               <table class="w-full">
                 <thead>
                   <tr class="border-b border-purple-200">
-                    <th class="text-left py-4 px-4 font-semibold text-purple-800">
-                      <input 
-                        type="checkbox" 
-                        @change="toggleAllApplicants"
-                        :checked="selectedApplicants.length === applicantsList.length && applicantsList.length > 0"
-                        class="rounded border-purple-300 text-purple-600 focus:ring-purple-500"
-                      >
-                    </th>
-                    <th class="text-left py-4 px-4 font-semibold text-purple-800">ID</th>
-                    <th class="text-left py-4 px-4 font-semibold text-purple-800">Name</th>
-                    <th class="text-left py-4 px-4 font-semibold text-purple-800">Email</th>
-                    <th class="text-left py-4 px-4 font-semibold text-purple-800">Phone</th>
-                    <th class="text-left py-4 px-4 font-semibold text-purple-800">Gender</th>
-                    <th class="text-left py-4 px-4 font-semibold text-purple-800">Registration Date</th>
+                    <th class="text-left py-4 px-4 font-semibold text-purple-800">Exam Name</th>
+                    <th class="text-left py-4 px-4 font-semibold text-purple-800">Date</th>
+                    <th class="text-left py-4 px-4 font-semibold text-purple-800">Total Applicants</th>
                     <th class="text-left py-4 px-4 font-semibold text-purple-800">Actions</th>
                   </tr>
                 </thead>
                 <tbody>
-                  <tr v-for="applicant in applicantsList" :key="applicant.Applicant_Id" class="border-b border-purple-200 hover:bg-purple-50">
-                    <td class="py-4 px-4">
-                      <input 
-                        type="checkbox" 
-                        :value="applicant.Applicant_Id"
-                        v-model="selectedApplicants"
-                        class="rounded border-purple-300 text-purple-600 focus:ring-purple-500"
-                      >
-                    </td>
-                    <td class="py-4 px-4 text-gray-700">{{ applicant.Applicant_Id }}</td>
-                    <td class="py-4 px-4 text-gray-700">{{ applicant.Full_Name }}</td>
-                    <td class="py-4 px-4 text-gray-700">{{ applicant.Email }}</td>
-                    <td class="py-4 px-4 text-gray-700">{{ applicant.Phone }}</td>
-                    <td class="py-4 px-4 text-gray-700">{{ applicant.Gender }}</td>
-                    <td class="py-4 px-4 text-gray-700">{{ formatDate(applicant.Registration_Date) }}</td>
+                  <tr v-for="exam in conductedExamsList" :key="exam.Exam_Id" class="border-b border-purple-200 hover:bg-purple-50">
+                    <td class="py-4 px-4 text-gray-700">{{ exam.Exam_Name }}</td>
+                    <td class="py-4 px-4 text-gray-700">{{ formatDate(exam.Exam_Date) }}</td>
+                    <td class="py-4 px-4 text-gray-700">{{ exam.total_applicants || 0 }}</td>
                     <td class="py-4 px-4 space-x-2">
                       <button
-                        @click="viewApplicant(applicant)"
-                        class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 transform hover:scale-105"
+                        @click="viewExamResponses(exam.Exam_Id)"
+                        class="bg-purple-500 hover:bg-purple-600 text-white px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 transform hover:scale-105"
                       >
-                        View
-                      </button>
-                      <button
-                        @click="deleteApplicant(applicant.Applicant_Id)"
-                        class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 transform hover:scale-105"
-                      >
-                        Delete
+                        View Responses
                       </button>
                     </td>
                   </tr>
                 </tbody>
               </table>
-            </div>
-
-            <div v-if="applicantsList.length === 0" class="text-center py-12 text-gray-500">
-              No applicants found. Add some applicants to get started.
             </div>
           </div>
         </div>
@@ -346,25 +510,26 @@
             </button>
           </div>
 
-          <div class="bg-purple-100 rounded-xl p-6 border border-purple-200">
+          <!-- Updated table design to match modern style with light blue header -->
+          <div class="bg-white rounded-2xl shadow-lg border border-gray-200 overflow-hidden">
             <div class="overflow-x-auto">
               <table class="w-full">
                 <thead>
-                  <tr class="border-b border-purple-200">
-                    <th class="text-left py-4 px-4 font-semibold text-purple-800">ID</th>
-                    <th class="text-left py-4 px-4 font-semibold text-purple-800">Name</th>
-                    <th class="text-left py-4 px-4 font-semibold text-purple-800">Email</th>
-                    <th class="text-left py-4 px-4 font-semibold text-purple-800">Actions</th>
+                  <tr class="bg-gradient-to-r from-blue-50 to-blue-100 border-b border-blue-200">
+                    <th class="text-left py-4 px-6 font-semibold text-blue-900">ID</th>
+                    <th class="text-left py-4 px-6 font-semibold text-blue-900">Name</th>
+                    <th class="text-left py-4 px-6 font-semibold text-blue-900">Email</th>
+                    <th class="text-left py-4 px-6 font-semibold text-blue-900">Actions</th>
                   </tr>
                 </thead>
-                <tbody>
-                  <tr v-for="admin in adminsList" :key="admin.Admin_ID" class="border-b border-purple-200 hover:bg-purple-50">
-                    <td class="py-4 px-4 text-gray-700">{{ admin.Admin_ID }}</td>
-                    <td class="py-4 px-4 text-gray-700">{{ admin.Name }}</td>
-                    <td class="py-4 px-4 text-gray-700">{{ admin.Email }}</td>
-                    <td class="py-4 px-4 space-x-2">
-                      <button @click="editAdmin(admin)" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 transform hover:scale-105">Edit</button>
-                      <button @click="deleteAdmin(admin.Admin_ID)" class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 transform hover:scale-105">Delete</button>
+                <tbody class="bg-white">
+                  <tr v-for="admin in adminsList" :key="admin.Admin_ID" class="border-b border-gray-100 hover:bg-gray-50 transition-colors duration-200">
+                    <td class="py-4 px-6 text-gray-700 font-medium">{{ admin.Admin_ID }}</td>
+                    <td class="py-4 px-6 text-gray-700">{{ admin.Name }}</td>
+                    <td class="py-4 px-6 text-gray-700">{{ admin.Email }}</td>
+                    <td class="py-4 px-6 space-x-2">
+                      <button @click="editAdmin(admin)" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 transform hover:scale-105 shadow-md">Edit</button>
+                      <button @click="deleteAdmin(admin.Admin_ID)" class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 transform hover:scale-105 shadow-md">Delete</button>
                     </td>
                   </tr>
                 </tbody>
@@ -379,38 +544,77 @@
         <div class="bg-white/80 backdrop-blur-sm shadow-xl rounded-2xl p-8 border border-white/20">
           <h2 class="text-2xl font-bold text-gray-800 mb-6">Login Logs</h2>
 
-          <div class="bg-purple-100 rounded-xl p-6 border border-purple-200">
+          <!-- Updated login logs table design to match modern style -->
+          <div class="bg-white rounded-2xl shadow-lg border border-gray-200 overflow-hidden">
             <div class="overflow-x-auto">
               <table class="w-full">
                 <thead>
-                  <tr class="border-b border-purple-200">
-                    <th class="text-left py-4 px-4 font-semibold text-purple-800">Log ID</th>
-                    <th class="text-left py-4 px-4 font-semibold text-purple-800">User Email</th>
-                    <th class="text-left py-4 px-4 font-semibold text-purple-800">Role</th>
-                    <th class="text-left py-4 px-4 font-semibold text-purple-800">Login Time</th>
-                    <th class="text-left py-4 px-4 font-semibold text-purple-800">Logout Time</th>
-                    <th class="text-left py-4 px-4 font-semibold text-purple-800">Actions</th>
+                  <tr class="bg-gradient-to-r from-blue-50 to-blue-100 border-b border-blue-200">
+                    <th class="text-left py-4 px-6 font-semibold text-blue-900">Log ID</th>
+                    <th class="text-left py-4 px-6 font-semibold text-blue-900">User Email</th>
+                    <th class="text-left py-4 px-6 font-semibold text-blue-900">Role</th>
+                    <th class="text-left py-4 px-6 font-semibold text-blue-900">Login Time</th>
+                    <th class="text-left py-4 px-6 font-semibold text-blue-900">Logout Time</th>
+                    <th class="text-left py-4 px-6 font-semibold text-blue-900">Actions</th>
                   </tr>
                 </thead>
-                <tbody>
-                  <tr v-for="log in logsList" :key="log.Log_ID" class="border-b border-purple-200 hover:bg-purple-50">
-                    <td class="py-4 px-4 text-gray-700">{{ log.Log_ID }}</td>
-                    <td class="py-4 px-4 text-gray-700">{{ log.User_Email }}</td>
-                    <td class="py-4 px-4">
+                <tbody class="bg-white">
+                  <tr v-for="log in logsList" :key="log.Log_ID" class="border-b border-gray-100 hover:bg-gray-50 transition-colors duration-200">
+                    <td class="py-4 px-6 text-gray-700 font-medium">{{ log.Log_ID }}</td>
+                    <td class="py-4 px-6 text-gray-700">{{ log.User_Email }}</td>
+                    <td class="py-4 px-6">
                       <span :class="getRoleColor(log.Role)" class="px-3 py-1 rounded-full text-xs font-medium">
                         {{ log.Role }}
                       </span>
                     </td>
-                    <td class="py-4 px-4 text-gray-700">{{ log.Login_Time || 'N/A' }}</td>
-                    <td class="py-4 px-4 text-gray-700">{{ log.Logout_Time || 'N/A' }}</td>
-                    <td class="py-4 px-4 space-x-2">
-                      <button @click="viewLog(log)" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 transform hover:scale-105">View</button>
-                      <button @click="deleteLog(log.Log_ID)" class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 transform hover:scale-105">Delete</button>
+                    <td class="py-4 px-6 text-gray-700">{{ log.Login_Time || 'N/A' }}</td>
+                    <td class="py-4 px-6 text-gray-700">{{ log.Logout_Time || 'N/A' }}</td>
+                    <td class="py-4 px-6 space-x-2">
+                      <button @click="viewLog(log)" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 transform hover:scale-105 shadow-md">View</button>
                     </td>
                   </tr>
                 </tbody>
               </table>
             </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Notification Popup -->
+    <div v-if="message" class="fixed top-4 right-4 z-50 max-w-md">
+      <div 
+        :class="[
+          'p-4 rounded-xl shadow-2xl border-l-4 transform transition-all duration-300 ease-in-out',
+          messageType === 'error' 
+            ? 'bg-red-50 text-red-800 border-red-500' 
+            : 'bg-green-50 text-green-800 border-green-500'
+        ]"
+        class="animate-slide-in-right"
+      >
+        <div class="flex items-center justify-between">
+          <div class="flex items-center">
+            <div class="flex-shrink-0">
+              <svg v-if="messageType === 'error'" class="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
+                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" />
+              </svg>
+              <svg v-else class="h-5 w-5 text-green-400" viewBox="0 0 20 20" fill="currentColor">
+                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+              </svg>
+            </div>
+            <div class="ml-3">
+              <p class="text-sm font-medium">{{ message }}</p>
+            </div>
+          </div>
+          <div class="ml-4 flex-shrink-0">
+            <button
+              @click="message = ''"
+              class="inline-flex text-gray-400 hover:text-gray-600 focus:outline-none focus:text-gray-600 transition ease-in-out duration-150"
+            >
+              <svg class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" />
+              </svg>
+            </button>
           </div>
         </div>
       </div>
@@ -475,7 +679,7 @@
               >
             </div>
           </div>
-          <div class="flex justify-center space-x-4 mt-8 pt-4">
+          <div class="flex justify-center space-x-4 mt-8">
             <button
               type="button"
               @click="closeFacultyModal"
@@ -521,7 +725,7 @@
               >
             </div>
           </div>
-          <div class="flex justify-center space-x-4 mt-8 pt-4">
+          <div class="flex justify-center space-x-4 mt-8">
             <button
               type="button"
               @click="closeSchoolModal"
@@ -574,7 +778,7 @@
             <span class="text-gray-800 font-medium">{{ formatDate(selectedApplicant.Registration_Date) }}</span>
           </div>
         </div>
-        <div class="flex justify-center space-x-4 mt-8 pt-4">
+        <div class="flex justify-center space-x-4 mt-8">
           <button
             @click="showViewApplicantModal = false"
             class="px-8 py-3 text-sm font-semibold text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-full transition-all duration-200 transform hover:scale-105 min-w-[100px]"
@@ -606,7 +810,7 @@
               <input v-model="adminForm.Password" type="password" required class="w-full border border-gray-200 rounded-2xl px-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-purple-50 focus:bg-white">
             </div>
           </div>
-          <div class="flex justify-center space-x-4 mt-8 pt-4">
+          <div class="flex justify-center space-x-4 mt-8">
             <button type="button" @click="closeAdminModal" class="px-8 py-3 text-sm font-semibold text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-full transition-all duration-200 transform hover:scale-105 min-w-[100px]">Cancel</button>
             <button type="submit" class="px-8 py-3 text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-full transition-all duration-200 transform hover:scale-105 min-w-[100px]">
               {{ showAddAdminModal ? 'Add' : 'Update' }}
@@ -654,7 +858,7 @@
             <span>{{ selectedLog.Applicant_ID }}</span>
           </div>
         </div>
-        <div class="flex justify-center space-x-4 mt-8 pt-4">
+        <div class="flex justify-center space-x-4 mt-8">
           <button @click="showViewLogModal = false" class="px-8 py-3 text-sm font-semibold text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-full transition-all duration-200 transform hover:scale-105 min-w-[100px]">Close</button>
         </div>
       </div>
@@ -716,7 +920,7 @@
           </div>
         </div>
         
-        <div class="flex justify-center space-x-4 mt-8 pt-4">
+        <div class="flex justify-center space-x-4 mt-8">
           <button
             type="button"
             @click="closeUploadModal"
@@ -738,8 +942,9 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import axios from 'axios'
+import { useRouter } from 'vue-router'
 
 // Data
 const activeTab = ref('faculty')
@@ -810,6 +1015,21 @@ const newApplicant = ref({
   Address: ''
 })
 
+// Exam management
+const showCreateExamForm = ref(false)
+const examsList = ref([])
+const conductedExamsList = ref([])
+
+const examForm = ref({
+  exam_name: '',
+  exam_date: '',
+  exam_time: '',
+  duration: '',
+  total_questions: '',
+  max_marks: '',
+  faculty_email: localStorage.getItem('faculty_email') || ''
+})
+
 // Admin user info
 const adminName = ref('Admin')
 const adminEmail = ref(localStorage.getItem('faculty_email') || '') // Reuse same key as mentioned in the code
@@ -819,6 +1039,7 @@ const tabs = [
   { id: 'faculty', name: 'Faculty' },
   { id: 'schools', name: 'Schools' },
   { id: 'applicants', name: 'Applicants' },
+  { id: 'exams', name: 'Exams' },
   { id: 'admins', name: 'Admins' },
   { id: 'logs', name: 'Login Logs' }
 ]
@@ -832,7 +1053,8 @@ const showMessage = (msg, type = 'success') => {
   messageType.value = type
   setTimeout(() => {
     message.value = ''
-  }, 5000)
+  }, 3000) // Auto-hide after 3 seconds
+
 }
 
 // Bulk operations
@@ -931,18 +1153,7 @@ const viewLog = (log) => {
   showViewLogModal.value = true
 }
 
-const deleteLog = async (id) => {
-  if (confirm('Are you sure you want to delete this log entry?')) {
-    try {
-      await axios.delete(`${API_BASE}/admin/logs/${id}`)
-      await fetchLogs()
-      showMessage('Log deleted successfully')
-    } catch (error) {
-      console.error('Error deleting log:', error)
-      showMessage(error.response?.data?.error || 'Error deleting log', 'error')
-    }
-  }
-}
+// Removed deleteLog function as requested
 
 // Modal close methods
 const closeAdminModal = () => {
@@ -1131,7 +1342,7 @@ const submitApplicant = async () => {
         Address: ''
       }
     } else {
-      showMessage(response.data.message || 'Failed to add applicant', 'error')
+      showMessage(response.data.message || 'Failed to add applicant Duplicate entry ', 'error')
     }
   } catch (error) {
     console.error('Error adding applicant:', error)
@@ -1211,6 +1422,108 @@ const closeUploadModal = () => {
   isUploading.value = false
 }
 
+// Exam methods
+const fetchExams = async () => {
+  try {
+    const response = await axios.get(`${API_BASE}/exam/get_exams/${adminEmail.value}`)
+    if (response.data.success) {
+      examsList.value = response.data.exams
+    }
+  } catch (error) {
+    console.error('Error fetching exams:', error)
+    showMessage('Error fetching exams data', 'error')
+  }
+}
+
+const fetchConductedExams = async () => {
+  try {
+    const response = await axios.get(`${API_BASE}/faculty/conducted_exams/${adminEmail.value}`)
+    if (response.data.success) {
+      conductedExamsList.value = response.data.exams
+    }
+  } catch (error) {
+    console.error('Error fetching conducted exams:', error)
+  }
+}
+
+const submitExam = async () => {
+  try {
+    const response = await axios.post(`${API_BASE}/exam/create`, examForm.value)
+    if (response.data.success) {
+      showMessage('Exam created successfully!')
+      await fetchExams()
+      showCreateExamForm.value = false
+      // Reset form
+      examForm.value = {
+        exam_name: '',
+        exam_date: '',
+        exam_time: '',
+        duration: '',
+        total_questions: '',
+        max_marks: '',
+        faculty_email: adminEmail.value
+      }
+    } else {
+      showMessage(response.data.message || 'Failed to create exam', 'error')
+    }
+  } catch (error) {
+    console.error('Error creating exam:', error)
+    showMessage('Error creating exam', 'error')
+  }
+}
+
+const deleteExam = async (examId) => {
+  if (confirm('Are you sure you want to delete this exam?')) {
+    try {
+      const response = await axios.delete(`${API_BASE}/exam/delete/${examId}`)
+      if (response.data.success) {
+        showMessage('Exam deleted successfully!')
+        await fetchExams()
+      } else {
+        showMessage(response.data.message || 'Failed to delete exam', 'error')
+      }
+    } catch (error) {
+      console.error('Error deleting exam:', error)
+      showMessage('Error deleting exam', 'error')
+    }
+  }
+}
+
+// Navigation function with route mapping (same as Faculty.vue)
+const router = useRouter()
+
+const navigateTo = (action, examId) => {
+  const routeMap = {
+    AddApplicants_exam: 'AddApplicantsexam',
+    AddQuestion: 'AddQuestion',
+    MakeQuestionPaper: 'MakeQuestionPaper',
+    UploadStudents: 'UploadStudents',
+    ViewResponses: 'ViewResponses'
+  }
+  if (examId) {
+    router.push({ name: routeMap[action], params: { examId } })
+  } else {
+    router.push({ name: routeMap[action] })
+  }
+}
+
+// Navigation methods for exam actions
+const navigateToAddStudents = (examId) => {
+  navigateTo('AddApplicants_exam', examId)
+}
+
+const navigateToAddQuestions = (examId) => {
+  navigateTo('AddQuestion', examId)
+}
+
+const navigateToMakeQuestionPaper = (examId) => {
+  navigateTo('MakeQuestionPaper', examId)
+}
+
+const viewExamResponses = (examId) => {
+  navigateTo('ViewResponses', examId)
+}
+
 const getSchoolName = (schoolId) => {
   const school = schoolsList.value.find(s => s.School_Id === schoolId)
   return school ? school.School_Name : 'Unknown'
@@ -1225,7 +1538,9 @@ const logout = async () => {
   const email = localStorage.getItem('faculty_email') // Again, adjust if you use different keys for admin
   const role = 'Admin'
   
+  
   try {
+    // Call backend logout API
     // Call backend logout API
     await axios.post('http://localhost:5000/api/auth/logout', {
       email,
@@ -1233,12 +1548,19 @@ const logout = async () => {
     });
     
     // Clear local storage
+    
+    // Clear local storage
     localStorage.removeItem('faculty_email')
     localStorage.removeItem('faculty_name')
     
     // Redirect to login page
     window.location.href = '/'
+    
+    // Redirect to login page
+    window.location.href = '/'
   } catch (err) {
+    console.error('Logout error:', err);
+    alert('Logout failed. Try again.');
     console.error('Logout error:', err);
     alert('Logout failed. Try again.');
   }
@@ -1269,5 +1591,24 @@ onMounted(async () => {
   await fetchApplicants()
   await fetchAdmins()
   await fetchLogs()
+  await fetchExams()
+  await fetchConductedExams()
 })
 </script>
+
+<style scoped>
+@keyframes slide-in-right {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+.animate-slide-in-right {
+  animation: slide-in-right 0.3s ease-out;
+}
+</style>
