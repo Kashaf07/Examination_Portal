@@ -1,6 +1,5 @@
 from flask import Blueprint, request, jsonify
 from datetime import datetime, timedelta
-from datetime import datetime, timedelta
 
 def create_student_routes(mysql):
     student_routes = Blueprint('student_routes', __name__)
@@ -12,16 +11,7 @@ def create_student_routes(mysql):
             cur = mysql.connection.cursor()
             
             # Get the next upcoming exam
-            
-            # Get the next upcoming exam
             cur.execute("""
-                SELECT Exam_Id, Exam_Name, Exam_Date, Exam_Time, Duration_Minutes, 
-                       Total_Questions, Max_Marks, Faculty_Email
-                FROM entrance_exam 
-                WHERE Exam_Date >= CURDATE()
-                ORDER BY Exam_Date, Exam_Time 
-                LIMIT 1
-            """)
                 SELECT Exam_Id, Exam_Name, Exam_Date, Exam_Time, Duration_Minutes, 
                        Total_Questions, Max_Marks, Faculty_Email
                 FROM entrance_exam 
@@ -37,15 +27,7 @@ def create_student_routes(mysql):
             exam_id = exam[0]
 
             # Get questions for this exam
-            # Get questions for this exam
             cur.execute("""
-                SELECT q.Question_Id, q.Exam_Id, q.Question_Type, q.Question_Text, 
-                       q.Option_A, q.Option_B, q.Option_C, q.Option_D
-                FROM entrance_question_bank q   
-                JOIN exam_paper_questions epq ON q.Question_Id = epq.Question_Id
-                JOIN exam_paper ep ON epq.Exam_Paper_Id = ep.Exam_Paper_Id    
-                WHERE ep.Exam_Id = %s
-            """, (exam_id,))
                 SELECT q.Question_Id, q.Exam_Id, q.Question_Type, q.Question_Text, 
                        q.Option_A, q.Option_B, q.Option_C, q.Option_D
                 FROM entrance_question_bank q   
@@ -55,7 +37,6 @@ def create_student_routes(mysql):
             """, (exam_id,))
             questions = cur.fetchall()
 
-            # Get or create exam paper
             # Get or create exam paper
             cur.execute("SELECT * FROM exam_paper WHERE Exam_Id = %s", (exam_id,))
             exam_paper = cur.fetchone()
@@ -178,12 +159,6 @@ def create_student_routes(mysql):
             if not applicant_id:
                 return jsonify({"message": "Applicant ID is required"}), 400
             
-            data = request.json
-            applicant_id = data.get('applicant_id')
-            
-            if not applicant_id:
-                return jsonify({"message": "Applicant ID is required"}), 400
-            
             cur = mysql.connection.cursor()
             
             print("Exam ID received:", exam_id)
@@ -195,7 +170,6 @@ def create_student_routes(mysql):
             print("Query result:", exam)
 
             if not exam:
-                cur.close()
                 cur.close()
                 return jsonify({"message": "Invalid Exam ID"}), 404
 
@@ -288,16 +262,7 @@ def create_student_routes(mysql):
                 JOIN exam_paper ep ON epq.Exam_Paper_Id = ep.Exam_Paper_Id    
                 WHERE ep.Exam_Id = %s
             """, (exam_id,))
-                SELECT q.Question_Id, q.Exam_Id, q.Question_Type, q.Question_Text, 
-                       q.Option_A, q.Option_B, q.Option_C, q.Option_D
-                FROM entrance_question_bank q   
-                JOIN exam_paper_questions epq ON q.Question_Id = epq.Question_Id
-                JOIN exam_paper ep ON epq.Exam_Paper_Id = ep.Exam_Paper_Id    
-                WHERE ep.Exam_Id = %s
-            """, (exam_id,))
             questions = cur.fetchall()
-
-            # Get or create exam paper
 
             # Get or create exam paper
             cur.execute("SELECT * FROM exam_paper WHERE Exam_Id = %s", (exam_id,))
@@ -441,14 +406,12 @@ def create_student_routes(mysql):
                 cur.execute("""
                     SELECT Question_Type, Correct_Answer, Marks,
                            Option_A, Option_B, Option_C, Option_D
-                           Option_A, Option_B, Option_C, Option_D
                     FROM entrance_question_bank
                     WHERE Question_Id = %s
                 """, (question_id,))
                 row = cur.fetchone()
                 if not row:
                     continue
-                    
                     
                 q_type, correct_answer, marks, opt_a, opt_b, opt_c, opt_d = row
                 option_map = {'A': opt_a, 'B': opt_b, 'C': opt_c, 'D': opt_d}
@@ -530,12 +493,9 @@ def create_student_routes(mysql):
                 SELECT aa.Attempt_Id, aa.Start_Time, aa.End_Time, aa.Status, 
                        aa.Marks_Obtained, aa.Student_Email, ep.Title, ee.Exam_Name, ee.Max_Marks,
                        ag.Status as Grade_Status
-                       aa.Marks_Obtained, aa.Student_Email, ep.Title, ee.Exam_Name, ee.Max_Marks,
-                       ag.Status as Grade_Status
                 FROM applicant_attempt aa
                 JOIN exam_paper ep ON aa.Exam_Paper_Id = ep.Exam_Paper_Id
                 JOIN entrance_exam ee ON ep.Exam_Id = ee.Exam_Id
-                LEFT JOIN auto_grading ag ON aa.Attempt_Id = ag.Attempt_Id
                 LEFT JOIN auto_grading ag ON aa.Attempt_Id = ag.Attempt_Id
                 WHERE aa.Applicant_Id = %s
                 ORDER BY aa.Start_Time DESC
