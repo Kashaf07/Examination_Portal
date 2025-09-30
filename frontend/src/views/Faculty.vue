@@ -10,9 +10,6 @@
       </button> 
     </div>     
   
-
-
-
     <!-- Button Group -->
     <div class="flex gap-4 mb-6">
       <button
@@ -43,7 +40,7 @@
       <form @submit.prevent="submitExam">
         <div class="grid grid-cols-2 gap-4">
           <input v-model="exam.exam_name" type="text" placeholder="Exam Name" required class="border p-2 rounded" />
-          <input v-model="exam.exam_date" type="date" placeholder="Exam Date" required class="border p-2 rounded" />
+          <input v-model="exam.exam_date" type="date" placeholder="Exam Date" required class="border p-2 rounded" :min="todayDate" />
           <input v-model="exam.exam_time" type="time" placeholder="Exam Time" required class="border p-2 rounded" />
           <input v-model="exam.duration" type="number" placeholder="Duration (Minutes)" required class="border p-2 rounded" />
           <input v-model="exam.total_questions" type="number" placeholder="Total Questions" required class="border p-2 rounded" />
@@ -81,8 +78,8 @@
       </form>
     </div>
 
-    <!-- Exam Table -->
-    <div v-if="exams.length" class="mt-8">
+    <!-- Exam Table (Upcoming/Created) -->
+    <div v-if="createdExams.length" class="mt-8">
       <h2 class="text-2xl font-semibold mb-4">Created Exams</h2>
       <table class="min-w-full border text-sm text-left">
         <thead class="bg-gray-200">
@@ -97,7 +94,7 @@
           </tr>
         </thead>
         <tbody>
-          <tr v-for="exam in exams" :key="exam.Exam_Id" class="border-t">
+          <tr v-for="exam in createdExams" :key="exam.Exam_Id" class="border-t">
             <td class="px-4 py-2">{{ exam.Exam_Name }}</td>
             <td class="px-4 py-2">{{ exam.Exam_Date }}</td>
             <td class="px-4 py-2">{{ exam.Exam_Time }}</td>
@@ -138,28 +135,27 @@
 
     <!-- Conducted Exams Table -->
     <div v-if="conductedExams && conductedExams.length" class="mt-12">
-      <h2 class="text-2xl font-semibold mb-4">📄 Conducted Exams</h2>  
+      <h2 class="text-2xl font-semibold mb-4">Conducted Exams</h2>
       <table class="min-w-full border text-sm text-left">
         <thead class="bg-gray-200">
           <tr>
             <th class="px-4 py-2">Exam Name</th>        
             <th class="px-4 py-2">Date</th>
             <th class="px-4 py-2">Total Applicants</th>
+            <th class="px-4 py-2">Applicants Attempted</th>
             <th class="px-4 py-2 text-center">Actions</th>
           </tr>
         </thead>
         <tbody>
-        <tr
-          v-for="exam in conductedExams"
-          :key="exam.Exam_Paper_Id"
-          class="border-t"
-        >
-          <td class="px-4 py-2">{{ exam.Exam_Title || 'N/A' }}</td>
-          <td class="px-4 py-2">{{ formatDate(exam.Exam_Date) }}</td>
-          <td class="px-4 py-2">{{ exam.Students_Attended || 0 }}</td>
+          <tr v-for="exam in conductedExams" :key="exam.Exam_Id" class="border-t">
+            <td class="px-4 py-2">{{ exam.Exam_Name || 'N/A' }}</td>
+            <td class="px-4 py-2">{{ formatDate(exam.Exam_Date) }}</td>
+            <td class="px-4 py-2">{{ exam.total_applicants || 0 }}</td> 
+            <td class="px-4 py-2">{{ exam.attempted_applicants || 0 }}</td>
+
           <td class="px-4 py-2 text-center">
             <button
-              @click="navigateTo('ViewResponses', exam.Exam_Paper_Id)"
+                @click="navigateTo('ViewResponses', exam.Exam_Id)"
               class="bg-purple-600 text-white px-3 py-1 rounded text-sm hover:bg-purple-700"
             >
               View Responses
@@ -169,36 +165,36 @@
       </tbody>
     </table>
   </div>
-  <div v-else class="mt-8 text-gray-500 text-center text-lg">
-    No exams conducted yet.
-  </div>
+    <div v-else class="mt-8 text-gray-500 text-center text-lg">
+      No exams conducted yet.
+    </div>
 </div>
-
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import axios from 'axios'
 
 const router = useRouter()
 const facultyName = ref('')
 const facultyEmail = localStorage.getItem('faculty_email') || ''
-const conductedExams = ref([])
-
 const showForm = ref(false)
 const showApplicantForm = ref(false)
-const exams = ref([])
 const submitMessage = ref('')
 const examSubmitMessage = ref('')
+const createdExams = ref([])
+const conductedExams = ref([])
 
-// Toggle exam form
-const toggleExamForm = () => {
-  showForm.value = !showForm.value
-  examSubmitMessage.value = ''
-}
+// Date blocking
+const todayDate = computed(() => {
+  const today = new Date()
+  const year = today.getFullYear()
+  const month = String(today.getMonth() + 1).padStart(2, '0')
+  const day = String(today.getDate()).padStart(2, '0')
+  return `${year}-${month}-${day}`
+})
 
-// Create exam model
 const exam = ref({
   exam_name: '',
   exam_date: '',
@@ -209,34 +205,54 @@ const exam = ref({
   faculty_email: facultyEmail
 })
 
-//Delete Exam
-const deleteExam = async (examId) => {
-  const confirmDelete = confirm('Are you sure you want to delete this exam?');
-  if (!confirmDelete) return;
+const applicant = ref({
+  Full_Name: '',
+  Email: '',
+  Password: '',
+  Phone: '',
+  DOB: '',
+  Gender: '',
+  Address: ''
+})
 
+const formatDate = (dateString) => {
+  if (!dateString) return 'N/A'
+  return new Date(dateString).toLocaleDateString('en-GB', {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric'
+  })
+}
+
+const toggleExamForm = () => {
+  showForm.value = !showForm.value
+  examSubmitMessage.value = ''
+}
+
+const deleteExam = async (examId) => {
+  const confirmDelete = confirm('Are you sure you want to delete this exam?')
+  if (!confirmDelete) return
   try {
-    const res = await axios.delete(`http://localhost:5000/api/exam/delete/${examId}`);
+    const res = await axios.delete(`http://localhost:5000/api/exam/delete/${examId}`)
     if (res.data.success) {
-      alert('Exam deleted successfully!');
-      fetchExams(); // Refresh the list
+      alert('Exam deleted successfully!')
+      fetchExamsAndCategorize()
     } else {
-      alert('Failed to delete exam: ' + (res.data.message || 'Unknown error'));
+      alert('Failed to delete exam: ' + (res.data.message || 'Unknown error'))
     }
   } catch (err) {
-    console.error('Error deleting exam:', err);
-    alert('Server error while deleting exam');
+    console.error('Error deleting exam:', err)
+    alert('Server error while deleting exam')
   }
-};
+}
 
-
-// Submit exam
 const submitExam = async () => {
   try {
     const res = await axios.post('http://localhost:5000/api/exam/create', exam.value)
     if (res.data.success) {
       examSubmitMessage.value = 'Exam created successfully!'
       showForm.value = false
-      fetchExams()
+      fetchExamsAndCategorize()
       exam.value = {
         exam_name: '',
         exam_date: '',
@@ -254,17 +270,6 @@ const submitExam = async () => {
     examSubmitMessage.value = 'Error occurred while creating exam.'
   }
 }
-
-// Submit applicant
-const applicant = ref({
-  Full_Name: '',
-  Email: '',
-  Password: '',
-  Phone: '',
-  DOB: '',
-  Gender: '',
-  Address: ''
-})
 
 const submitApplicant = async () => {
   try {
@@ -289,38 +294,40 @@ const submitApplicant = async () => {
   }
 }
 
-// Fetch Exams
-const fetchExams = async () => {
+const getExamEndTime = (exam) => {
+  if (!exam.Exam_Date || !exam.Exam_Time || !exam.Duration_Minutes) return null
+  const start = new Date(`${exam.Exam_Date}T${exam.Exam_Time}`)
+  return new Date(start.getTime() + Number(exam.Duration_Minutes) * 60000)
+}
+
+
+
+const fetchExamsAndCategorize = async () => {
   try {
     const res = await axios.get(`http://localhost:5000/api/exam/get_exams/${facultyEmail}`)
-    if (res.data.success) {
-      exams.value = res.data.exams
+    // Existing code for upcoming/created exam fetch (no change needed)
+
+    // LOG IS FOR CONDUCTED EXAMS
+    // For the "conducted_exams" API usage and logging
+    const conductedRes = await axios.get(`http://localhost:5000/api/faculty/conducted_exams/${facultyEmail}`)
+    console.log("API /conducted_exams response:", conductedRes.data);
+    console.log("Exams array for conducted:", conductedRes.data.exams);
+
+    if (conductedRes.data.success) {
+      conductedExams.value = conductedRes.data.exams;
     }
   } catch (err) {
     console.error('Failed to fetch exams', err)
   }
 }
 
-// Fetch Conducted Exams
-const fetchConductedExams = async () => {
-  try {
-    const res = await axios.get(`http://localhost:5000/api/faculty/conducted_exams/${facultyEmail}`)
-    if (res.data.success) {
-      conductedExams.value = res.data.exams
-    }
-  } catch (err) {
-    console.error('Failed to fetch conducted exams', err)
-  }
-}
-
-
-// Navigation
 const navigateTo = (action, examId) => {
   const routeMap = {
     AddApplicants_exam: 'AddApplicantsexam',
     AddQuestion: 'AddQuestion',
     MakeQuestionPaper: 'MakeQuestionPaper',
-    UploadStudents: 'UploadStudents'
+    UploadStudents: 'UploadStudents',
+    ViewResponses: 'ViewResponses'
   }
   if (examId) {
     router.push({ name: routeMap[action], params: { examId } })
@@ -329,35 +336,27 @@ const navigateTo = (action, examId) => {
   }
 }
 
-// Init
 onMounted(() => {
   facultyName.value = localStorage.getItem('faculty_name') || 'Faculty'
-  fetchExams()
-  fetchConductedExams() 
+  fetchExamsAndCategorize()
+  
+})
+onMounted(() => {
+  facultyName.value = localStorage.getItem('faculty_name') || 'Faculty'
+  fetchExamsAndCategorize()
 })
 
-// Logout Button
 const logout = async () => {
-  const email = localStorage.getItem('faculty_email');
-  const role = 'Faculty'; // or detect from storage if needed
-
+  const email = localStorage.getItem('faculty_email')
+  const role = 'Faculty'
   try {
-    // ✅ Call backend logout API
-    await axios.post('http://localhost:5000/api/auth/logout', {
-      email,
-      role
-    });
-
-
-  // Clear local storage
+    await axios.post('http://localhost:5000/api/auth/logout', { email, role })
   localStorage.removeItem('faculty_email')
   localStorage.removeItem('faculty_name')
-
-  // Redirect to login page
   router.push('/')
   } catch (err) {
-    console.error('Logout error:', err);
-    alert('Logout failed. Try again.');
+    console.error('Logout error:', err)
+    alert('Logout failed. Try again.')
   }
 }
 </script>
@@ -413,7 +412,6 @@ button.bg-blue-600:hover {
   transform: scale(1.03);
   box-shadow: 0 6px 20px rgba(0, 0, 0, 0.12);
 }
-
 
 /* Table Styling */
 table {
@@ -491,7 +489,4 @@ td button:hover {
 .bg-red-500:hover {
   background: linear-gradient(to right, #dc2626, #b91c1c);
 }
-
-
 </style>
-

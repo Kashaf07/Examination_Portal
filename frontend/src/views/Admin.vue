@@ -1538,11 +1538,16 @@ const logout = async () => {
   const email = localStorage.getItem('faculty_email') // Again, adjust if you use different keys for admin
   const role = 'Admin'
   
+  
   try {
+    // Call backend logout API
     // Call backend logout API
     await axios.post('http://localhost:5000/api/auth/logout', {
       email,
       role
+    });
+    
+    // Clear local storage
     });
     
     // Clear local storage
@@ -1551,7 +1556,12 @@ const logout = async () => {
     
     // Redirect to login page
     window.location.href = '/'
+    
+    // Redirect to login page
+    window.location.href = '/'
   } catch (err) {
+    console.error('Logout error:', err);
+    alert('Logout failed. Try again.');
     console.error('Logout error:', err);
     alert('Logout failed. Try again.');
   }
