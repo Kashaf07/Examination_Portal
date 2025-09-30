@@ -62,48 +62,38 @@ def create_faculty_routes(mysql):
             return jsonify({"success": False, "message": str(e)}), 500
 
     # -------------------------
-    # Conducted Exams
+    # Conducted Exams with Applicant Attempts
     # -------------------------
     @faculty_bp.route("/conducted_exams/<faculty_email>", methods=["GET"])
     def get_conducted_exams(faculty_email):
         try:
             cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
             query = """
-               SELECT
-    ee.Exam_Id,
-    ee.Exam_Name,
-    ee.Exam_Date,
-    ee.Exam_Time,
-    ee.Duration_Minutes,
-    ee.Total_Questions,
-    ee.Max_Marks,
-    IFNULL(assigns.total_applicants, 0) AS total_applicants,
-    IFNULL(attempts.attempted_applicants, 0) AS attempted_applicants
-FROM
-    entrance_exam ee
-    LEFT JOIN (
-        SELECT Exam_Id, COUNT(*) AS total_applicants
-        FROM applicant_exam_assign
-        GROUP BY Exam_Id
-    ) assigns ON ee.Exam_Id = assigns.Exam_Id
-    LEFT JOIN (
-        SELECT ep.Exam_Id, COUNT(DISTINCT aa.Applicant_Id) AS attempted_applicants
-        FROM exam_paper ep
-        JOIN applicant_attempt aa ON ep.Exam_Paper_Id = aa.Exam_Paper_Id
-        WHERE aa.Status = 'Submitted'
-        GROUP BY ep.Exam_Id
-    ) attempts ON ee.Exam_Id = attempts.Exam_Id
-WHERE
-    ee.Faculty_Email = %s
-ORDER BY ee.Exam_Date DESC;
-
-
-
+                SELECT 
+                    ee.Exam_Id,
+                    ee.Exam_Name,
+                    ee.Exam_Date,
+                    COUNT(DISTINCT aea.Applicant_Id) AS total_applicants,
+                    COALESCE(attempts.attempted_applicants, 0) AS attempted_applicants
+                FROM Entrance_Exam ee
+                LEFT JOIN applicant_exam_assign aea ON ee.Exam_Id = aea.Exam_Id
+                LEFT JOIN (
+                    SELECT ep.Exam_Id, COUNT(DISTINCT aa.Applicant_Id) AS attempted_applicants
+                    FROM exam_paper ep
+                    JOIN applicant_attempt aa ON ep.Exam_Paper_Id = aa.Exam_Paper_Id
+                    WHERE aa.Status = 'Submitted'
+                    GROUP BY ep.Exam_Id
+                ) AS attempts ON ee.Exam_Id = attempts.Exam_Id
+                WHERE ee.faculty_email = %s
+                GROUP BY ee.Exam_Id, ee.Exam_Name, ee.Exam_Date, attempts.attempted_applicants
+                ORDER BY ee.Exam_Date DESC
             """
             cursor.execute(query, (faculty_email,))
             exams = cursor.fetchall()
             cursor.close()
+
             return jsonify({"success": True, "exams": exams})
+
         except Exception as e:
             return jsonify({"success": False, "message": str(e)}), 500
 

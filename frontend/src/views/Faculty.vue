@@ -1,15 +1,15 @@
 <template>
   <div class="p-6">
     <div class="flex justify-between items-center mb-6">
-      <h1 class="text-3xl font-bold mb-6">Welcome, {{ facultyName }}</h1>
-      <button
+      <h1 class="text-3xl font-bold mb-6">Welcome, {{ facultyName }}</h1>    
+      <button          
         @click="logout"
         class="logout-btn"
       >
-        Logout
-      </button>
-    </div>
-
+        Logout      
+      </button> 
+    </div>     
+  
     <!-- Button Group -->
     <div class="flex gap-4 mb-6">
       <button
@@ -139,7 +139,7 @@
       <table class="min-w-full border text-sm text-left">
         <thead class="bg-gray-200">
           <tr>
-            <th class="px-4 py-2">Exam Name</th>
+            <th class="px-4 py-2">Exam Name</th>        
             <th class="px-4 py-2">Date</th>
             <th class="px-4 py-2">Total Applicants</th>
             <th class="px-4 py-2">Applicants Attempted</th>
@@ -153,22 +153,22 @@
             <td class="px-4 py-2">{{ exam.total_applicants || 0 }}</td> 
             <td class="px-4 py-2">{{ exam.attempted_applicants || 0 }}</td>
 
-            <td class="px-4 py-2 text-center">
-              <button
+          <td class="px-4 py-2 text-center">
+            <button
                 @click="navigateTo('ViewResponses', exam.Exam_Id)"
-                class="bg-purple-600 text-white px-3 py-1 rounded text-sm hover:bg-purple-700"
-              >
-                View Responses
-              </button>
-            </td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
+              class="bg-purple-600 text-white px-3 py-1 rounded text-sm hover:bg-purple-700"
+            >
+              View Responses
+            </button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
     <div v-else class="mt-8 text-gray-500 text-center text-lg">
       No exams conducted yet.
     </div>
-  </div>
+</div>
 </template>
 
 <script setup>
@@ -300,24 +300,21 @@ const getExamEndTime = (exam) => {
   return new Date(start.getTime() + Number(exam.Duration_Minutes) * 60000)
 }
 
+
+
 const fetchExamsAndCategorize = async () => {
   try {
     const res = await axios.get(`http://localhost:5000/api/exam/get_exams/${facultyEmail}`)
-    if (res.data.success) {
-      const now = new Date()
-      const allExams = res.data.exams || []
+    // Existing code for upcoming/created exam fetch (no change needed)
 
-      createdExams.value = allExams.filter(exam => {
-        const endTime = getExamEndTime(exam)
-        if (!endTime) return false
-        return now < endTime
-      })
+    // LOG IS FOR CONDUCTED EXAMS
+    // For the "conducted_exams" API usage and logging
+    const conductedRes = await axios.get(`http://localhost:5000/api/faculty/conducted_exams/${facultyEmail}`)
+    console.log("API /conducted_exams response:", conductedRes.data);
+    console.log("Exams array for conducted:", conductedRes.data.exams);
 
-      conductedExams.value = allExams.filter(exam => {
-        const endTime = getExamEndTime(exam)
-        if (!endTime) return false
-        return now >= endTime
-      })
+    if (conductedRes.data.success) {
+      conductedExams.value = conductedRes.data.exams;
     }
   } catch (err) {
     console.error('Failed to fetch exams', err)
@@ -342,6 +339,11 @@ const navigateTo = (action, examId) => {
 onMounted(() => {
   facultyName.value = localStorage.getItem('faculty_name') || 'Faculty'
   fetchExamsAndCategorize()
+  
+})
+onMounted(() => {
+  facultyName.value = localStorage.getItem('faculty_name') || 'Faculty'
+  fetchExamsAndCategorize()
 })
 
 const logout = async () => {
@@ -349,9 +351,9 @@ const logout = async () => {
   const role = 'Faculty'
   try {
     await axios.post('http://localhost:5000/api/auth/logout', { email, role })
-    localStorage.removeItem('faculty_email')
-    localStorage.removeItem('faculty_name')
-    router.push('/')
+  localStorage.removeItem('faculty_email')
+  localStorage.removeItem('faculty_name')
+  router.push('/')
   } catch (err) {
     console.error('Logout error:', err)
     alert('Logout failed. Try again.')
