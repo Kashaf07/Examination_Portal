@@ -338,6 +338,7 @@ const fetchExamsAndCategorize = async () => {
   }
 }
 
+
 const navigateTo = (action, examId) => {
   const routeMap = {
     AddApplicants_exam: 'AddApplicantsexam',
