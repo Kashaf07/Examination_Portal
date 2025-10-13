@@ -460,42 +460,39 @@
         </div>
 
         <!-- Conducted Exams Table -->
-        <div v-if="conductedExamsList.length > 0" class="bg-white/80 backdrop-blur-sm shadow-xl rounded-2xl border border-white/20">
-          <div class="flex justify-between items-center p-8 border-b border-gray-200">
-            <h2 class="text-2xl font-bold text-gray-800">Conducted Exams</h2>
-          </div>
+         <div v-if="conductedExams && conductedExams.length" class="mt-12">
+      <h2 class="text-2xl font-semibold mb-4">Conducted Exams</h2>
+      <table class="min-w-full border text-sm text-left">
+        <thead class="bg-gray-200">
+          <tr>
+            <th class="px-4 py-2">Exam Name</th>        
+            <th class="px-4 py-2">Date</th>
+            <th class="px-4 py-2">Total Applicants</th>
+            <th class="px-4 py-2">Applicants Attempted</th>
+            <th class="px-4 py-2 text-center">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr v-for="exam in conductedExams" :key="exam.Exam_Id" class="border-t">
+            <td class="px-4 py-2">{{ exam.Exam_Name || 'N/A' }}</td>
+            <td class="px-4 py-2">{{ formatDate(exam.Exam_Date) }}</td>
+            <td class="px-4 py-2">{{ exam.total_applicants || 0 }}</td> 
+            <td class="px-4 py-2">{{ exam.attempted_applicants || 0 }}</td>
 
-          <div class="bg-purple-100 rounded-b-2xl p-6">
-            <div class="overflow-x-auto">
-              <table class="w-full">
-                <thead>
-                  <tr class="border-b border-purple-200">
-                    <th class="text-left py-4 px-4 font-semibold text-purple-800">Exam Name</th>
-                    <th class="text-left py-4 px-4 font-semibold text-purple-800">Date</th>
-                    <th class="text-left py-4 px-4 font-semibold text-purple-800">Total Applicants</th>
-                    <th class="text-left py-4 px-4 font-semibold text-purple-800">Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr v-for="exam in conductedExamsList" :key="exam.Exam_Id" class="border-b border-purple-200 hover:bg-purple-50">
-                    <td class="py-4 px-4 text-gray-700">{{ exam.Exam_Name }}</td>
-                    <td class="py-4 px-4 text-gray-700">{{ formatDate(exam.Exam_Date) }}</td>
-                    <td class="py-4 px-4 text-gray-700">{{ exam.total_applicants || 0 }}</td>
-                    <td class="py-4 px-4 space-x-2">
-                      <button
-                        @click="viewExamResponses(exam.Exam_Id)"
-                        class="bg-purple-500 hover:bg-purple-600 text-white px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 transform hover:scale-105"
-                      >
-                        View Responses
-                      </button>
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </div>
+          <td class="px-4 py-2 text-center">
+            <button
+                @click="navigateTo('ViewResponses', exam.Exam_Id)"
+              class="bg-purple-600 text-white px-3 py-1 rounded text-sm hover:bg-purple-700"
+            >
+              View Responses
+            </button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+    </div>
       </div>
+
 
       <!-- Admins Management -->
       <div v-if="activeTab === 'admins'" class="space-y-6">
@@ -1538,9 +1535,7 @@ const logout = async () => {
   const email = localStorage.getItem('faculty_email') // Again, adjust if you use different keys for admin
   const role = 'Admin'
   
-  
   try {
-    // Call backend logout API
     // Call backend logout API
     await axios.post('http://localhost:5000/api/auth/logout', {
       email,
@@ -1548,19 +1543,12 @@ const logout = async () => {
     });
     
     // Clear local storage
-    
-    // Clear local storage
     localStorage.removeItem('faculty_email')
     localStorage.removeItem('faculty_name')
     
     // Redirect to login page
     window.location.href = '/'
-    
-    // Redirect to login page
-    window.location.href = '/'
   } catch (err) {
-    console.error('Logout error:', err);
-    alert('Logout failed. Try again.');
     console.error('Logout error:', err);
     alert('Logout failed. Try again.');
   }

@@ -537,8 +537,7 @@ def create_admin_routes(mysql):
         try:
             cursor = mysql.connection.cursor()
             cursor.execute("""
-                SELECT Log_ID, User_Email, Role, Login_Time, Logout_Time,
-                       Student_ID, Student_Name, Applicant_ID
+                SELECT Log_ID, User_Email, Role, Login_Time, Logout_Time
                 FROM login_log 
                 ORDER BY Log_ID
             """)
