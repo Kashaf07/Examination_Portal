@@ -2,6 +2,7 @@ from flask import Blueprint, request, jsonify
 import pandas as pd
 import os
 from werkzeug.utils import secure_filename
+from datetime import datetime
 
 def create_add_students_bp(mysql):
     add_students_bp = Blueprint('add_students', __name__)
@@ -105,6 +106,16 @@ def create_add_students_bp(mysql):
 
             for _, row in df.iterrows():
                 try:
+                    # Convert DOB to proper MySQL format
+                    dob_str = str(row['DOB'])
+                    try:
+                        # Handle both "MM/DD/YYYY" or "M/D/YYYY" formats
+                        dob_obj = datetime.strptime(dob_str, "%m/%d/%Y")
+                        dob_mysql = dob_obj.strftime("%Y-%m-%d")
+                    except ValueError:
+                        # If already correct or blank, use as is
+                        dob_mysql = dob_str
+
                     cursor.execute("""
                         INSERT INTO applicants (Full_Name, Email, Password, Phone, DOB, Gender, Address)
                         VALUES (%s, %s, %s, %s, %s, %s, %s)
@@ -113,20 +124,15 @@ def create_add_students_bp(mysql):
                         row['Email'],
                         row['Password'],
                         row['Phone'],
-                        row['DOB'],
+                        dob_mysql,
                         row['Gender'],
                         row['Address']
                     ))
 
-                # Optional: Insert into exam_applicants
-                # if exam_id:
-                #     applicant_id = cursor.lastrowid
-                #     cursor.execute("INSERT INTO exam_applicants (exam_id, applicant_id) VALUES (%s, %s)", (exam_id, applicant_id))
-
                 except Exception as e:
                     print("Skip duplicate or error:", e)
-                    continue  # skip duplicates or bad rows
-
+                    continue
+                
             # Log the upload
             cursor.execute("""
                 INSERT INTO file_uploads (Uploaded_By, Role, File_Name, File_Path)
@@ -139,8 +145,9 @@ def create_add_students_bp(mysql):
             return jsonify({'message': 'Students uploaded and logged successfully'}), 200
 
         except Exception as e:
-            print("Upload Error:", e)
+            print("Error inserting row:", e)
             return jsonify({'error': str(e)}), 500
+
         
     return add_students_bp
 

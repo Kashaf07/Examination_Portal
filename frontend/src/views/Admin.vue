@@ -349,6 +349,7 @@
                   type="date"
                   required
                   class="w-full border border-gray-300 rounded-xl px-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
+                  :min="todayDate" 
                 >
               </div>
               <div>
@@ -978,6 +979,15 @@ const schoolsList = ref([])
 const applicantsList = ref([])
 const adminsList = ref([])
 const logsList = ref([])
+
+// Date blocking
+const todayDate = computed(() => {
+  const today = new Date()
+  const year = today.getFullYear()
+  const month = String(today.getMonth() + 1).padStart(2, '0')
+  const day = String(today.getDate()).padStart(2, '0')
+  return `${year}-${month}-${day}`
+})
 
 // Added for conducted exams
 const conductedExamsList = ref([]) // Updated initialization
