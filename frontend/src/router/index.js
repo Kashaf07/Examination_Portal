@@ -10,10 +10,12 @@ import MakeQuestionPaperPage from '../views/MakeQuestionPaperPage.vue'
 import UploadStudents from '../views/UploadStudents.vue'
 import AddApplicantsPage from '../views/AddApplicantsPage.vue'
 import AddApplicants_exam from '../views/AddApplicants_exam.vue'
+import ViewResponses from '../views/ViewResponsesAdmin.vue'        
 
 const routes = [
   { path: '/', component: Login },
-  { path: '/admin', component: Admin },
+ { path: '/admin', name: 'Admin', component: Admin },
+
   { path: '/faculty', component: Faculty },
   { path: '/student', component: Student },
   { path: '/exam/:examId/upload-question-bank', name: 'UploadQuestionBank', component: UploadQuestionBank },
@@ -23,12 +25,8 @@ const routes = [
   { path: '/exam/:examId/add-question', name: 'AddQuestion', component: AddQuestion },
   { path: '/exam/:examId/make-question-paper', name: 'MakeQuestionPaper', component: MakeQuestionPaperPage },
   { path: '/add-applicants', name: 'AddApplicants', component: AddApplicantsPage },
-  {
-    path: '/faculty/view-responses/:examId',
-    name: 'ViewResponses',
-    component: () => import('@/views/ViewResponses.vue'),
-    props: true
-  },
+  
+ 
   {
     path: '/faculty/view-answers/:attemptId',
     name: 'ViewAnswers',
@@ -36,11 +34,24 @@ const routes = [
     props: true
   },
   {
+  path: '/responses/:examId',
+  name: 'ViewResponsesAdmin',
+  component: () => import('@/views/ViewResponsesAdmin.vue'),
+  props: true
+},
+{
   path: '/faculty',
   name: 'Faculty',
   component: () => import('@/views/Faculty.vue')
   
+},
+{
+  path: '/faculty/view-responses/:examId',
+  name: 'ViewResponses',
+  component: () => import('@/views/ViewResponses.vue'),
+  props: true
 }
+
 
   
 ]

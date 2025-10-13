@@ -304,17 +304,34 @@ const getExamEndTime = (exam) => {
 
 const fetchExamsAndCategorize = async () => {
   try {
+    // 1. Fetch all exams
     const res = await axios.get(`http://localhost:5000/api/exam/get_exams/${facultyEmail}`)
-    // Existing code for upcoming/created exam fetch (no change needed)
+    if (res.data.success) {
+      const now = new Date()
+      const allExams = res.data.exams || []
 
-    // LOG IS FOR CONDUCTED EXAMS
-    // For the "conducted_exams" API usage and logging
+      // Categorize from /get_exams
+      createdExams.value = allExams.filter(exam => {
+        const endTime = getExamEndTime(exam)
+        if (!endTime) return false
+        return now < endTime
+      })
+
+      conductedExams.value = allExams.filter(exam => {
+        const endTime = getExamEndTime(exam)
+        if (!endTime) return false
+        return now >= endTime
+      })
+    }
+
+    // 2. Fetch conducted exams directly from API
     const conductedRes = await axios.get(`http://localhost:5000/api/faculty/conducted_exams/${facultyEmail}`)
     console.log("API /conducted_exams response:", conductedRes.data);
     console.log("Exams array for conducted:", conductedRes.data.exams);
 
     if (conductedRes.data.success) {
-      conductedExams.value = conductedRes.data.exams;
+      // Override / update conducted exams with API response
+      conductedExams.value = conductedRes.data.exams
     }
   } catch (err) {
     console.error('Failed to fetch exams', err)

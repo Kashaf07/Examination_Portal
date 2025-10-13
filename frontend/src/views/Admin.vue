@@ -59,8 +59,8 @@
                   </tr>
                 </thead>
                 <tbody class="bg-white divide-y divide-gray-100">
-                  <tr v-for="faculty in facultyList" :key="faculty.Faculty_Id" class="hover:bg-gray-50 transition-colors duration-200">
-                    <td class="py-4 px-6 text-gray-900">{{ faculty.Faculty_Id }}</td>
+                  <tr v-for="(faculty, idx) in facultyList" :key="faculty.Faculty_Id" class="hover:bg-gray-50 transition-colors duration-200">
+                    <td class="py-4 px-6 text-gray-900">{{ idx + 1 }}</td>
                     <td class="py-4 px-6 text-gray-900">{{ faculty.F_Name }}</td>
                     <td class="py-4 px-6 text-gray-900">{{ faculty.F_Email }}</td>
                     <td class="py-4 px-6 text-gray-900">{{ getSchoolName(faculty.School_Id) }}</td>
@@ -114,8 +114,8 @@
                   </tr>
                 </thead>
                 <tbody class="bg-white divide-y divide-gray-100">
-                  <tr v-for="school in schoolsList" :key="school.School_Id" class="hover:bg-gray-50 transition-colors duration-200">
-                    <td class="py-4 px-6 text-gray-900">{{ school.School_Id }}</td>
+                  <tr v-for="(school, idx) in schoolsList" :key="school.School_Id" class="hover:bg-gray-50 transition-colors duration-200">
+                    <td class="py-4 px-6 text-gray-900">{{ idx + 1 }}</td>
                     <td class="py-4 px-6 text-gray-900">{{ school.School_Name }}</td>
                     <td class="py-4 px-6 text-gray-900">{{ school.School_Short }}</td>
                     <td class="py-4 px-6 space-x-2">
@@ -150,6 +150,7 @@
           >
             {{ showAddApplicantForm ? 'Close' : 'Add Applicants' }}
           </button>
+          <!-- CHANGE: navigate to UploadStudents.vue instead of opening modal -->
           <button
             @click="navigateTo('UploadStudents')"
             class="bg-purple-500 hover:bg-purple-600 text-white font-semibold px-6 py-3 rounded-full shadow-lg transition-all duration-200 transform hover:scale-105"
@@ -258,6 +259,7 @@
               <thead class="bg-gradient-to-r from-blue-50 to-blue-100">
                 <tr>
                   <th class="text-left py-4 px-6 font-semibold text-blue-900">
+                    <input type="checkbox" @change="toggleAllApplicants" :checked="selectedApplicants.length === applicantsList.length && applicantsList.length > 0" />
                   </th>
                   <th class="text-left py-4 px-6 font-semibold text-blue-900">ID</th>
                   <th class="text-left py-4 px-6 font-semibold text-blue-900">Name</th>
@@ -269,11 +271,11 @@
                 </tr>
               </thead>
               <tbody class="bg-white divide-y divide-gray-100">
-                <tr v-for="applicant in applicantsList" :key="applicant.Applicant_Id" class="hover:bg-gray-50 transition-colors duration-200">
+                <tr v-for="(applicant, idx) in applicantsList" :key="applicant.Applicant_Id" class="hover:bg-gray-50 transition-colors duration-200">
                   <td class="py-4 px-6">
-                  
+                    <input type="checkbox" :value="applicant.Applicant_Id" v-model="selectedApplicants" />
                   </td>
-                  <td class="py-4 px-6 text-gray-900">{{ applicant.Applicant_Id }}</td>
+                  <td class="py-4 px-6 text-gray-900">{{ idx + 1 }}</td>
                   <td class="py-4 px-6 text-gray-900">{{ applicant.Full_Name }}</td>
                   <td class="py-4 px-6 text-gray-900">{{ applicant.Email }}</td>
                   <td class="py-4 px-6 text-gray-900">{{ applicant.Phone }}</td>
@@ -301,6 +303,15 @@
           <div v-if="applicantsList.length === 0" class="text-center py-12 text-gray-500">
             No applicants found. Add some applicants to get started.
           </div>
+          <div v-else class="flex justify-end px-6 py-4 bg-gray-50">
+            <button
+              @click="bulkDeleteApplicants"
+              :disabled="selectedApplicants.length === 0"
+              class="bg-red-500 hover:bg-red-600 text-white font-semibold px-4 py-2 rounded-lg text-sm shadow-md disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 transform hover:scale-105"
+            >
+              Delete Selected ({{ selectedApplicants.length }})
+            </button>
+          </div>
         </div>
       </div>
 
@@ -314,7 +325,6 @@
           >
             {{ showCreateExamForm ? 'Close' : 'Create Exam' }}
           </button>
-          
         </div>
 
         <!-- Create Exam Form -->
@@ -406,6 +416,7 @@
             <table class="w-full">
               <thead class="bg-gradient-to-r from-blue-50 to-blue-100">
                 <tr>
+                  <th class="text-left py-4 px-6 font-semibold text-blue-900">ID</th>
                   <th class="text-left py-4 px-6 font-semibold text-blue-900">Exam Name</th>
                   <th class="text-left py-4 px-6 font-semibold text-blue-900">Date</th>
                   <th class="text-left py-4 px-6 font-semibold text-blue-900">Time</th>
@@ -416,7 +427,8 @@
                 </tr>
               </thead>
               <tbody class="bg-white divide-y divide-gray-100">
-                <tr v-for="exam in examsList" :key="exam.Exam_Id" class="hover:bg-gray-50 transition-colors duration-200">
+                <tr v-for="(exam, idx) in visibleCreatedExams" :key="exam.Exam_Id" class="hover:bg-gray-50 transition-colors duration-200">
+                  <td class="py-4 px-6 text-gray-900">{{ idx + 1 }}</td>
                   <td class="py-4 px-6 text-gray-900">{{ exam.Exam_Name }}</td>
                   <td class="py-4 px-6 text-gray-900">{{ formatDate(exam.Exam_Date) }}</td>
                   <td class="py-4 px-6 text-gray-900">{{ exam.Exam_Time }}</td>
@@ -454,45 +466,49 @@
             </table>
           </div>
 
-          <div v-if="examsList.length === 0" class="text-center py-12 text-gray-500">
+          <div v-if="visibleCreatedExams.length === 0" class="text-center py-12 text-gray-500">
             No exams created yet. Create your first exam to get started.
           </div>
         </div>
 
         <!-- Conducted Exams Table -->
-        <div v-if="conductedExamsList.length > 0" class="bg-white/80 backdrop-blur-sm shadow-xl rounded-2xl border border-white/20">
-          <div class="flex justify-between items-center p-8 border-b border-gray-200">
-            <h2 class="text-2xl font-bold text-gray-800">Conducted Exams</h2>
+        <div v-if="conductedExams && conductedExams.length" class="mt-12 bg-white rounded-2xl shadow-lg overflow-hidden border border-gray-200">
+          <div class="px-6 py-4 bg-gradient-to-r from-purple-50 to-purple-100 border-b border-purple-200">
+            <h2 class="text-2xl font-bold text-purple-900">Conducted Exams</h2>
           </div>
+          <div class="overflow-x-auto">
+            <table class="w-full">
+              <thead class="bg-gradient-to-r from-blue-50 to-blue-100">
+                <tr>
+                  <th class="text-left py-4 px-6 font-semibold text-blue-900">ID</th>
+                  <th class="text-left py-4 px-6 font-semibold text-blue-900">Exam Name</th>
+                  <th class="text-left py-4 px-6 font-semibold text-blue-900">Date</th>
+                  <th class="text-left py-4 px-6 font-semibold text-blue-900">Faculty Email</th>
+                  <th class="text-left py-4 px-6 font-semibold text-blue-900">Total Applicants</th>
+                  <th class="text-left py-4 px-6 font-semibold text-blue-900">Attempted</th>
+                  <th class="text-center py-4 px-6 font-semibold text-blue-900">Actions</th>
+                </tr>
+              </thead>
+              <tbody class="bg-white divide-y divide-gray-100">
+                <tr v-for="(exam, idx) in conductedExams" :key="exam.Exam_Id" class="hover:bg-gray-50 transition-colors duration-200">
+                  <td class="py-4 px-6 text-gray-900">{{ idx + 1 }}</td>
+                  <td class="py-4 px-6 text-gray-900">{{ exam.Exam_Name || 'N/A' }}</td>
+                  <td class="py-4 px-6 text-gray-900">{{ formatDate(exam.Exam_Date) }}</td>
+                  <td class="py-4 px-6 text-gray-900">{{ exam.faculty_email || 'N/A' }}</td>
+                  <td class="py-4 px-6 text-gray-900">{{ exam.total_applicants || 0 }}</td>
+                  <td class="py-4 px-6 text-gray-900">{{ exam.attempted_applicants || 0 }}</td>
+                  <td class="py-4 px-6 text-center">
+                   <button
+  @click="$router.push({ name: 'ViewResponsesAdmin', params: { examId: exam.Exam_Id } })"
+  class="bg-purple-500 hover:bg-purple-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 transform hover:scale-105 shadow-md"
+>
+  View Responses
+</button>
 
-          <div class="bg-purple-100 rounded-b-2xl p-6">
-            <div class="overflow-x-auto">
-              <table class="w-full">
-                <thead>
-                  <tr class="border-b border-purple-200">
-                    <th class="text-left py-4 px-4 font-semibold text-purple-800">Exam Name</th>
-                    <th class="text-left py-4 px-4 font-semibold text-purple-800">Date</th>
-                    <th class="text-left py-4 px-4 font-semibold text-purple-800">Total Applicants</th>
-                    <th class="text-left py-4 px-4 font-semibold text-purple-800">Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr v-for="exam in conductedExamsList" :key="exam.Exam_Id" class="border-b border-purple-200 hover:bg-purple-50">
-                    <td class="py-4 px-4 text-gray-700">{{ exam.Exam_Name }}</td>
-                    <td class="py-4 px-4 text-gray-700">{{ formatDate(exam.Exam_Date) }}</td>
-                    <td class="py-4 px-4 text-gray-700">{{ exam.total_applicants || 0 }}</td>
-                    <td class="py-4 px-4 space-x-2">
-                      <button
-                        @click="viewExamResponses(exam.Exam_Id)"
-                        class="bg-purple-500 hover:bg-purple-600 text-white px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 transform hover:scale-105"
-                      >
-                        View Responses
-                      </button>
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
           </div>
         </div>
       </div>
@@ -523,8 +539,8 @@
                   </tr>
                 </thead>
                 <tbody class="bg-white">
-                  <tr v-for="admin in adminsList" :key="admin.Admin_ID" class="border-b border-gray-100 hover:bg-gray-50 transition-colors duration-200">
-                    <td class="py-4 px-6 text-gray-700 font-medium">{{ admin.Admin_ID }}</td>
+                  <tr v-for="(admin, idx) in adminsList" :key="admin.Admin_ID" class="border-b border-gray-100 hover:bg-gray-50 transition-colors duration-200">
+                    <td class="py-4 px-6 text-gray-700 font-medium">{{ idx + 1 }}</td>
                     <td class="py-4 px-6 text-gray-700">{{ admin.Name }}</td>
                     <td class="py-4 px-6 text-gray-700">{{ admin.Email }}</td>
                     <td class="py-4 px-6 space-x-2">
@@ -550,7 +566,7 @@
               <table class="w-full">
                 <thead>
                   <tr class="bg-gradient-to-r from-blue-50 to-blue-100 border-b border-blue-200">
-                    <th class="text-left py-4 px-6 font-semibold text-blue-900">Log ID</th>
+                    <th class="text-left py-4 px-6 font-semibold text-blue-900">ID</th>
                     <th class="text-left py-4 px-6 font-semibold text-blue-900">User Email</th>
                     <th class="text-left py-4 px-6 font-semibold text-blue-900">Role</th>
                     <th class="text-left py-4 px-6 font-semibold text-blue-900">Login Time</th>
@@ -559,8 +575,8 @@
                   </tr>
                 </thead>
                 <tbody class="bg-white">
-                  <tr v-for="log in logsList" :key="log.Log_ID" class="border-b border-gray-100 hover:bg-gray-50 transition-colors duration-200">
-                    <td class="py-4 px-6 text-gray-700 font-medium">{{ log.Log_ID }}</td>
+                  <tr v-for="(log, idx) in logsList" :key="log.Log_ID" class="border-b border-gray-100 hover:bg-gray-50 transition-colors duration-200">
+                    <td class="py-4 px-6 text-gray-700 font-medium">{{ idx + 1 }}</td>
                     <td class="py-4 px-6 text-gray-700">{{ log.User_Email }}</td>
                     <td class="py-4 px-6">
                       <span :class="getRoleColor(log.Role)" class="px-3 py-1 rounded-full text-xs font-medium">
@@ -571,6 +587,7 @@
                     <td class="py-4 px-6 text-gray-700">{{ log.Logout_Time || 'N/A' }}</td>
                     <td class="py-4 px-6 space-x-2">
                       <button @click="viewLog(log)" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 transform hover:scale-105 shadow-md">View</button>
+                      <!-- Removed deleteLog function call as per instruction -->
                     </td>
                   </tr>
                 </tbody>
@@ -583,11 +600,11 @@
 
     <!-- Notification Popup -->
     <div v-if="message" class="fixed top-4 right-4 z-50 max-w-md">
-      <div 
+      <div
         :class="[
           'p-4 rounded-xl shadow-2xl border-l-4 transform transition-all duration-300 ease-in-out',
-          messageType === 'error' 
-            ? 'bg-red-50 text-red-800 border-red-500' 
+          messageType === 'error'
+            ? 'bg-red-50 text-red-800 border-red-500'
             : 'bg-green-50 text-green-800 border-green-500'
         ]"
         class="animate-slide-in-right"
@@ -942,17 +959,27 @@
 </template>
 
 <script setup>
-import { ref, onMounted, computed } from 'vue'
+/* eslint-disable react-hooks/rules-of-hooks, react-hooks/exhaustive-deps */
+import { ref, onMounted, computed, watch, onUnmounted } from 'vue'
 import axios from 'axios'
-import { useRouter } from 'vue-router'
+import { useRouter, useRoute } from 'vue-router'
+
+// --- Vue Router Setup ---
+const route = useRoute()
+const router = useRouter()
+// --- End Vue Router Setup ---
 
 // Data
-const activeTab = ref('faculty')
+// Initialize activeTab from the query string (fallback to 'faculty')
+const activeTab = ref(typeof route.query.tab === 'string' ? route.query.tab : 'faculty')
 const facultyList = ref([])
 const schoolsList = ref([])
 const applicantsList = ref([])
 const adminsList = ref([])
 const logsList = ref([])
+
+// Added for conducted exams
+const conductedExamsList = ref([]) // Updated initialization
 
 // Message system
 const message = ref('')
@@ -970,6 +997,7 @@ const showViewApplicantModal = ref(false)
 const showAddAdminModal = ref(false)
 const showEditAdminModal = ref(false)
 const showViewLogModal = ref(false)
+const showUploadApplicantsModal = ref(false) // Added for upload modal
 
 // Forms
 const facultyForm = ref({
@@ -999,7 +1027,6 @@ const selectedLog = ref(null)
 
 // Add these new reactive variables
 const showAddApplicantForm = ref(false)
-const showUploadApplicantsModal = ref(false)
 const selectedFile = ref(null)
 const isUploading = ref(false)
 const uploadProgress = ref(0)
@@ -1018,7 +1045,7 @@ const newApplicant = ref({
 // Exam management
 const showCreateExamForm = ref(false)
 const examsList = ref([])
-const conductedExamsList = ref([])
+// const conductedExamsList = ref([]) // This was moved up
 
 const examForm = ref({
   exam_name: '',
@@ -1047,14 +1074,35 @@ const tabs = [
 // API Base URL
 const API_BASE = 'http://localhost:5000/api'
 
-// Message helper
+// Computed property for conducted exams
+const conductedExams = computed(() => conductedExamsList.value) // Added computed property
+
+const isExamEnded = (exam) => {
+  try {
+    const dateStr = typeof exam.Exam_Date === 'string'
+      ? exam.Exam_Date
+      : new Date(exam.Exam_Date).toISOString().slice(0, 10)
+    const timeStr = (exam.Exam_Time ?? '00:00:00').toString()
+    const start = new Date(`${dateStr}T${timeStr}`)
+    if (Number.isNaN(start.getTime())) return false
+    const durationMin = Number(exam.Duration_Minutes || 0)
+    const end = new Date(start.getTime() + durationMin * 60_000)
+    return end.getTime() <= Date.now()
+  } catch {
+    return false
+  }
+}
+
+// Created exams: only show exams that have NOT ended yet
+const visibleCreatedExams = computed(() => examsList.value.filter(exam => !isExamEnded(exam)))
+
+// Message system helper
 const showMessage = (msg, type = 'success') => {
   message.value = msg
   messageType.value = type
   setTimeout(() => {
     message.value = ''
   }, 3000) // Auto-hide after 3 seconds
-
 }
 
 // Bulk operations
@@ -1435,14 +1483,16 @@ const fetchExams = async () => {
   }
 }
 
+// Updated fetchConductedExams function
 const fetchConductedExams = async () => {
   try {
-    const response = await axios.get(`${API_BASE}/faculty/conducted_exams/${adminEmail.value}`)
+    const response = await axios.get(`${API_BASE}/admin/conducted_exams`)
     if (response.data.success) {
       conductedExamsList.value = response.data.exams
     }
   } catch (error) {
     console.error('Error fetching conducted exams:', error)
+    showMessage('Error fetching conducted exams', 'error')
   }
 }
 
@@ -1490,14 +1540,12 @@ const deleteExam = async (examId) => {
 }
 
 // Navigation function with route mapping (same as Faculty.vue)
-const router = useRouter()
-
 const navigateTo = (action, examId) => {
   const routeMap = {
     AddApplicants_exam: 'AddApplicantsexam',
     AddQuestion: 'AddQuestion',
     MakeQuestionPaper: 'MakeQuestionPaper',
-    UploadStudents: 'UploadStudents',
+    UploadStudents: 'UploadStudents', // Added for the upload button
     ViewResponses: 'ViewResponses'
   }
   if (examId) {
@@ -1538,16 +1586,11 @@ const logout = async () => {
   const email = localStorage.getItem('faculty_email') // Again, adjust if you use different keys for admin
   const role = 'Admin'
   
-  
   try {
-    // Call backend logout API
     // Call backend logout API
     await axios.post('http://localhost:5000/api/auth/logout', {
       email,
       role
-    });
-    
-    // Clear local storage
     });
     
     // Clear local storage
@@ -1556,12 +1599,7 @@ const logout = async () => {
     
     // Redirect to login page
     window.location.href = '/'
-    
-    // Redirect to login page
-    window.location.href = '/'
   } catch (err) {
-    console.error('Logout error:', err);
-    alert('Logout failed. Try again.');
     console.error('Logout error:', err);
     alert('Logout failed. Try again.');
   }
@@ -1582,7 +1620,14 @@ const getRoleColor = (role) => {
   }
 }
 
-// Initialize
+// Watcher to update URL when activeTab changes
+watch(activeTab, (val) => {
+  // Keep other existing query params
+  const q = { ...route.query, tab: val }
+  router.replace({ name: 'Admin', query: q })
+})
+
+let refreshTimer
 onMounted(async () => {
   const name = localStorage.getItem('faculty_name') // Reuse same key if you're not storing separately for admin
   if (name) adminName.value = name
@@ -1593,7 +1638,16 @@ onMounted(async () => {
   await fetchAdmins()
   await fetchLogs()
   await fetchExams()
-  await fetchConductedExams()
+  await fetchConductedExams() // Call the updated function
+  // refresh every 60s to auto-move ended exams
+  refreshTimer = setInterval(async () => {
+    await fetchExams()
+    await fetchConductedExams()
+  }, 60_000)
+})
+
+onUnmounted(() => {
+  if (refreshTimer) clearInterval(refreshTimer)
 })
 </script>
 
