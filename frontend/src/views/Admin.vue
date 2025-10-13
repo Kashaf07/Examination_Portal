@@ -513,6 +513,7 @@
         </div>
       </div>
 
+
       <!-- Admins Management -->
       <div v-if="activeTab === 'admins'" class="space-y-6">
         <div class="bg-white/80 backdrop-blur-sm shadow-xl rounded-2xl p-8 border border-white/20">
