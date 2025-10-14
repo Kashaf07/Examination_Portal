@@ -1,6 +1,7 @@
 from flask import Blueprint, request, jsonify
 import MySQLdb.cursors  # Using flask-mysqldb DictCursor
 
+
 def create_faculty_routes(mysql):
     faculty_bp = Blueprint("faculty_bp", __name__)
 
@@ -22,7 +23,7 @@ def create_faculty_routes(mysql):
             if not faculty:
                 return jsonify({"success": False, "message": "Faculty not found"}), 404
 
-            # If you use plain text passwords (⚠️ insecure but works for now)
+            # Plain text password check (insecure, recommended to hash)
             if faculty["F_Password"] == password:
                 return jsonify({
                     "success": True,
@@ -93,6 +94,41 @@ def create_faculty_routes(mysql):
             cursor.close()
 
             return jsonify({"success": True, "exams": exams})
+
+        except Exception as e:
+            return jsonify({"success": False, "message": str(e)}), 500
+
+    # -------------------------
+    # New: Exam Applicants Statistics (Total and Attempted Applicants)
+    # -------------------------
+    @faculty_bp.route("/exam_applicants_stats/<faculty_email>", methods=["GET"])
+    def get_exam_applicants_stats(faculty_email):
+        try:
+            cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+            query = """
+                SELECT 
+                    ee.Exam_Id,
+                    ee.Exam_Name,
+                    COUNT(DISTINCT aea.Applicant_Id) AS total_applicants,
+                    COALESCE(attempts.attempted_applicants, 0) AS attempted_applicants
+                FROM Entrance_Exam ee
+                LEFT JOIN applicant_exam_assign aea ON ee.Exam_Id = aea.Exam_Id
+                LEFT JOIN (
+                    SELECT ep.Exam_Id, COUNT(DISTINCT aa.Applicant_Id) AS attempted_applicants
+                    FROM exam_paper ep
+                    JOIN applicant_attempt aa ON ep.Exam_Paper_Id = aa.Exam_Paper_Id
+                    WHERE aa.Status = 'Submitted'
+                    GROUP BY ep.Exam_Id
+                ) AS attempts ON ee.Exam_Id = attempts.Exam_Id
+                WHERE ee.faculty_email = %s
+                GROUP BY ee.Exam_Id, ee.Exam_Name, attempts.attempted_applicants
+                ORDER BY ee.Exam_Name
+            """
+            cursor.execute(query, (faculty_email,))
+            stats = cursor.fetchall()
+            cursor.close()
+
+            return jsonify({"success": True, "stats": stats})
 
         except Exception as e:
             return jsonify({"success": False, "message": str(e)}), 500
