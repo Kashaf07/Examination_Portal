@@ -1,4 +1,3 @@
-Full_Name,Email,Password,Phone,DOB,Gender,Address
-Ayaan Tambe,ayaantambe@example.com,ayaan789,9823456789,2001-11-22,Male,12 Garden Road Delhi
-Anam Tambe,anam.tambe@example.com,Anam321,9812345670,2000-10-15,Female,45 Bhandup East Mumbai
-Ziyaan Tambe,ziyaan.tambe@mail.com,ziyaan123,9988776655,2003-12-09,Male,89 MG Road Pune
+Full_Name,	Email,	Password,	Phone,	DOB,	Gender,	Address
+Ravi Kumar,	ravi.kumar@example.com,	ravi123,	9998887776,	03/15/2004,	Male,	78 Nehru Street
+Fatima Sheikh,	fatima.sheikh@mail.com,	fatima456,	9876543211,	03/10/2004,	Female,	202 Green Avenue Mumbai
