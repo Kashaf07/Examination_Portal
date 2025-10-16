@@ -16,7 +16,7 @@
       <div class="mb-6 text-sm text-gray-700 text-center">
         Need a format?
         <a
-          href="/sample/Student_Upload_Template.csv"
+          href="/sample/Applicants.csv"
           download
           class="text-blue-600 underline hover:text-blue-800 transition duration-150"
         >
