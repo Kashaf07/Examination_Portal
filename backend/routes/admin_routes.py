@@ -2,9 +2,19 @@ from flask import Blueprint, request, jsonify
 import pandas as pd
 import os
 from werkzeug.utils import secure_filename
+from datetime import datetime
+import pytz
 
 def create_admin_routes(mysql):
     admin_bp = Blueprint('admin_routes', __name__)
+    def convert_to_ist(dt):
+        if dt is None:
+            return None
+        utc = pytz.utc
+        ist = pytz.timezone('Asia/Kolkata')
+        utc_dt = utc.localize(dt)
+        ist_dt = utc_dt.astimezone(ist)
+        return ist_dt.strftime('%Y-%m-%d %H:%M:%S')
 
     # ID Management Route
     @admin_bp.route('/reorganize-ids', methods=['POST'])
