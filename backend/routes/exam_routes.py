@@ -127,8 +127,6 @@ def create_exam_routes(mysql):
             cursor.execute("DELETE FROM exam_paper WHERE Exam_Id = %s", (exam_id,))
             cursor.execute("DELETE FROM entrance_question_bank WHERE Exam_Id = %s", (exam_id,))
             cursor.execute("DELETE FROM applicant_exam_assign WHERE Exam_Id = %s", (exam_id,))
-            cursor.execute("DELETE FROM exam_access_window WHERE Exam_Id = %s", (exam_id,))
-            cursor.execute("DELETE FROM exam_settings WHERE Exam_Id = %s", (exam_id,))
             cursor.execute("DELETE FROM Entrance_Exam WHERE Exam_Id = %s", (exam_id,))
 
             cursor.execute("SET FOREIGN_KEY_CHECKS = 1")

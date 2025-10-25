@@ -174,7 +174,7 @@
 <script setup>
 import { ref, onMounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
-import axios from 'axios'
+import axios from '../utils/axiosInstance'
 
 const router = useRouter()
 const facultyName = ref('')
@@ -186,6 +186,17 @@ const examSubmitMessage = ref('')
 const createdExams = ref([])
 const conductedExams = ref([])
 
+onMounted(() => {
+  const token = localStorage.getItem('token')
+  const role = localStorage.getItem('role')
+  if (role !== 'Faculty') {
+    router.push('/') // or '/' home page
+  } else {
+    facultyName.value = localStorage.getItem('faculty_name') || 'Faculty'
+    fetchExamsAndCategorize()
+  }
+})
+
 // Date blocking
 const todayDate = computed(() => {
   const today = new Date()
@@ -195,6 +206,7 @@ const todayDate = computed(() => {
   return `${year}-${month}-${day}`
 })
 
+// Exam form model
 const exam = ref({
   exam_name: '',
   exam_date: '',
@@ -205,6 +217,7 @@ const exam = ref({
   faculty_email: facultyEmail
 })
 
+// Applicant form model
 const applicant = ref({
   Full_Name: '',
   Email: '',
@@ -215,6 +228,7 @@ const applicant = ref({
   Address: ''
 })
 
+// Format date for display
 const formatDate = (dateString) => {
   if (!dateString) return 'N/A'
   return new Date(dateString).toLocaleDateString('en-GB', {
@@ -224,6 +238,7 @@ const formatDate = (dateString) => {
   })
 }
 
+// Toggle exam creation form
 const toggleExamForm = () => {
   showForm.value = !showForm.value
   examSubmitMessage.value = ''
@@ -233,7 +248,7 @@ const deleteExam = async (examId) => {
   const confirmDelete = confirm('Are you sure you want to delete this exam?')
   if (!confirmDelete) return
   try {
-    const res = await axios.delete(`http://localhost:5000/api/exam/delete/${examId}`)
+    const res = await axios.delete(`/exam/delete/${examId}`)
     if (res.data.success) {
       alert('Exam deleted successfully!')
       fetchExamsAndCategorize()
@@ -248,7 +263,7 @@ const deleteExam = async (examId) => {
 
 const submitExam = async () => {
   try {
-    const res = await axios.post('http://localhost:5000/api/exam/create', exam.value)
+    const res = await axios.post('/exam/create', exam.value)
     if (res.data.success) {
       examSubmitMessage.value = 'Exam created successfully!'
       showForm.value = false
@@ -273,7 +288,7 @@ const submitExam = async () => {
 
 const submitApplicant = async () => {
   try {
-    const res = await axios.post('http://localhost:5000/api/applicants/add', applicant.value)
+    const res = await axios.post('/applicants/add', applicant.value)
     if (res.data.success) {
       submitMessage.value = 'Applicant added successfully!'
       applicant.value = {
@@ -294,6 +309,7 @@ const submitApplicant = async () => {
   }
 }
 
+// Calculate exam end time
 const getExamEndTime = (exam) => {
   if (!exam.Exam_Date || !exam.Exam_Time || !exam.Duration_Minutes) return null
   const start = new Date(`${exam.Exam_Date}T${exam.Exam_Time}`)
@@ -305,7 +321,7 @@ const getExamEndTime = (exam) => {
 const fetchExamsAndCategorize = async () => {
   try {
     // 1. Fetch all exams
-    const res = await axios.get(`http://localhost:5000/api/exam/get_exams/${facultyEmail}`)
+    const res = await axios.get(`/exam/get_exams/${facultyEmail}`)
     if (res.data.success) {
       const now = new Date()
       const allExams = res.data.exams || []
@@ -325,7 +341,7 @@ const fetchExamsAndCategorize = async () => {
     }
 
     // 2. Fetch conducted exams directly from API
-    const conductedRes = await axios.get(`http://localhost:5000/api/faculty/conducted_exams/${facultyEmail}`)
+    const conductedRes = await axios.get(`/faculty/conducted_exams/${facultyEmail}`)
     console.log("API /conducted_exams response:", conductedRes.data);
     console.log("Exams array for conducted:", conductedRes.data.exams);
 
@@ -338,7 +354,7 @@ const fetchExamsAndCategorize = async () => {
   }
 }
 
-
+// Navigation helper
 const navigateTo = (action, examId) => {
   const routeMap = {
     AddApplicants_exam: 'AddApplicantsexam',
@@ -354,24 +370,17 @@ const navigateTo = (action, examId) => {
   }
 }
 
-onMounted(() => {
-  facultyName.value = localStorage.getItem('faculty_name') || 'Faculty'
-  fetchExamsAndCategorize()
-  
-})
-onMounted(() => {
-  facultyName.value = localStorage.getItem('faculty_name') || 'Faculty'
-  fetchExamsAndCategorize()
-})
 
 const logout = async () => {
   const email = localStorage.getItem('faculty_email')
   const role = 'Faculty'
   try {
-    await axios.post('http://localhost:5000/api/auth/logout', { email, role })
-  localStorage.removeItem('faculty_email')
-  localStorage.removeItem('faculty_name')
-  router.push('/')
+    await axios.post('/auth/logout', { email, role })
+    localStorage.removeItem('token')
+    localStorage.removeItem('role')
+    localStorage.removeItem('faculty_email')
+    localStorage.removeItem('faculty_name')
+    router.push('/')
   } catch (err) {
     console.error('Logout error:', err)
     alert('Logout failed. Try again.')
