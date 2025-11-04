@@ -499,12 +499,11 @@
                   <td class="py-4 px-6 text-gray-900">{{ exam.attempted_applicants || 0 }}</td>
                   <td class="py-4 px-6 text-center">
                    <button
-  @click="$router.push({ name: 'ViewResponsesAdmin', params: { examId: exam.Exam_Id } })"
-  class="bg-purple-500 hover:bg-purple-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 transform hover:scale-105 shadow-md"
->
-  View Responses
-</button>
-
+                    @click="$router.push({ name: 'ViewResponsesAdmin', params: { examId: exam.Exam_Id } })"
+                    class="bg-purple-500 hover:bg-purple-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 transform hover:scale-105 shadow-md"
+                  >
+                    View Responses
+                  </button>
                   </td>
                 </tr>
               </tbody>
@@ -583,11 +582,10 @@
                         {{ log.Role }}
                       </span>
                     </td>
-                    <td class="py-4 px-6 text-gray-700">{{ log.Login_Time || 'N/A' }}</td>
-                    <td class="py-4 px-6 text-gray-700">{{ log.Logout_Time || 'N/A' }}</td>
+                    <td class="py-4 px-6 text-gray-700">{{ formatDateTime(log.Login_Time) || 'N/A' }}</td>
+                    <td class="py-4 px-6 text-gray-700">{{ formatDateTime(log.Logout_Time) || 'N/A' }}</td>
                     <td class="py-4 px-6 space-x-2">
                       <button @click="viewLog(log)" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 transform hover:scale-105 shadow-md">View</button>
-                      <!-- Removed deleteLog function call as per instruction -->
                     </td>
                   </tr>
                 </tbody>
@@ -624,10 +622,7 @@
             </div>
           </div>
           <div class="ml-4 flex-shrink-0">
-            <button
-              @click="message = ''"
-              class="inline-flex text-gray-400 hover:text-gray-600 focus:outline-none focus:text-gray-600 transition ease-in-out duration-150"
-            >
+            <button @click="message = ''" class="inline-flex text-gray-400 hover:text-gray-600 focus:outline-none focus:text-gray-600 transition ease-in-out duration-150">
               <svg class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
                 <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" />
               </svg>
@@ -646,6 +641,7 @@
         </h3>
         <form @submit.prevent="showAddFacultyModal ? addFaculty() : updateFaculty()">
           <div class="space-y-4">
+            <input v-model="facultyForm.Faculty_Id" type="hidden">
             <div>
               <label class="block text-sm font-semibold text-gray-700 mb-3">Name</label>
               <input
@@ -723,6 +719,7 @@
         </h3>
         <form @submit.prevent="showAddSchoolModal ? addSchool() : updateSchool()">
           <div class="space-y-4">
+            <input v-model="schoolForm.School_Id" type="hidden">
             <div>
               <label class="block text-sm font-semibold text-gray-700 mb-3">School Name</label>
               <input
@@ -814,6 +811,7 @@
         </h3>
         <form @submit.prevent="showAddAdminModal ? addAdmin() : updateAdmin()">
           <div class="space-y-4">
+            <input v-model="adminForm.Admin_ID" type="hidden">
             <div>
               <label class="block text-sm font-semibold text-gray-700 mb-3">Name</label>
               <input v-model="adminForm.Name" type="text" required class="w-full border border-gray-200 rounded-2xl px-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-purple-50 focus:bg-white">
@@ -856,11 +854,11 @@
           </div>
           <div class="flex justify-between items-center py-2 border-b border-gray-100">
             <span class="font-semibold text-gray-700">Login Time:</span>
-            <span>{{ selectedLog.Login_Time || 'N/A' }}</span>
+            <span>{{ formatDateTime(selectedLog.Login_Time) || 'N/A' }}</span>
           </div>
           <div class="flex justify-between items-center py-2 border-b border-gray-100">
             <span class="font-semibold text-gray-700">Logout Time:</span>
-            <span>{{ selectedLog.Logout_Time || 'N/A' }}</span>
+            <span>{{ formatDateTime(selectedLog.Logout_Time) || 'N/A' }}</span>
           </div>
           <div v-if="selectedLog.Student_ID" class="flex justify-between items-center py-2 border-b border-gray-100">
             <span class="font-semibold text-gray-700">Student ID:</span>
@@ -1054,12 +1052,12 @@ const examForm = ref({
   duration: '',
   total_questions: '',
   max_marks: '',
-  faculty_email: localStorage.getItem('faculty_email') || ''
+  faculty_email: localStorage.getItem('admin_email') || ''
 })
 
 // Admin user info
 const adminName = ref('Admin')
-const adminEmail = ref(localStorage.getItem('faculty_email') || '') // Reuse same key as mentioned in the code
+const adminEmail = ref(localStorage.getItem('admin_email') || '') // Reuse same key as mentioned in the code
 
 // Tabs
 const tabs = [
@@ -1124,7 +1122,7 @@ const bulkDeleteApplicants = async () => {
       })
       await fetchApplicants()
       selectedApplicants.value = []
-      showMessage(`Successfully deleted ${selectedApplicants.value.length} applicants`)
+      showMessage(`Successfully deleted applicants`)
     } catch (error) {
       console.error('Error in bulk delete:', error)
       showMessage(error.response?.data?.error || 'Error deleting applicants', 'error')
@@ -1145,6 +1143,8 @@ const fetchAdmins = async () => {
 const fetchLogs = async () => {
   try {
     const response = await axios.get(`${API_BASE}/admin/logs`)
+    console.log('Raw logs response:', response.data)
+    console.log('First log item:', response.data[0])
     logsList.value = response.data
   } catch (error) {
     console.error('Error fetching logs:', error)
@@ -1200,8 +1200,6 @@ const viewLog = (log) => {
   selectedLog.value = log
   showViewLogModal.value = true
 }
-
-// Removed deleteLog function as requested
 
 // Modal close methods
 const closeAdminModal = () => {
@@ -1472,6 +1470,7 @@ const closeUploadModal = () => {
 
 // Exam methods
 const fetchExams = async () => {
+  if (!adminEmail.value) return;
   try {
     const response = await axios.get(`${API_BASE}/exam/get_exams/${adminEmail.value}`)
     if (response.data.success) {
@@ -1511,7 +1510,7 @@ const submitExam = async () => {
         duration: '',
         total_questions: '',
         max_marks: '',
-        faculty_email: adminEmail.value
+        admin_email: adminEmail.value
       }
     } else {
       showMessage(response.data.message || 'Failed to create exam', 'error')
@@ -1529,12 +1528,14 @@ const deleteExam = async (examId) => {
       if (response.data.success) {
         showMessage('Exam deleted successfully!')
         await fetchExams()
+        await fetchConductedExams()
       } else {
-        showMessage(response.data.message || 'Failed to delete exam', 'error')
+        showMessage(response.data.error || 'Failed to delete exam', 'error')
       }
     } catch (error) {
       console.error('Error deleting exam:', error)
-      showMessage('Error deleting exam', 'error')
+      const errorMsg = error.response?.data?.error || error.message || 'Error deleting exam'
+      showMessage(errorMsg, 'error')
     }
   }
 }
@@ -1568,22 +1569,13 @@ const navigateToMakeQuestionPaper = (examId) => {
   navigateTo('MakeQuestionPaper', examId)
 }
 
-const viewExamResponses = (examId) => {
-  navigateTo('ViewResponses', examId)
-}
-
 const getSchoolName = (schoolId) => {
   const school = schoolsList.value.find(s => s.School_Id === schoolId)
   return school ? school.School_Name : 'Unknown'
 }
 
-const formatDate = (dateString) => {
-  if (!dateString) return 'N/A'
-  return new Date(dateString).toLocaleDateString()
-}
-
 const logout = async () => {
-  const email = localStorage.getItem('faculty_email') // Again, adjust if you use different keys for admin
+  const email = localStorage.getItem('admin_email') // Again, adjust if you use different keys for admin
   const role = 'Admin'
   
   try {
@@ -1594,8 +1586,8 @@ const logout = async () => {
     });
     
     // Clear local storage
-    localStorage.removeItem('faculty_email')
-    localStorage.removeItem('faculty_name')
+    localStorage.removeItem('admin_email')
+    localStorage.removeItem('admin_name')
     
     // Redirect to login page
     window.location.href = '/'
@@ -1605,10 +1597,21 @@ const logout = async () => {
   }
 }
 
+const formatDate = (dateString) => {
+  if (!dateString) return 'N/A'
+  
+  const isoString = dateString.includes('T') ? dateString : dateString.replace(' ', 'T')
+  const date = new Date(isoString)
+  return isNaN(date.getTime()) ? 'Invalid Date' : date.toLocaleDateString('en-IN')
+}
+
 // Utility methods
 const formatDateTime = (dateString) => {
   if (!dateString) return 'N/A'
-  return new Date(dateString).toLocaleString()
+  // Convert MySQL datetime to ISO format
+  const isoString = dateString.includes('T') ? dateString : dateString.replace(' ', 'T')
+  const date = new Date(isoString)
+  return isNaN(date.getTime()) ? 'Invalid Date' : date.toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' })
 }
 
 const getRoleColor = (role) => {
@@ -1629,8 +1632,9 @@ watch(activeTab, (val) => {
 
 let refreshTimer
 onMounted(async () => {
-  const name = localStorage.getItem('faculty_name') // Reuse same key if you're not storing separately for admin
-  if (name) adminName.value = name
+  adminName.value = localStorage.getItem('admin_name') || 'Admin';
+  adminEmail.value = localStorage.getItem('admin_email') || '';
+  examForm.value.admin_email = adminEmail.value; // Set email for exam form
   
   await fetchSchools()
   await fetchFaculty()
@@ -1639,6 +1643,7 @@ onMounted(async () => {
   await fetchLogs()
   await fetchExams()
   await fetchConductedExams() // Call the updated function
+
   // refresh every 60s to auto-move ended exams
   refreshTimer = setInterval(async () => {
     await fetchExams()
