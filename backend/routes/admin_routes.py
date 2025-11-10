@@ -240,7 +240,7 @@ def create_admin_routes(mysql):
                 if 'School_Short' in str(e):
                      return jsonify({"error": "A school with this short name already exists."}), 400
                 return jsonify({"error": "A school with this name or short name already exists."}), 400
-            # --- END CHANGE ---
+            # --- END CHANGE ---            
             return jsonify({"error": "Unable to add school"}), 500
 
     @admin_bp.route('/schools/<int:school_id>', methods=['PUT'])

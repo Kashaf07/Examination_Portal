@@ -44,7 +44,7 @@
           </div>
 
           <!-- Faculty Table -->
-          <!-- Updated faculty table to match modern design with light blue header -->
+          <!-- Updated faculty table to match modern design with light blue header -->          
           <div class="bg-white rounded-2xl shadow-lg overflow-hidden border border-gray-200">
             <div class="overflow-x-auto">
               <table class="w-full">
@@ -101,7 +101,7 @@
           </div>
 
           <!-- Schools Table -->
-          <!-- Updated schools table to match modern design -->
+          <!-- Updated schools table to match modern design -->          
           <div class="bg-white rounded-2xl shadow-lg overflow-hidden border border-gray-200">
             <div class="overflow-x-auto">
               <table class="w-full">
@@ -252,7 +252,7 @@
         </div>
 
         <!-- Applicants Table -->
-        <!-- Updated applicants table to match modern design -->
+        <!-- Updated applicants table to match modern design -->        
         <div class="bg-white rounded-2xl shadow-lg overflow-hidden border border-gray-200">
           <div class="overflow-x-auto">
             <table class="w-full">
@@ -348,7 +348,7 @@
                   v-model="examForm.exam_date"
                   type="date"
                   required
-                  class="w-full border border-gray-300 rounded-xl px-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
+                  class="w-full border border-gray-300 rounded-xl px-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200" :min="todayDate"
                 >
               </div>
               <div>
@@ -410,7 +410,7 @@
         </div>
 
         <!-- Created Exams Table -->
-        <!-- Updated exams table to match modern design with colored action buttons -->
+        <!-- Updated exams table to match modern design with colored action buttons -->        
         <div class="bg-white rounded-2xl shadow-lg overflow-hidden border border-gray-200">
           <div class="overflow-x-auto">
             <table class="w-full">
@@ -597,7 +597,7 @@
     </div>
 
     <!-- Notification Popup -->
-    <div v-if="message" class="fixed top-4 right-4 z-50 max-w-md">
+    <div v-if="message" class="fixed top-4 right-4 z-[100] max-w-md">
       <div
         :class="[
           'p-4 rounded-xl shadow-2xl border-l-4 transform transition-all duration-300 ease-in-out',
@@ -967,6 +967,15 @@ const route = useRoute()
 const router = useRouter()
 // --- End Vue Router Setup ---
 
+// Date blocking
+const todayDate = computed(() => {
+  const today = new Date()
+  const year = today.getFullYear()
+  const month = String(today.getMonth() + 1).padStart(2, '0')
+  const day = String(today.getDate()).padStart(2, '0')
+  return `${year}-${month}-${day}`
+})
+
 // Data
 // Initialize activeTab from the query string (fallback to 'faculty')
 const activeTab = ref(typeof route.query.tab === 'string' ? route.query.tab : 'faculty')
@@ -1100,7 +1109,7 @@ const showMessage = (msg, type = 'success') => {
   messageType.value = type
   setTimeout(() => {
     message.value = ''
-  }, 3000) // Auto-hide after 3 seconds
+  }, 6000) // Auto-hide after 6 seconds
 }
 
 // Bulk operations
