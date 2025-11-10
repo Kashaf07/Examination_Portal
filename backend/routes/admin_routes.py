@@ -134,6 +134,13 @@ def create_admin_routes(mysql):
             data = request.get_json()
             cursor = mysql.connection.cursor()
             
+            # --- START CHANGE: Check for duplicate email ---
+            cursor.execute("SELECT COUNT(*) FROM mst_faculty WHERE F_Email = %s", (data['F_Email'],))
+            if cursor.fetchone()[0] > 0:
+                cursor.close()
+                return jsonify({"error": "A faculty member with this email already exists."}), 400
+            # --- END CHANGE ---
+            
             cursor.execute("""
                 INSERT INTO mst_faculty (F_Name, F_Email, School_Id, Designation, Password)
                 VALUES (%s, %s, %s, %s, %s)
@@ -145,6 +152,10 @@ def create_admin_routes(mysql):
             return jsonify({"message": "Faculty added successfully", "Faculty_Id": faculty_id}), 201
         except Exception as e:
             print("Error adding faculty:", e)
+            # --- START CHANGE: Catch DB-level duplicate error ---
+            if 'Duplicate entry' in str(e) and 'F_Email' in str(e):
+                return jsonify({"error": "A faculty member with this email already exists."}), 400
+            # --- END CHANGE ---
             return jsonify({"error": "Unable to add faculty"}), 500
 
     @admin_bp.route('/faculty/<int:faculty_id>', methods=['PUT'])
@@ -199,6 +210,18 @@ def create_admin_routes(mysql):
             data = request.get_json()
             cursor = mysql.connection.cursor()
             
+            # --- START CHANGE: Check for duplicate School_Name or School_Short ---
+            cursor.execute("SELECT School_Name, School_Short FROM mst_school WHERE School_Name = %s OR School_Short = %s", 
+                           (data['School_Name'], data['School_Short']))
+            existing = cursor.fetchone()
+            if existing:
+                cursor.close()
+                if existing[0] == data['School_Name']:
+                    return jsonify({"error": "A school with this name already exists."}), 400
+                if existing[1] == data['School_Short']:
+                    return jsonify({"error": "A school with this short name already exists."}), 400
+            # --- END CHANGE ---
+            
             cursor.execute("""
                 INSERT INTO mst_school (School_Name, School_Short)
                 VALUES (%s, %s)
@@ -210,6 +233,14 @@ def create_admin_routes(mysql):
             return jsonify({"message": "School added successfully", "School_Id": school_id}), 201
         except Exception as e:
             print("Error adding school:", e)
+            # --- START CHANGE: Catch DB-level duplicate errors ---
+            if 'Duplicate entry' in str(e):
+                if 'School_Name' in str(e):
+                     return jsonify({"error": "A school with this name already exists."}), 400
+                if 'School_Short' in str(e):
+                     return jsonify({"error": "A school with this short name already exists."}), 400
+                return jsonify({"error": "A school with this name or short name already exists."}), 400
+            # --- END CHANGE ---            
             return jsonify({"error": "Unable to add school"}), 500
 
     @admin_bp.route('/schools/<int:school_id>', methods=['PUT'])
