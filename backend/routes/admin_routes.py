@@ -512,7 +512,7 @@ def create_admin_routes(mysql):
             data = request.get_json()
             cursor = mysql.connection.cursor()
             
-            # Check if email already exists
+            # Check if email already exists (This was already correct)
             cursor.execute("SELECT COUNT(*) FROM mst_admin WHERE Email = %s", (data['Email'],))
             if cursor.fetchone()[0] > 0:
                 cursor.close()
@@ -659,7 +659,7 @@ def create_admin_routes(mysql):
                         cursor.execute("SELECT COUNT(*) FROM login_log WHERE User_Email = %s", (applicant_email,))
                         log_count = cursor.fetchone()[0]
                         if log_count > 0:
-                            cursor.execute("DELETE FROM login_log WHERE User_Email = %s", (applicant_email,))
+                            cursor.execute("DELETE FROM login_log WHERE User_Email = %s", (applicant_id,))
                             total_logs_deleted += log_count
                 
                     # Delete the applicant
