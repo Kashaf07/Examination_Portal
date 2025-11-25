@@ -659,7 +659,7 @@ export default {
       }
     }
 
-    // ✅ VIOLATION COUNTED - ESC key (merged from reference code)
+    // ✅ VIOLATION COUNTED - ESC key
     if (event.key === 'Escape') {
       event.preventDefault();
       event.stopPropagation();
@@ -685,7 +685,7 @@ export default {
         'warning'
       );
       
-      // Immediately re-enter fullscreen (reference code pattern)
+      // Immediately re-enter fullscreen
       setTimeout(() => this.enterFullscreen(), 100);
       return;
     }
@@ -694,12 +694,26 @@ export default {
     const isRestrictedCombo =
       event.key === 'F12' ||
       (event.ctrlKey && event.shiftKey && ['I', 'C', 'J'].includes(event.key)) ||
-      (event.ctrlKey && ['U', 'R'].includes(event.key)) ||
+      (event.ctrlKey && ['U'].includes(event.key)) ||
       (event.ctrlKey && event.key === 'Tab');
 
     if (isRestrictedCombo) {
       event.preventDefault();
       console.log('🔒 Restricted key blocked (no violation - browser locked):', event.key);
+      return;
+    }
+
+    // ❌ NO VIOLATION - Refresh keys (Ctrl+R, F5, Ctrl+F5, Shift+F5)
+    const isRefreshKey =
+      event.key === 'F5' ||
+      (event.ctrlKey && event.key === 'r') ||
+      (event.ctrlKey && event.key === 'R') ||
+      (event.ctrlKey && event.shiftKey && event.key === 'r') ||
+      (event.ctrlKey && event.shiftKey && event.key === 'R');
+
+    if (isRefreshKey) {
+      event.preventDefault();
+      console.log('🔒 Refresh attempt blocked (no violation - browser locked):', event.key);
       return;
     }
 

@@ -16,7 +16,10 @@
           🎲 Randomize Questions
         </button>
         <button @click="savePaper"
-        class="action-btn text-sm" >
+        class="action-btn text-sm" 
+        :disabled="!isPaperComplete"
+        :class="!isPaperComplete ? 'opacity-60 cursor-not-allowed' : ''"
+        title="Save is enabled only when selected marks equal allowed total">
           💾 Save Paper
         </button>
         <button @click="downloadPDF"
@@ -136,6 +139,9 @@ export default {
       return this.questions.filter(q =>
         !this.selectedQuestions.some(sq => sq.Question_Id === q.Question_Id)
       );
+    },
+    isPaperComplete() {
+    return this.currentTotalMarks === this.examTotalMarks && this.selectedQuestions.length > 0;
     }
   },
 
@@ -188,6 +194,16 @@ export default {
     this.selectedQuestions = this.selectedQuestions.filter(q => q.Question_Id !== id);
     },
     savePaper() {
+      // client-side guard: only allow save if exact equality
+      if (!this.isPaperComplete) {
+        // Provide a helpful message
+        if (this.currentTotalMarks > this.examTotalMarks) {
+          alert(`❌ Total marks exceed the allowed ${this.examTotalMarks}. Please remove or reduce questions.`);
+        } else {
+          alert(`❌ Total marks must be exactly ${this.examTotalMarks} to save the paper. Current total: ${this.currentTotalMarks}.`);
+        }
+        return;
+      }
       const payload = {
         exam_id: this.$route.params.examId,
         questions: this.selectedQuestions.map(q => q.Question_Id)
