@@ -380,86 +380,77 @@
   </div>
 </template>
 
+
+
+
 <script>
 import axios from 'axios'
 
 export default {
- data() {
-  return {
-    examId: '',
-    exam: null,
-    questions: [],
-    currentIndex: 0,
-    selectedOption: null,
-    keyboardSelectedOption: null,
-    textAnswer: '',
-    timer: 0,
-    stage: 'enter',
-    finishMessage: '',
-    attemptId: null,
-    examAttemptId: null,
-    answers: [],
-    optionKeys: ['A', 'B', 'C', 'D'],
-    studentEmail: '',
-    studentName: '',
-    applicantId: null,
-    interval: null,
-    examIdError: false,
-    inlineMessage: null,
-    violationCount: 0,
-    maxViolations: 3,
-    fullscreenRecoveryTimeout: null,
-    redirectCountdown: 10,
-    redirectTimer: null,
-  }
-},
-  computed: {
-  // Get current question
-  currentQuestion() {
-    return this.questions[this.currentIndex]
-  },
-
-  // Return answer options based on question type
-  options() {
-    const type = this.currentQuestion.Question_Type
-    if (type === 'TF') {
-      return {
-        A: this.currentQuestion.Option_A,
-        B: this.currentQuestion.Option_B
-      }
-    } else if (type === 'MCQ') {
-      return {
-        A: this.currentQuestion.Option_A,
-        B: this.currentQuestion.Option_B,
-        C: this.currentQuestion.Option_C,
-        D: this.currentQuestion.Option_D
-      }
-    } else {
-      return {}
+  data() {
+    return {
+      examId: '',
+      exam: null,
+      questions: [],
+      currentIndex: 0,
+      selectedOption: null,
+      keyboardSelectedOption: null,
+      textAnswer: '',
+      timer: 0,
+      stage: 'enter',
+      finishMessage: '',
+      attemptId: null,        // for use in both forced and normal ends
+      examAttemptId: null,    // attempt id in-progress
+      answers: [],
+      optionKeys: ['A', 'B', 'C', 'D'],
+      studentEmail: '',
+      studentName: '',
+      applicantId: null,
+      interval: null,
+      examIdError: false,
+      inlineMessage: null,
+      violationCount: 0,
+      maxViolations: 3,
+      fullscreenRecoveryTimeout: null,
+      redirectCountdown: 10,
+      redirectTimer: null,
     }
   },
-
-  // Return option keys like A, B, C, D
-  optionKeys() {
-    return Object.keys(this.options)
+  computed: {
+    currentQuestion() {
+      return this.questions[this.currentIndex]
+    },
+    options() {
+      const type = this.currentQuestion.Question_Type
+      if (type === 'TF') {
+        return {
+          A: this.currentQuestion.Option_A,
+          B: this.currentQuestion.Option_B
+        }
+      } else if (type === 'MCQ') {
+        return {
+          A: this.currentQuestion.Option_A,
+          B: this.currentQuestion.Option_B,
+          C: this.currentQuestion.Option_C,
+          D: this.currentQuestion.Option_D
+        }
+      } else {
+        return {}
+      }
+    },
+    optionKeys() {
+      return Object.keys(this.options)
+    },
+    minutes() {
+      return String(Math.floor(this.timer / 60)).padStart(2, '0')
+    },
+    seconds() {
+      return String(this.timer % 60).padStart(2, '0')
+    },
+    allAnswersFilled() {
+      return this.answers.every(ans => ans !== null)
+    }
   },
-
-  // Timer minutes
-  minutes() {
-    return String(Math.floor(this.timer / 60)).padStart(2, '0')
-  },
-
-  // Timer seconds
-  seconds() {
-    return String(this.timer % 60).padStart(2, '0')
-  },
-
-  // Check if all questions are answered
-  allAnswersFilled() {
-    return this.answers.every(ans => ans !== null)
-  }
-},
-
   watch: {
     textAnswer() {
       if (this.currentQuestion.Question_Type === 'Fill') {
@@ -467,13 +458,11 @@ export default {
       }
     }
   },
-  
   mounted() {
     this.studentEmail = localStorage.getItem('student_email')
     this.studentName = localStorage.getItem('student_name')
     this.applicantId = parseInt(localStorage.getItem('applicant_id'))
 
-    // Add all event listeners
     window.addEventListener('keydown', this.handleKeydown)
     window.addEventListener('blur', this.handleBlur)
     window.addEventListener('resize', this.detectSplitScreen)
@@ -487,13 +476,11 @@ export default {
     document.addEventListener('paste', e => e.preventDefault())
     window.history.pushState(null, null, location.href)
   },
-
   beforeUnmount() {
     clearInterval(this.interval)
     clearTimeout(this.fullscreenRecoveryTimeout)
     clearInterval(this.redirectTimer)
-    
-    // Remove all event listeners
+
     window.removeEventListener('keydown', this.handleKeydown)
     window.removeEventListener('blur', this.handleBlur)
     window.removeEventListener('resize', this.detectSplitScreen)
@@ -502,498 +489,443 @@ export default {
     window.removeEventListener('beforeunload', this.preventRefresh)
     window.removeEventListener('popstate', this.preventBack)
   },
+  methods: {
+    formatFillQuestion(text) {
+      const value = this.textAnswer || '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;'
+      const safe = value.replace(/</g, '&lt;').replace(/>/g, '&gt;')
+      return text.replace(/____+/g, `
+        <span class="inline-block border-b-2 border-blue-600 min-w-[120px] px-1 text-center align-baseline text-indigo-800 font-medium tracking-wide">
+          ${safe}
+        </span>
+      `)
+    },
 
- methods: {
-  formatFillQuestion(text) {
-    const value = this.textAnswer || '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;'
-    const safe = value.replace(/</g, '&lt;').replace(/>/g, '&gt;')
-    return text.replace(/____+/g, `
-      <span class="inline-block border-b-2 border-blue-600 min-w-[120px] px-1 text-center align-baseline text-indigo-800 font-medium tracking-wide">
-        ${safe}
-      </span>
-    `)
-  },
+    enterFullscreen() {
+      const el = document.documentElement
+      setTimeout(() => {
+        if (el.requestFullscreen) el.requestFullscreen()
+        else if (el.webkitRequestFullscreen) el.webkitRequestFullscreen()
+        else if (el.mozRequestFullScreen) el.mozRequestFullScreen()
+        else if (el.msRequestFullscreen) el.msRequestFullscreen()
+      }, 100)
+    },
 
-  enterFullscreen() {
-    const el = document.documentElement
-    setTimeout(() => {
-      if (el.requestFullscreen) el.requestFullscreen()
-      else if (el.webkitRequestFullscreen) el.webkitRequestFullscreen()
-      else if (el.mozRequestFullScreen) el.mozRequestFullScreen()
-      else if (el.msRequestFullscreen) el.msRequestFullscreen()
-    }, 100)
-  },
+    startRedirectCountdown() {
+      this.redirectCountdown = 10
+      this.redirectTimer = setInterval(() => {
+        if (this.redirectCountdown > 0) {
+          this.redirectCountdown--
+        } else {
+          clearInterval(this.redirectTimer)
+          localStorage.removeItem('student_email')
+          localStorage.removeItem('student_name')
+          localStorage.removeItem('applicant_id')
+          window.location.href = '/'
+        }
+      }, 1000)
+    },
 
-  startRedirectCountdown() {
-    this.redirectCountdown = 10;
-    this.redirectTimer = setInterval(() => {
-      if (this.redirectCountdown > 0) {
-        this.redirectCountdown--;
-      } else {
-        clearInterval(this.redirectTimer);
-        localStorage.removeItem('student_email');
-        localStorage.removeItem('student_name');
-        localStorage.removeItem('applicant_id');
-        window.location.href = '/';
+    handleBlur() {
+      if (this.stage === 'exam') {
+        this.handleViolation('Window lost focus (Alt+Tab detected)')
+        this.recoverFullscreen(100)
       }
-    }, 1000);
-  },
+    },
 
-  // ✅ VIOLATION COUNTED - Alt+Tab (window blur)
-  handleBlur() {
-    if (this.stage === 'exam') {
-      console.log('🚨 Window blur detected (Alt+Tab) - COUNTING VIOLATION')
-      this.handleViolation('Window lost focus (Alt+Tab detected)')
-      this.recoverFullscreen(100)
-    }
-  },
-
-  // ✅ VIOLATION COUNTED - Tab switch
-  handleVisibilityChange() {
-    if (document.hidden && this.stage === 'exam') {
-      console.log('🚨 Tab switch detected - COUNTING VIOLATION')
-      this.handleViolation('Tab switch detected')
-      this.recoverFullscreen(100)
-    }
-  },
-
-  // ❌ NO VIOLATION - Split screen/window resize (just recover)
-  detectSplitScreen() {
-    if (this.stage !== 'exam') return
-    
-    const isFullscreen = document.fullscreenElement !== null
-    const screenWidth = window.screen.width
-    const screenHeight = window.screen.height
-    const windowWidth = window.innerWidth
-    const windowHeight = window.innerHeight
-    
-    if (!isFullscreen) {
-      console.log('⚠️ Not in fullscreen - recovering (no violation)')
-      this.recoverFullscreen(100)
-      return
-    }
-    
-    const widthRatio = windowWidth / screenWidth
-    const heightRatio = windowHeight / screenHeight
-    
-    if (widthRatio < 0.95 || heightRatio < 0.95) {
-      console.log('⚠️ Window resize detected - recovering (no violation)')
-      this.recoverFullscreen(100)
-    }
-  },
-
-  // ❌ NO VIOLATION - Fullscreen exit (system action)
-  handleFullscreenChange() {
-    if (this.stage === 'exam' && !document.fullscreenElement) {
-      console.log('⚠️ Fullscreen exited - recovering (no violation)')
-      this.recoverFullscreen(100)
-    }
-  },
-
-  handleViolation(reason) {
-    this.violationCount++
-    console.log(`⚠️ VIOLATION #${this.violationCount}: ${reason}`)
-    
-    if (this.violationCount >= this.maxViolations) {
-      this.forceExit(reason)
-    } else {
-      const left = this.maxViolations - this.violationCount
-      this.showInlineMessage(`⚠️ Warning ${this.violationCount}/${this.maxViolations}: ${reason}. You have ${left} attempt(s) left.`, 'warning')
-    }
-  },
-    
-  async forceExit(reason) {
-    clearInterval(this.interval)
-    this.stage = 'finished'
-    this.finishMessage = `Exam forcibly ended.\nReason: ${reason}\n\nTotal Violations: ${this.violationCount}/${this.maxViolations}`
-
-    window.removeEventListener('beforeunload', this.preventRefresh)
-
-    const email = localStorage.getItem('student_email');
-    if (email) {
-      try {
-        await axios.post('http://localhost:5000/api/logout', {
-          email: email,
-          role: 'Student'
-        });
-        console.log('Logout time recorded for forcibly ended exam:', email);
-      } catch (error) {
-        console.error('Logout API failed during forced exit:', error);
+    handleVisibilityChange() {
+      if (document.hidden && this.stage === 'exam') {
+        this.handleViolation('Tab switch detected')
+        this.recoverFullscreen(100)
       }
-    }
+    },
 
-    this.startRedirectCountdown()
-  },
-    
-  recoverFullscreen(delay = 100) {
-    clearTimeout(this.fullscreenRecoveryTimeout)
-    this.fullscreenRecoveryTimeout = setTimeout(() => {
+    detectSplitScreen() {
+      if (this.stage !== 'exam') return
+      const isFullscreen = document.fullscreenElement !== null
+      const screenWidth = window.screen.width
+      const screenHeight = window.screen.height
+      const windowWidth = window.innerWidth
+      const windowHeight = window.innerHeight
+      if (!isFullscreen) {
+        this.recoverFullscreen(100)
+        return
+      }
+      const widthRatio = windowWidth / screenWidth
+      const heightRatio = windowHeight / screenHeight
+      if (widthRatio < 0.95 || heightRatio < 0.95) {
+        this.recoverFullscreen(100)
+      }
+    },
+
+    handleFullscreenChange() {
       if (this.stage === 'exam' && !document.fullscreenElement) {
-        console.log("🔄 Re-entering fullscreen after", delay, "ms delay")
-        this.enterFullscreen()
+        this.recoverFullscreen(100)
       }
-    }, delay)
-  },
+    },
 
-  preventRefresh(e) {
-    e.preventDefault()
-    e.returnValue = ''
-  },
-
-  preventBack() {
-    window.history.pushState(null, null, location.href)
-  },
-
-  handleKeydown(event) {
-    if (this.stage !== 'exam') return;
-
-    const qType = this.currentQuestion.Question_Type;
-    if (['MCQ', 'TF'].includes(qType)) {
-      const key = event.key;
-      if (['ArrowUp', 'ArrowDown'].includes(key)) {
-        event.preventDefault();
-        this.navigateOptions(key === 'ArrowUp' ? -1 : 1);
-      } else if (key === 'Enter') {
-        event.preventDefault();
-        this.handleEnterKey();
-      }
-    }
-
-    // ✅ VIOLATION COUNTED - ESC key (merged from reference code)
-    if (event.key === 'Escape') {
-      event.preventDefault();
-      event.stopPropagation();
-      
-      console.log('🚨 ESC key pressed - COUNTING VIOLATION');
-      console.log('Before:', this.violationCount);
-      
-      // Count violation
-      this.violationCount++;
-      
-      console.log('After:', this.violationCount, '/', this.maxViolations);
-      
-      // Check if reached max
+    handleViolation(reason) {
+      this.violationCount++
       if (this.violationCount >= this.maxViolations) {
-        this.forceExit('ESC key pressed (attempted to exit fullscreen)');
-        return;
-      }
-      
-      // Show warning
-      const left = this.maxViolations - this.violationCount;
-      this.showInlineMessage(
-        `⚠️ Warning ${this.violationCount}/${this.maxViolations}: ESC key pressed. You have ${left} attempt(s) left.`, 
-        'warning'
-      );
-      
-      // Immediately re-enter fullscreen (reference code pattern)
-      setTimeout(() => this.enterFullscreen(), 100);
-      return;
-    }
-
-    // ❌ NO VIOLATION - Browser-locked keys (F12, DevTools, etc.)
-    const isRestrictedCombo =
-      event.key === 'F12' ||
-      (event.ctrlKey && event.shiftKey && ['I', 'C', 'J'].includes(event.key)) ||
-      (event.ctrlKey && ['U', 'R'].includes(event.key)) ||
-      (event.ctrlKey && event.key === 'Tab');
-
-    if (isRestrictedCombo) {
-      event.preventDefault();
-      console.log('🔒 Restricted key blocked (no violation - browser locked):', event.key);
-      return;
-    }
-
-    // ❌ NO VIOLATION - Screenshot keys
-    if (event.key === 'PrintScreen' || 
-        (event.metaKey && event.shiftKey && ['3', '4', '5'].includes(event.key))) {
-      event.preventDefault();
-      console.log('🔒 Screenshot blocked (no violation)');
-      return;
-    }
-  },
-
-  navigateOptions(dir) {
-    const availableKeys = Object.keys(this.options)
-    const index = this.keyboardSelectedOption
-      ? availableKeys.indexOf(this.keyboardSelectedOption)
-      : (this.selectedOption ? availableKeys.indexOf(this.selectedOption) : -1)
-    let newIndex = index + dir
-    if (newIndex < 0) newIndex = availableKeys.length - 1
-    if (newIndex >= availableKeys.length) newIndex = 0
-    this.keyboardSelectedOption = availableKeys[newIndex]
-  },
-
-  handleEnterKey() {
-    if (this.keyboardSelectedOption) {
-      this.selectOption(this.keyboardSelectedOption)
-      this.keyboardSelectedOption = null
-    } else if (this.selectedOption || this.textAnswer) {
-      this.handleNext()
-    } else {
-      this.showInlineMessage('⚠️ Select or enter an answer first', 'warning')
-    }
-  },
-
-  selectOption(key) {
-    this.selectedOption = key
-    this.keyboardSelectedOption = null
-    this.clearInlineMessage()
-  },
-
-  async fetchExam() {
-    try {
-      this.examIdError = false
-      this.clearInlineMessage()
-      
-      const res = await axios.post(`http://localhost:5000/api/student/exam/${this.examId}`, {
-        applicant_id: this.applicantId
-      })
-      
-      this.exam = res.data.exam
-      this.questions = res.data.questions
-      this.answers = new Array(this.questions.length).fill(null)
-      
-      this.examAttemptId = res.data.exam.Attempt_Id
-      console.log("Stored attempt ID:", this.examAttemptId)
-      
-      if (res.data.exam.Remaining_Seconds !== undefined) {
-        this.timer = res.data.exam.Remaining_Seconds
-        console.log("Timer set to full duration:", this.timer)
+        this.forceExit(reason)
       } else {
-        this.timer = this.exam.Duration_Minutes * 60
+        const left = this.maxViolations - this.violationCount
+        this.showInlineMessage(
+          `⚠️ Warning ${this.violationCount}/${this.maxViolations}: ${reason}. You have ${left} attempt(s) left.`,
+          'warning'
+        )
       }
-      
-      this.stage = 'instructions'
-      this.clearInlineMessage()
-      
-    } catch (error) {
-      this.examIdError = true
-      console.error("Fetch exam error:", error)
-      
-      if (error.response) {
-        const status = error.response.status
-        const errorData = error.response.data
-        
-        switch (status) {
-          case 425:
-            this.showInlineMessage(
-              errorData.error || 'Exam has not started yet. Please wait until the scheduled time.',
-              'error'
-            )
-            break
-            
-          case 410:
-            this.showInlineMessage(
-              errorData.error || 'Exam entry time has expired. You cannot start the exam after 10 minutes of exam start time.',
-              'error'
-            )
-            break
-            
-          case 403:
-            this.showInlineMessage(
-              errorData.error || 'Access Denied: You are not assigned to this exam',
-              'error'
-            )
-            break
-            
-          case 409:
-            this.showInlineMessage(
-              errorData.error || 'You have already attempted this exam',
-              'error'
-            )
-            break
-            
-          case 404:
-            this.showInlineMessage('Invalid Exam ID', 'error')
-            break
-            
-          default:
-            this.showInlineMessage(
-              errorData.error || 'Failed to load exam. Please try again.',
-              'error'
-            )
-        }
-      } else {
-        this.showInlineMessage('Network error. Please check your connection.', 'error')
-      }
-    }
-  },
+    },
 
-  startExam() {
-    this.stage = 'exam'
-    this.enterFullscreen()
-    
-    console.log("🚀 Starting exam with timer:", this.timer, "seconds")
-    
-    this.interval = setInterval(() => {
-      if (this.timer > 0) {
-        this.timer--
-        
-        if (this.timer === 300) {
-          this.showInlineMessage('⚠️ Only 5 minutes remaining!', 'warning')
-        } else if (this.timer === 60) {
-          this.showInlineMessage('🚨 Only 1 minute remaining!', 'warning')
-        }
-        
-      } else {
-        clearInterval(this.interval)
-        this.handleTimerFinish()
-      }
-    }, 1000)
-
-    // Initial fullscreen check after 1 second
-    setTimeout(() => {
-      if (this.stage === 'exam' && !document.fullscreenElement) {
-        this.enterFullscreen()
-      }
-    }, 1000)
-  },
-
-  handleTimerFinish() {
-    console.log("⏰ Timer finished - auto submitting exam")
-    
-    this.answers = this.answers.map((ans, idx) => {
-      if (ans === null) {
-        return {
-          question_id: this.questions[idx].Question_Id,
-          selected_option: ''
-        }
-      }
-      return ans
-    })
-
-    this.finishExam('⏰ Time is up!\nYour exam has been auto-submitted.')
-  },
-
-  handleNext() {
-    const type = this.currentQuestion.Question_Type
-    let value = null
-
-    if (type === 'MCQ' || type === 'TF') {
-      if (!this.selectedOption) {
-        this.showInlineMessage('⚠️ Select an option first', 'warning')
-        return
-      }
-      value = this.selectedOption
-    } else if (type === 'Fill' || type === 'OneWord') {
-      if (!this.textAnswer.trim()) {
-        this.showInlineMessage('⚠️ Please provide an answer', 'warning')
-        return
-      }
-      value = this.textAnswer.trim()
-    }
-
-    this.answers[this.currentIndex] = {
-      question_id: this.currentQuestion.Question_Id,
-      selected_option: value
-    }
-
-    const last = this.currentIndex + 1 === this.questions.length
-
-    if (last) {
-      const anyUnanswered = this.answers.some(ans => ans === null)
-      if (anyUnanswered) {
-        this.showInlineMessage('⚠️ Please answer all questions.', 'warning')
-        return
-      }
-
+    async forceExit(reason) {
       clearInterval(this.interval)
-      this.finishExam('✅ All questions submitted!')
-    } else {
-      this.selectedOption = null
-      this.textAnswer = ''
+      this.stage = 'finished'
+      this.finishMessage = `Exam forcibly ended.\nReason: ${reason}\n\nTotal Violations: ${this.violationCount}/${this.maxViolations}`
+      window.removeEventListener('beforeunload', this.preventRefresh)
+      try {
+        if (this.examAttemptId) {
+          const res = await axios.post('http://localhost:5000/api/force-end-exam', {
+            attempt_id: this.examAttemptId,
+            reason: reason || 'Misconduct'
+          })
+          if (res.data && res.data.Attempt_Id) {
+            this.attemptId = res.data.Attempt_Id
+          }
+        } else {
+          this.attemptId = null
+        }
+      } catch (error) {
+        console.error('Forced end API failed:', error)
+        this.attemptId = null
+      }
+      // Auto-logout
+      const email = localStorage.getItem('student_email')
+      if (email) {
+        try {
+          await axios.post('http://localhost:5000/api/logout', { email: email, role: 'Student' })
+        } catch {}
+      }
+      this.startRedirectCountdown()
+    },
+
+    recoverFullscreen(delay = 100) {
+      clearTimeout(this.fullscreenRecoveryTimeout)
+      this.fullscreenRecoveryTimeout = setTimeout(() => {
+        if (this.stage === 'exam' && !document.fullscreenElement) {
+          this.enterFullscreen()
+        }
+      }, delay)
+    },
+
+    preventRefresh(e) {
+      e.preventDefault()
+      e.returnValue = ''
+    },
+
+    preventBack() {
+      window.history.pushState(null, null, location.href)
+    },
+
+    handleKeydown(event) {
+      if (this.stage !== 'exam') return
+      const qType = this.currentQuestion.Question_Type
+      if (['MCQ', 'TF'].includes(qType)) {
+        const key = event.key
+        if (['ArrowUp', 'ArrowDown'].includes(key)) {
+          event.preventDefault()
+          this.navigateOptions(key === 'ArrowUp' ? -1 : 1)
+        } else if (key === 'Enter') {
+          event.preventDefault()
+          this.handleEnterKey()
+        }
+      }
+      if (event.key === 'Escape') {
+        event.preventDefault()
+        event.stopPropagation()
+        this.violationCount++
+        if (this.violationCount >= this.maxViolations) {
+          this.forceExit('ESC key pressed (attempted to exit fullscreen)')
+          return
+        }
+        const left = this.maxViolations - this.violationCount
+        this.showInlineMessage(
+          `⚠️ Warning ${this.violationCount}/${this.maxViolations}: ESC key pressed. You have ${left} attempt(s) left.`,
+          'warning'
+        )
+        setTimeout(() => this.enterFullscreen(), 100)
+        return
+      }
+      const isRestrictedCombo =
+        event.key === 'F12' ||
+        (event.ctrlKey && event.shiftKey && ['I', 'C', 'J'].includes(event.key)) ||
+        (event.ctrlKey && ['U'].includes(event.key)) ||
+        (event.ctrlKey && event.key === 'Tab')
+      if (isRestrictedCombo) {
+        event.preventDefault()
+        return
+      }
+      const isRefreshKey =
+        event.key === 'F5' ||
+        (event.ctrlKey && event.key === 'r') ||
+        (event.ctrlKey && event.key === 'R') ||
+        (event.ctrlKey && event.shiftKey && event.key === 'r') ||
+        (event.ctrlKey && event.shiftKey && event.key === 'R')
+      if (isRefreshKey) {
+        event.preventDefault()
+        return
+      }
+      if (
+        event.key === 'PrintScreen' ||
+        (event.metaKey && event.shiftKey && ['3', '4', '5'].includes(event.key))
+      ) {
+        event.preventDefault()
+        return
+      }
+    },
+
+    navigateOptions(dir) {
+      const availableKeys = Object.keys(this.options)
+      const index = this.keyboardSelectedOption
+        ? availableKeys.indexOf(this.keyboardSelectedOption)
+        : (this.selectedOption ? availableKeys.indexOf(this.selectedOption) : -1)
+      let newIndex = index + dir
+      if (newIndex < 0) newIndex = availableKeys.length - 1
+      if (newIndex >= availableKeys.length) newIndex = 0
+      this.keyboardSelectedOption = availableKeys[newIndex]
+    },
+
+    handleEnterKey() {
+      if (this.keyboardSelectedOption) {
+        this.selectOption(this.keyboardSelectedOption)
+        this.keyboardSelectedOption = null
+      } else if (this.selectedOption || this.textAnswer) {
+        this.handleNext()
+      } else {
+        this.showInlineMessage('⚠️ Select or enter an answer first', 'warning')
+      }
+    },
+
+    selectOption(key) {
+      this.selectedOption = key
       this.keyboardSelectedOption = null
       this.clearInlineMessage()
+    },
 
-      this.currentIndex++
-      this.loadCurrentAnswer()
-      this.focusTextInput()
-    }
-  },
-
-  loadCurrentAnswer() {
-    const ans = this.answers[this.currentIndex]
-    const type = this.currentQuestion.Question_Type
-    if (ans) {
-      if (type === 'MCQ' || type === 'TF') this.selectedOption = ans.selected_option
-      else this.textAnswer = ans.selected_option
-    } else {
-      this.selectedOption = null
-      this.textAnswer = ''
-    }
-    this.keyboardSelectedOption = null
-    this.clearInlineMessage()
-    this.$nextTick(() => {
-      if (this.currentQuestion.Question_Type === 'Fill' && this.$refs.fillInput) {
-        this.$refs.fillInput.focus()
-      } else if (this.currentQuestion.Question_Type === 'OneWord' && this.$refs.oneWordInput) {
-        this.$refs.oneWordInput.focus()
-      }
-    })
-  },
-
-  jumpToQuestion(idx) {
-    this.currentIndex = idx
-    this.loadCurrentAnswer()
-  },
-    
-  async finishExam(msg) {
-    this.stage = 'finished'
-    this.finishMessage = msg
-
-    window.removeEventListener('beforeunload', this.preventRefresh)
-
-    const email = localStorage.getItem('student_email');
-    if (email) {
+    async fetchExam() {
       try {
-        await axios.post('http://localhost:5000/api/logout', {
-          email: email,
-          role: 'Student'
-        });
-        console.log('Logout time recorded for student:', email);
+        this.examIdError = false
+        this.clearInlineMessage()
+        const res = await axios.post(`http://localhost:5000/api/student/exam/${this.examId}`, {
+          applicant_id: this.applicantId
+        })
+        this.exam = res.data.exam
+        this.questions = res.data.questions
+        this.answers = new Array(this.questions.length).fill(null)
+        this.examAttemptId = res.data.attempt_id || null
+        if (res.data.exam.Remaining_Seconds !== undefined) {
+          this.timer = res.data.exam.Remaining_Seconds
+        } else {
+          this.timer = this.exam.Duration_Minutes * 60
+        }
+        this.stage = 'instructions'
+        this.clearInlineMessage()
       } catch (error) {
-        console.error('Logout API failed:', error);
+        this.examIdError = true
+        if (error.response) {
+          const status = error.response.status
+          const errorData = error.response.data
+          switch (status) {
+            case 425:
+              this.showInlineMessage(
+                errorData.error || 'Exam has not started yet. Please wait until the scheduled time.',
+                'error'
+              )
+              break
+            case 410:
+              this.showInlineMessage(
+                errorData.error || 'Exam entry time has expired. You cannot start the exam after 10 minutes of exam start time.',
+                'error'
+              )
+              break
+            case 403:
+              this.showInlineMessage(
+                errorData.error || 'Access Denied: You are not assigned to this exam',
+                'error'
+              )
+              break
+            case 409:
+              this.showInlineMessage(
+                errorData.error || 'You have already attempted this exam',
+                'error'
+              )
+              break
+            case 404:
+              this.showInlineMessage('Invalid Exam ID', 'error')
+              break
+            default:
+              this.showInlineMessage(
+                errorData.error || 'Failed to load exam. Please try again.',
+                'error'
+              )
+          }
+        } else {
+          this.showInlineMessage('Network error. Please check your connection.', 'error')
+        }
       }
-    }
+    },
 
-    this.startRedirectCountdown()
+    startExam() {
+      this.stage = 'exam'
+      this.enterFullscreen()
+      this.interval = setInterval(() => {
+        if (this.timer > 0) {
+          this.timer--
+          if (this.timer === 300) {
+            this.showInlineMessage('⚠️ Only 5 minutes remaining!', 'warning')
+          } else if (this.timer === 60) {
+            this.showInlineMessage('🚨 Only 1 minute remaining!', 'warning')
+          }
+        } else {
+          clearInterval(this.interval)
+          this.handleTimerFinish()
+        }
+      }, 1000)
+      setTimeout(() => {
+        if (this.stage === 'exam' && !document.fullscreenElement) {
+          this.enterFullscreen()
+        }
+      }, 1000)
+    },
 
-    try {
-      const res = await axios.post('http://localhost:5000/api/student/submit', {
-        applicant_id: this.applicantId,
-        exam_paper_id: this.exam.Exam_Paper_Id,
-        answers: this.answers,
-        attempt_id: this.examAttemptId
+    handleTimerFinish() {
+      this.answers = this.answers.map((ans, idx) => {
+        if (ans === null) {
+          return {
+            question_id: this.questions[idx].Question_Id,
+            selected_option: ''
+          }
+        }
+        return ans
       })
-      this.attemptId = res.data.Attempt_Id
-      console.log("Submission successful, attempt ID:", this.attemptId)
-    } catch (error) {
-      console.error("Submission error:", error)
-      this.showInlineMessage('Submission failed', 'error')
-    }
-  },
+      this.finishExam('⏰ Time is up!\nYour exam has been auto-submitted.')
+    },
 
-  showInlineMessage(text, type = 'error') {
-    this.inlineMessage = { text, type }
-    setTimeout(() => {
-      this.clearInlineMessage()
-    }, 5000)
-  },
-
-  clearInlineMessage() {
-    this.inlineMessage = null
-  },
-
-  focusTextInput() {
-    this.$nextTick(() => {
-      if (this.currentQuestion.Question_Type === 'Fill' && this.$refs.fillInput) {
-        this.$refs.fillInput.focus()
-      } else if (this.currentQuestion.Question_Type === 'OneWord' && this.$refs.oneWordInput) {
-        this.$refs.oneWordInput.focus()
+    handleNext() {
+      const type = this.currentQuestion.Question_Type
+      let value = null
+      if (type === 'MCQ' || type === 'TF') {
+        if (!this.selectedOption) {
+          this.showInlineMessage('⚠️ Select an option first', 'warning')
+          return
+        }
+        value = this.selectedOption
+      } else if (type === 'Fill' || type === 'OneWord') {
+        if (!this.textAnswer.trim()) {
+          this.showInlineMessage('⚠️ Please provide an answer', 'warning')
+          return
+        }
+        value = this.textAnswer.trim()
       }
-    })
+      this.answers[this.currentIndex] = {
+        question_id: this.currentQuestion.Question_Id,
+        selected_option: value
+      }
+      const last = this.currentIndex + 1 === this.questions.length
+      if (last) {
+        const anyUnanswered = this.answers.some(ans => ans === null)
+        if (anyUnanswered) {
+          this.showInlineMessage('⚠️ Please answer all questions.', 'warning')
+          return
+        }
+        clearInterval(this.interval)
+        this.finishExam('✅ All questions submitted!')
+      } else {
+        this.selectedOption = null
+        this.textAnswer = ''
+        this.keyboardSelectedOption = null
+        this.clearInlineMessage()
+        this.currentIndex++
+        this.loadCurrentAnswer()
+        this.focusTextInput()
+      }
+    },
+
+    loadCurrentAnswer() {
+      const ans = this.answers[this.currentIndex]
+      const type = this.currentQuestion.Question_Type
+      if (ans) {
+        if (type === 'MCQ' || type === 'TF') this.selectedOption = ans.selected_option
+        else this.textAnswer = ans.selected_option
+      } else {
+        this.selectedOption = null
+        this.textAnswer = ''
+      }
+      this.keyboardSelectedOption = null
+      this.clearInlineMessage()
+      this.$nextTick(() => {
+        if (this.currentQuestion.Question_Type === 'Fill' && this.$refs.fillInput) {
+          this.$refs.fillInput.focus()
+        } else if (this.currentQuestion.Question_Type === 'OneWord' && this.$refs.oneWordInput) {
+          this.$refs.oneWordInput.focus()
+        }
+      })
+    },
+
+    jumpToQuestion(idx) {
+      this.currentIndex = idx
+      this.loadCurrentAnswer()
+    },
+
+    async finishExam(msg) {
+      this.stage = 'finished'
+      this.finishMessage = msg
+      window.removeEventListener('beforeunload', this.preventRefresh)
+      const email = localStorage.getItem('student_email')
+      if (email) {
+        try {
+          await axios.post('http://localhost:5000/api/logout', {
+            email: email,
+            role: 'Student'
+          })
+        } catch (error) {
+          console.error('Logout API failed:', error)
+        }
+      }
+      this.startRedirectCountdown()
+      try {
+        const res = await axios.post('http://localhost:5000/api/student/submit', {
+          applicant_id: this.applicantId,
+          exam_paper_id: this.exam.Exam_Paper_Id,
+          answers: this.answers,
+          attempt_id: this.examAttemptId    // pass the existing attempt ID if any
+        })
+        this.attemptId = res.data.Attempt_Id
+      } catch (error) {
+        console.error('Submission error:', error)
+        this.showInlineMessage('Submission failed', 'error')
+      }
+    },
+
+    showInlineMessage(text, type = 'error') {
+      this.inlineMessage = { text, type }
+      setTimeout(() => {
+        this.clearInlineMessage()
+      }, 5000)
+    },
+
+    clearInlineMessage() {
+      this.inlineMessage = null
+    },
+
+    focusTextInput() {
+      this.$nextTick(() => {
+        if (this.currentQuestion.Question_Type === 'Fill' && this.$refs.fillInput) {
+          this.$refs.fillInput.focus()
+        } else if (this.currentQuestion.Question_Type === 'OneWord' && this.$refs.oneWordInput) {
+          this.$refs.oneWordInput.focus()
+        }
+      })
+    }
   }
- }
 }
 </script>
 
@@ -1002,9 +934,8 @@ export default {
   0%, 100% { opacity: 1; transform: scale(1); }
   50% { opacity: 0.7; transform: scale(1.05); }
 }
-
 .animate-blink {
   animation: blink 1.2s infinite;
 }
-
 </style>
+

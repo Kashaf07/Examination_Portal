@@ -1,6 +1,6 @@
 Question_Type,Question_Text,Option_A,Option_B,Option_C,Option_D,Correct_Answer,Marks
 MCQ,Which data structure uses LIFO order?,Stack,Queue,Linked List,Tree,Stack,1
-MCQ,What is the output of 2+2*2?,4,6,8,10,,1
+MCQ,What is the output of 2+2*2?,4,6,8,10,8,1
 MCQ,Which language is primarily used for web development?,Python,C,HTML,Java,HTML,1
 MCQ,Which one is a non-volatile memory?,RAM,Cache,ROM,Register,ROM,1
 TF,Java is a statically typed language,TRUE,FALSE,,,TRUE,1

@@ -1,7 +1,8 @@
 from flask import Blueprint, request, jsonify
-from datetime import datetime, timedelta
+from datetime import datetime
 import traceback
 import MySQLdb.cursors
+
 
 def create_exam_routes(mysql):
     exam_bp = Blueprint('exam', __name__)
@@ -140,6 +141,32 @@ def create_exam_routes(mysql):
             print("Error deleting exam:", e)
             return jsonify({'success': False, 'message': 'Failed to delete exam'}), 500
 
-   
+    # New route to get question bank and paper status
+    @exam_bp.route('/status/<int:exam_id>', methods=['GET'])
+    def get_exam_status(exam_id):
+        try:
+            cursor = mysql.connection.cursor()
+
+            cursor.execute("""
+                SELECT COUNT(*) FROM entrance_question_bank WHERE Exam_Id = %s
+            """, (exam_id,))
+            qb_count = cursor.fetchone()[0]
+
+            cursor.execute("""
+                SELECT COUNT(*) FROM exam_paper WHERE Exam_Id = %s
+            """, (exam_id,))
+            qp_count = cursor.fetchone()[0]
+
+            cursor.close()
+
+            status = {
+                'has_question_bank': qb_count > 0,
+                'has_question_paper': qp_count > 0
+            }
+            return jsonify({'success': True, 'status': status})
+
+        except Exception as e:
+            print("Error in get_exam_status:", e)
+            return jsonify({'success': False, 'message': 'Server error'}), 500
 
     return exam_bp
