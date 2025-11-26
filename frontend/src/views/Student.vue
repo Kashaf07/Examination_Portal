@@ -625,62 +625,87 @@ export default {
       window.history.pushState(null, null, location.href)
     },
 
-    handleKeydown(event) {
-      if (this.stage !== 'exam') return
-      const qType = this.currentQuestion.Question_Type
-      if (['MCQ', 'TF'].includes(qType)) {
-        const key = event.key
-        if (['ArrowUp', 'ArrowDown'].includes(key)) {
-          event.preventDefault()
-          this.navigateOptions(key === 'ArrowUp' ? -1 : 1)
-        } else if (key === 'Enter') {
-          event.preventDefault()
-          this.handleEnterKey()
-        }
+  handleKeydown(event) {
+    if (this.stage !== 'exam') return;
+
+    const qType = this.currentQuestion.Question_Type;
+    if (['MCQ', 'TF'].includes(qType)) {
+      const key = event.key;
+      if (['ArrowUp', 'ArrowDown'].includes(key)) {
+        event.preventDefault();
+        this.navigateOptions(key === 'ArrowUp' ? -1 : 1);
+      } else if (key === 'Enter') {
+        event.preventDefault();
+        this.handleEnterKey();
       }
-      if (event.key === 'Escape') {
-        event.preventDefault()
-        event.stopPropagation()
-        this.violationCount++
-        if (this.violationCount >= this.maxViolations) {
-          this.forceExit('ESC key pressed (attempted to exit fullscreen)')
-          return
-        }
-        const left = this.maxViolations - this.violationCount
-        this.showInlineMessage(
-          `⚠️ Warning ${this.violationCount}/${this.maxViolations}: ESC key pressed. You have ${left} attempt(s) left.`,
-          'warning'
-        )
-        setTimeout(() => this.enterFullscreen(), 100)
-        return
+    }
+
+    // ✅ VIOLATION COUNTED - ESC key
+    if (event.key === 'Escape') {
+      event.preventDefault();
+      event.stopPropagation();
+      
+      console.log('🚨 ESC key pressed - COUNTING VIOLATION');
+      console.log('Before:', this.violationCount);
+      
+      // Count violation
+      this.violationCount++;
+      
+      console.log('After:', this.violationCount, '/', this.maxViolations);
+      
+      // Check if reached max
+      if (this.violationCount >= this.maxViolations) {
+        this.forceExit('ESC key pressed (attempted to exit fullscreen)');
+        return;
       }
-      const isRestrictedCombo =
-        event.key === 'F12' ||
-        (event.ctrlKey && event.shiftKey && ['I', 'C', 'J'].includes(event.key)) ||
-        (event.ctrlKey && ['U'].includes(event.key)) ||
-        (event.ctrlKey && event.key === 'Tab')
-      if (isRestrictedCombo) {
-        event.preventDefault()
-        return
-      }
-      const isRefreshKey =
-        event.key === 'F5' ||
-        (event.ctrlKey && event.key === 'r') ||
-        (event.ctrlKey && event.key === 'R') ||
-        (event.ctrlKey && event.shiftKey && event.key === 'r') ||
-        (event.ctrlKey && event.shiftKey && event.key === 'R')
-      if (isRefreshKey) {
-        event.preventDefault()
-        return
-      }
-      if (
-        event.key === 'PrintScreen' ||
-        (event.metaKey && event.shiftKey && ['3', '4', '5'].includes(event.key))
-      ) {
-        event.preventDefault()
-        return
-      }
-    },
+      
+      // Show warning
+      const left = this.maxViolations - this.violationCount;
+      this.showInlineMessage(
+        `⚠️ Warning ${this.violationCount}/${this.maxViolations}: ESC key pressed. You have ${left} attempt(s) left.`, 
+        'warning'
+      );
+      
+      // Immediately re-enter fullscreen
+      setTimeout(() => this.enterFullscreen(), 100);
+      return;
+    }
+
+    // ❌ NO VIOLATION - Browser-locked keys (F12, DevTools, etc.)
+    const isRestrictedCombo =
+      event.key === 'F12' ||
+      (event.ctrlKey && event.shiftKey && ['I', 'C', 'J'].includes(event.key)) ||
+      (event.ctrlKey && ['U'].includes(event.key)) ||
+      (event.ctrlKey && event.key === 'Tab');
+
+    if (isRestrictedCombo) {
+      event.preventDefault();
+      console.log('🔒 Restricted key blocked (no violation - browser locked):', event.key);
+      return;
+    }
+
+    // ❌ NO VIOLATION - Refresh keys (Ctrl+R, F5, Ctrl+F5, Shift+F5)
+    const isRefreshKey =
+      event.key === 'F5' ||
+      (event.ctrlKey && event.key === 'r') ||
+      (event.ctrlKey && event.key === 'R') ||
+      (event.ctrlKey && event.shiftKey && event.key === 'r') ||
+      (event.ctrlKey && event.shiftKey && event.key === 'R');
+
+    if (isRefreshKey) {
+      event.preventDefault();
+      console.log('🔒 Refresh attempt blocked (no violation - browser locked):', event.key);
+      return;
+    }
+
+    // ❌ NO VIOLATION - Screenshot keys
+    if (event.key === 'PrintScreen' || 
+        (event.metaKey && event.shiftKey && ['3', '4', '5'].includes(event.key))) {
+      event.preventDefault();
+      console.log('🔒 Screenshot blocked (no violation)');
+      return;
+    }
+  },
 
     navigateOptions(dir) {
       const availableKeys = Object.keys(this.options)
