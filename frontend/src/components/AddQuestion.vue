@@ -8,14 +8,12 @@
 
     <!-- Upload CSV Button and File Input -->
     <div class="mb-8 text-center">
-      <input type="file" ref="csvFile" @change="handleFileChange" accept=".csv" class="mb-6"/>
-      <button
-        @click="uploadCSV"
-        :disabled="!selectedFile"
-        class="bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white px-6 py-2 rounded-full shadow-md transition duration-300 ease-in-out ml-2"
+      <router-link
+        :to="`/exam/${$route.params.examId}/upload-question-bank`"
+        class="p-10 max-w-4xl mx-auto bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white px-6 py-2 rounded-full shadow-md transition duration-300 ease-in-out"
       >
         📤 Upload CSV
-      </button>
+      </router-link>
       <div v-if="csvErrors.length" class="mt-4 text-left max-w-2xl mx-auto">
         <div class="font-bold text-red-600 mb-2">CSV Errors:</div>
         <ul class="text-red-700 pl-6 list-disc">
