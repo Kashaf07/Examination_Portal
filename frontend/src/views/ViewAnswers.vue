@@ -1,12 +1,18 @@
 <template>
   <div class="min-h-screen w-full bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 flex flex-col items-center py-10">
     <div class="w-full max-w-[1600px] px-8">
-      <h1 class="text-4xl font-extrabold mb-8 text-transparent bg-clip-text bg-gradient-to-r from-purple-700 to-pink-500 tracking-tight">
+      <h1 class="text-3xl font-bold mb-6 text-transparent bg-clip-text bg-gradient-to-r from-purple-700 to-pink-500 tracking-tight">
         Submitted Answers for Attempt {{ attemptId }}
       </h1>
       <div v-if="error" class="mb-6 p-4 bg-red-100 text-red-700 border border-red-400 rounded w-full">
         {{ error }}
       </div>
+      <button
+        @click="goBack"
+        :class="['bg-purple-600 hover:bg-purple-700 text-white px-6 py-2 rounded-full font-semibold shadow transition', 'mb-12']"
+      >
+        Back to Attempts
+      </button>
       <div class="rounded-xl shadow-xl overflow-x-auto bg-white">
         <table class="min-w-full border-separate border-spacing-0">
           <thead>
@@ -35,13 +41,7 @@
             </tr>
           </tbody>
         </table>
-      </div>
-      <button
-        @click="goBack"
-        class="mt-8 bg-purple-600 hover:bg-purple-700 text-white px-6 py-2 rounded-full font-semibold shadow transition"
-      >
-        Back to Attempts
-      </button>
+      </div>      
     </div>
   </div>
 </template>

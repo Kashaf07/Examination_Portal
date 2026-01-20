@@ -1,29 +1,20 @@
-from flask import Blueprint, jsonify
-
 from flask import Blueprint, request, jsonify
+import pandas as pd
+import os
+from werkzeug.utils import secure_filename
+from datetime import datetime
+import pytz
 
 def create_admin_routes(mysql):
     admin_bp = Blueprint('admin_routes', __name__)
-    
-    # File Uploads 
-    @admin_bp.route('/uploaded-files', methods=['GET'])
-    def view_uploaded_files():
-        try:
-            cursor = mysql.connection.cursor()
-            query = """
-                SELECT File_ID, Uploaded_By, Role, File_Name, File_Path, Upload_Date 
-                FROM file_uploads 
-                ORDER BY Upload_Date DESC
-            """
-            cursor.execute(query)
-            files = cursor.fetchall()
-            columns = [desc[0] for desc in cursor.description]
-            result = [dict(zip(columns, row)) for row in files]
-            cursor.close()
-            return jsonify(result), 200
-        except Exception as e:
-            print("Admin file view error:", e)
-            return jsonify({"error": "Unable to fetch files"}), 500
+    def convert_to_ist(dt):
+        if dt is None:
+            return None
+        utc = pytz.utc
+        ist = pytz.timezone('Asia/Kolkata')
+        utc_dt = utc.localize(dt)
+        ist_dt = utc_dt.astimezone(ist)
+        return ist_dt.strftime('%Y-%m-%d %H:%M:%S')
 
     # ID Management Route
     @admin_bp.route('/reorganize-ids', methods=['POST'])
@@ -143,6 +134,13 @@ def create_admin_routes(mysql):
             data = request.get_json()
             cursor = mysql.connection.cursor()
             
+            # --- START CHANGE: Check for duplicate email ---
+            cursor.execute("SELECT COUNT(*) FROM mst_faculty WHERE F_Email = %s", (data['F_Email'],))
+            if cursor.fetchone()[0] > 0:
+                cursor.close()
+                return jsonify({"error": "A faculty member with this email already exists."}), 400
+            # --- END CHANGE ---
+            
             cursor.execute("""
                 INSERT INTO mst_faculty (F_Name, F_Email, School_Id, Designation, Password)
                 VALUES (%s, %s, %s, %s, %s)
@@ -154,6 +152,10 @@ def create_admin_routes(mysql):
             return jsonify({"message": "Faculty added successfully", "Faculty_Id": faculty_id}), 201
         except Exception as e:
             print("Error adding faculty:", e)
+            # --- START CHANGE: Catch DB-level duplicate error ---
+            if 'Duplicate entry' in str(e) and 'F_Email' in str(e):
+                return jsonify({"error": "A faculty member with this email already exists."}), 400
+            # --- END CHANGE ---
             return jsonify({"error": "Unable to add faculty"}), 500
 
     @admin_bp.route('/faculty/<int:faculty_id>', methods=['PUT'])
@@ -208,6 +210,18 @@ def create_admin_routes(mysql):
             data = request.get_json()
             cursor = mysql.connection.cursor()
             
+            # --- START CHANGE: Check for duplicate School_Name or School_Short ---
+            cursor.execute("SELECT School_Name, School_Short FROM mst_school WHERE School_Name = %s OR School_Short = %s", 
+                           (data['School_Name'], data['School_Short']))
+            existing = cursor.fetchone()
+            if existing:
+                cursor.close()
+                if existing[0] == data['School_Name']:
+                    return jsonify({"error": "A school with this name already exists."}), 400
+                if existing[1] == data['School_Short']:
+                    return jsonify({"error": "A school with this short name already exists."}), 400
+            # --- END CHANGE ---
+            
             cursor.execute("""
                 INSERT INTO mst_school (School_Name, School_Short)
                 VALUES (%s, %s)
@@ -219,6 +233,14 @@ def create_admin_routes(mysql):
             return jsonify({"message": "School added successfully", "School_Id": school_id}), 201
         except Exception as e:
             print("Error adding school:", e)
+            # --- START CHANGE: Catch DB-level duplicate errors ---
+            if 'Duplicate entry' in str(e):
+                if 'School_Name' in str(e):
+                     return jsonify({"error": "A school with this name already exists."}), 400
+                if 'School_Short' in str(e):
+                     return jsonify({"error": "A school with this short name already exists."}), 400
+                return jsonify({"error": "A school with this name or short name already exists."}), 400
+            # --- END CHANGE ---            
             return jsonify({"error": "Unable to add school"}), 500
 
     @admin_bp.route('/schools/<int:school_id>', methods=['PUT'])
@@ -285,12 +307,11 @@ def create_admin_routes(mysql):
         try:
             cursor = mysql.connection.cursor()
         
-            # Check for related records and delete them in the correct order
-            # 1. First, get all attempt IDs for this applicant
+            # Get all attempt IDs for this applicant
             cursor.execute("SELECT Attempt_Id FROM applicant_attempt WHERE Applicant_Id = %s", (applicant_id,))
             attempt_ids = [row[0] for row in cursor.fetchall()]
         
-            # 2. Delete from applicant_answers table first (if there are attempts)
+            # Delete from applicant_answers table first
             answers_deleted = 0
             if attempt_ids:
                 for attempt_id in attempt_ids:
@@ -300,7 +321,7 @@ def create_admin_routes(mysql):
                         cursor.execute("DELETE FROM applicant_answers WHERE Attempt_Id = %s", (attempt_id,))
                         answers_deleted += answer_count
         
-            # 3. Delete from applicant_attempt table
+            # Delete related records
             cursor.execute("SELECT COUNT(*) FROM applicant_attempt WHERE Applicant_Id = %s", (applicant_id,))
             attempt_count = cursor.fetchone()[0]
         
@@ -308,7 +329,7 @@ def create_admin_routes(mysql):
                 cursor.execute("DELETE FROM applicant_attempt WHERE Applicant_Id = %s", (applicant_id,))
                 print(f"Deleted {attempt_count} exam attempts for applicant {applicant_id}")
         
-            # 4. Delete from auto_grading table (if exists)
+            # Delete from auto_grading table (if exists)
             try:
                 cursor.execute("SELECT COUNT(*) FROM auto_grading WHERE Attempt_Id IN (%s)" % ','.join(['%s'] * len(attempt_ids)) if attempt_ids else "SELECT 0", attempt_ids if attempt_ids else [])
                 grading_count = cursor.fetchone()[0] if attempt_ids else 0
@@ -317,7 +338,7 @@ def create_admin_routes(mysql):
             except Exception as e:
                 print(f"Note: auto_grading table handling: {e}")
         
-            # 5. Delete from applicant_exam_assign table (if exists)
+            # Delete from applicant_exam_assign table (if exists)
             try:
                 cursor.execute("SELECT COUNT(*) FROM applicant_exam_assign WHERE Applicant_Id = %s", (applicant_id,))
                 assign_count = cursor.fetchone()[0]
@@ -326,15 +347,21 @@ def create_admin_routes(mysql):
             except Exception as e:
                 print(f"Note: applicant_exam_assign table handling: {e}")
         
-            # 6. Delete from login_log table
-            cursor.execute("SELECT COUNT(*) FROM login_log WHERE Applicant_ID = %s", (applicant_id,))
-            log_count = cursor.fetchone()[0]
+            # Delete from login_log table by User_Email
+            cursor.execute("SELECT Email FROM applicants WHERE Applicant_Id = %s", (applicant_id,))
+            row = cursor.fetchone()
+            applicant_email = row[0] if row else None
+
+            if applicant_email:
+                cursor.execute("SELECT COUNT(*) FROM login_log WHERE User_Email = %s", (applicant_email,))
+                log_count = cursor.fetchone()[0]
+                if log_count > 0:
+                    cursor.execute("DELETE FROM login_log WHERE User_Email = %s", (applicant_email,))
+                    print(f"Deleted {log_count} login logs for applicant {applicant_id}")
+            else:
+                log_count = 0
         
-            if log_count > 0:
-                cursor.execute("DELETE FROM login_log WHERE Applicant_ID = %s", (applicant_id,))
-                print(f"Deleted {log_count} login logs for applicant {applicant_id}")
-        
-            # 7. Finally delete the applicant
+            # Finally delete the applicant
             cursor.execute("DELETE FROM applicants WHERE Applicant_Id = %s", (applicant_id,))
         
             mysql.connection.commit()
@@ -485,7 +512,7 @@ def create_admin_routes(mysql):
             data = request.get_json()
             cursor = mysql.connection.cursor()
             
-            # Check if email already exists
+            # Check if email already exists (This was already correct)
             cursor.execute("SELECT COUNT(*) FROM mst_admin WHERE Email = %s", (data['Email'],))
             if cursor.fetchone()[0] > 0:
                 cursor.close()
@@ -555,14 +582,19 @@ def create_admin_routes(mysql):
     def get_logs():
         try:
             cursor = mysql.connection.cursor()
-            cursor.execute("""
-                SELECT Log_ID, User_Email, Role, Login_Time, Logout_Time
-                FROM login_log 
-                ORDER BY Log_ID;
-            """)
+            cursor.execute("""SELECT Log_ID, User_Email, Role, Login_Time, Logout_Time FROM login_log ORDER BY Log_ID""")
             logs = cursor.fetchall()
             columns = [desc[0] for desc in cursor.description]
-            result = [dict(zip(columns, row)) for row in logs]
+            result = []
+            for row in logs:
+                log_dict = dict(zip(columns, row))
+                # Convert datetime objects to strings
+                if log_dict.get('Login_Time'):
+                    log_dict['Login_Time'] = log_dict['Login_Time'].strftime('%Y-%m-%d %H:%M:%S') if hasattr(log_dict['Login_Time'], 'strftime') else str(log_dict['Login_Time'])
+                if log_dict.get('Logout_Time'):
+                    log_dict['Logout_Time'] = log_dict['Logout_Time'].strftime('%Y-%m-%d %H:%M:%S') if hasattr(log_dict['Logout_Time'], 'strftime') else str(log_dict['Logout_Time'])
+                result.append(log_dict)
+        
             cursor.close()
             return jsonify(result), 200
         except Exception as e:
@@ -620,11 +652,15 @@ def create_admin_routes(mysql):
                         cursor.execute("DELETE FROM applicant_attempt WHERE Applicant_Id = %s", (applicant_id,))
                         total_attempts_deleted += attempt_count
                 
-                    cursor.execute("SELECT COUNT(*) FROM login_log WHERE Applicant_ID = %s", (applicant_id,))
-                    log_count = cursor.fetchone()[0]
-                    if log_count > 0:
-                        cursor.execute("DELETE FROM login_log WHERE Applicant_ID = %s", (applicant_id,))
-                        total_logs_deleted += log_count
+                    cursor.execute("SELECT Email FROM applicants WHERE Applicant_Id = %s", (applicant_id,))
+                    row = cursor.fetchone()
+                    applicant_email = row[0] if row else None
+                    if applicant_email:
+                        cursor.execute("SELECT COUNT(*) FROM login_log WHERE User_Email = %s", (applicant_email,))
+                        log_count = cursor.fetchone()[0]
+                        if log_count > 0:
+                            cursor.execute("DELETE FROM login_log WHERE User_Email = %s", (applicant_id,))
+                            total_logs_deleted += log_count
                 
                     # Delete the applicant
                     cursor.execute("DELETE FROM applicants WHERE Applicant_Id = %s", (applicant_id,))
@@ -635,7 +671,7 @@ def create_admin_routes(mysql):
             mysql.connection.commit()
             cursor.close()
         
-            message = f"Successfully deleted {deleted_count} applicants"
+            message = f"Successfully deleted applicants"
             details = []
             if total_answers_deleted > 0:
                 details.append(f"{total_answers_deleted} exam answers")
@@ -655,5 +691,304 @@ def create_admin_routes(mysql):
             print("Error in bulk delete:", e)
             mysql.connection.rollback()
             return jsonify({"error": f"Bulk delete failed: {str(e)}"}), 500
+
+    # Student Upload Routes
+    ALLOWED_EXTENSIONS = {'csv', 'xlsx'}
+
+    def allowed_file(filename):
+        return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
+    @admin_bp.route('/add_students', methods=['POST'])
+    def add_students():
+        file = request.files.get('file')
+        exam_id = request.form.get('exam_id')  # optional exam linkage
+
+        if not file or not allowed_file(file.filename):
+            return jsonify({'error': 'Invalid or missing file'}), 400
+
+        try:
+            # Read Excel or CSV file
+            if file.filename.endswith('.csv'):
+                df = pd.read_csv(file)
+            else:
+                df = pd.read_excel(file)
+
+            required_columns = ['Full_Name', 'Email', 'Password', 'Phone', 'DOB', 'Gender', 'Address']
+            if not all(col in df.columns for col in required_columns):
+                return jsonify({'error': 'Missing required columns in uploaded file'}), 400
+
+            cursor = mysql.connection.cursor()
+            successful_uploads = 0
+            errors = []
+
+            for index, row in df.iterrows():
+                try:
+                    cursor.execute("""INSERT INTO applicants (Full_Name, Email, Password, Phone, DOB, Gender, Address) VALUES (%s, %s, %s, %s, %s, %s, %s)""", (
+                        row['Full_Name'],
+                        row['Email'],
+                        row['Password'],
+                        row['Phone'],
+                        row['DOB'],
+                        row['Gender'],
+                        row['Address']
+                    ))
+                    successful_uploads += 1
+
+                    # OPTIONAL: Insert into exam_applicants/exam_student mapping table
+                    # if exam_id:
+                    #     applicant_id = cursor.lastrowid
+                    #     cursor.execute("INSERT INTO exam_applicants (exam_id, applicant_id) VALUES (%s, %s)", (exam_id, applicant_id))
+
+                except Exception as e:
+                    errors.append(f"Row {index + 1}: {str(e)}")
+                    continue  # Skip duplicate emails or other errors
+
+            mysql.connection.commit()
+            cursor.close()
+
+            return jsonify({
+                'success': True,
+                'message': f'Successfully uploaded {successful_uploads} students',
+                'successful_uploads': successful_uploads,
+                'errors': errors
+            }), 200
+
+        except Exception as e:
+            print("Upload Error:", e)
+            return jsonify({'error': str(e)}), 500
+
+    @admin_bp.route('/upload_students', methods=['POST'])
+    def upload_students():
+        file = request.files.get('file')
+        exam_id = request.form.get('exam_id')
+        uploaded_by = request.form.get('email')
+        role = request.form.get('role', 'Admin')
+
+        if not file or not allowed_file(file.filename):
+            return jsonify({'error': 'Invalid or missing file'}), 400
+
+        try:
+            # Save uploaded file
+            filename = secure_filename(file.filename)
+            upload_path = os.path.join('uploads/students', filename)
+            os.makedirs(os.path.dirname(upload_path), exist_ok=True)
+            file.save(upload_path)
+
+            # Read Excel or CSV
+            if filename.endswith('.csv'):
+                df = pd.read_csv(upload_path)
+            else:
+                df = pd.read_excel(upload_path)
+
+            required_columns = ['Full_Name', 'Email', 'Password', 'Phone', 'DOB', 'Gender', 'Address']
+            if not all(col in df.columns for col in required_columns):
+                return jsonify({'error': 'Missing required columns in uploaded file'}), 400
+
+            cursor = mysql.connection.cursor()
+            successful_uploads = 0
+            errors = []
+
+            for index, row in df.iterrows():
+                try:
+                    cursor.execute("""INSERT INTO applicants (Full_Name, Email, Password, Phone, DOB, Gender, Address) VALUES (%s, %s, %s, %s, %s, %s, %s)""", (
+                        row['Full_Name'],
+                        row['Email'],
+                        row['Password'],
+                        row['Phone'],
+                        row['DOB'],
+                        row['Gender'],
+                        row['Address']
+                    ))
+                    successful_uploads += 1
+
+                    # Optional: Insert into exam_applicants
+                    # if exam_id:
+                    #     applicant_id = cursor.lastrowid
+                    #     cursor.execute("INSERT INTO exam_applicants (exam_id, applicant_id) VALUES (%s, %s)", (exam_id, applicant_id))
+
+                except Exception as e:
+                    errors.append(f"Row {index + 1}: {str(e)}")
+                    continue  # skip duplicates or bad rows
+
+            # Log the upload (if file_uploads table exists)
+            try:
+                cursor.execute("""INSERT INTO file_uploads (Uploaded_By, Role, File_Name, File_Path) VALUES (%s, %s, %s, %s)""", (uploaded_by, role, filename, upload_path))
+            except Exception as e:
+                print("Logging upload failed:", e)
+                # Continue even if logging fails
+
+            mysql.connection.commit()
+            cursor.close()
+
+            return jsonify({
+                'success': True,
+                'message': f'Successfully uploaded {successful_uploads} students and logged the upload',
+                'successful_uploads': successful_uploads,
+                'errors': errors
+            }), 200
+
+        except Exception as e:
+            print("Upload Error:", e)
+            return jsonify({'error': str(e)}), 500
+
+    # Conducted Exams Route - Admin can see ALL conducted exams
+    @admin_bp.route('/conducted_exams', methods=['GET'])
+    def get_all_conducted_exams():
+        try:
+            cursor = mysql.connection.cursor()
+            query = """
+                SELECT 
+                    ee.Exam_Id,
+                    ee.Exam_Name,
+                    ee.Exam_Date,
+                    ee.faculty_email,
+                    COUNT(DISTINCT aea.Applicant_Id) AS total_applicants,
+                    COALESCE(attempts.attempted_applicants, 0) AS attempted_applicants
+                FROM Entrance_Exam ee
+                LEFT JOIN applicant_exam_assign aea ON ee.Exam_Id = aea.Exam_Id
+                LEFT JOIN (
+                    SELECT ep.Exam_Id, COUNT(DISTINCT aa.Applicant_Id) AS attempted_applicants
+                    FROM exam_paper ep
+                    JOIN applicant_attempt aa ON ep.Exam_Paper_Id = aa.Exam_Paper_Id
+                    WHERE aa.Status = 'Submitted'
+                    GROUP BY ep.Exam_Id
+                ) AS attempts ON ee.Exam_Id = attempts.Exam_Id
+                WHERE TIMESTAMP(ee.Exam_Date, ee.Exam_Time) + INTERVAL ee.Duration_Minutes MINUTE <= NOW()
+                GROUP BY ee.Exam_Id, ee.Exam_Name, ee.Exam_Date, ee.faculty_email, attempts.attempted_applicants
+                ORDER BY ee.Exam_Date DESC
+            """
+            cursor.execute(query)
+        
+            # Fetch all results and convert to list of dictionaries
+            columns = [desc[0] for desc in cursor.description]
+            exams = []
+            for row in cursor.fetchall():
+                exams.append(dict(zip(columns, row)))
+        
+            cursor.close()
+            return jsonify({"success": True, "exams": exams}), 200
+        except Exception as e:
+            print("Error fetching conducted exams:", e)
+            return jsonify({"success": False, "error": str(e)}), 500
+
+    # Conducted Exams by Faculty - Admin can filter by specific faculty
+    @admin_bp.route('/conducted_exams/<faculty_email>', methods=['GET'])
+    def get_conducted_exams_by_faculty(faculty_email):
+        try:
+            cursor = mysql.connection.cursor()
+            query = """
+                SELECT 
+                    ee.Exam_Id,
+                    ee.Exam_Name,
+                    ee.Exam_Date,
+                    COUNT(DISTINCT aea.Applicant_Id) AS total_applicants,
+                    COALESCE(attempts.attempted_applicants, 0) AS attempted_applicants
+                FROM Entrance_Exam ee
+                LEFT JOIN applicant_exam_assign aea ON ee.Exam_Id = aea.Exam_Id
+                LEFT JOIN (
+                    SELECT ep.Exam_Id, COUNT(DISTINCT aa.Applicant_Id) AS attempted_applicants
+                    FROM exam_paper ep
+                    JOIN applicant_attempt aa ON ep.Exam_Paper_Id = aa.Exam_Paper_Id
+                    WHERE aa.Status = 'Submitted'
+                    GROUP BY ep.Exam_Id
+                ) AS attempts ON ee.Exam_Id = attempts.Exam_Id
+                WHERE ee.faculty_email = %s
+                  AND TIMESTAMP(ee.Exam_Date, ee.Exam_Time) + INTERVAL ee.Duration_Minutes MINUTE <= NOW()
+                GROUP BY ee.Exam_Id, ee.Exam_Name, ee.Exam_Date, attempts.attempted_applicants
+                ORDER BY ee.Exam_Date DESC
+            """
+            cursor.execute(query, (faculty_email,))
+            columns = [desc[0] for desc in cursor.description]
+            exams = [dict(zip(columns, row)) for row in cursor.fetchall()]
+            cursor.close()
+            return jsonify({"success": True, "exams": exams}), 200
+        except Exception as e:
+            print("Error fetching conducted exams for faculty:", e)
+            return jsonify({"success": False, "error": str(e)}), 500
+        
+    @admin_bp.route('/exam/delete/<int:exam_id>', methods=['DELETE'])
+    def delete_exam(exam_id):
+        try:
+            cursor = mysql.connection.cursor()
+            
+            # Get all exam papers for this exam
+            cursor.execute("SELECT Exam_Paper_Id FROM exam_paper WHERE Exam_Id = %s", (exam_id,))
+            exam_papers = [row[0] for row in cursor.fetchall()]
+            
+            # Delete exam attempts and answers for all exam papers
+            if exam_papers:
+                for exam_paper_id in exam_papers:
+                    # Get all attempts for this exam paper
+                    cursor.execute("SELECT Attempt_Id FROM applicant_attempt WHERE Exam_Paper_Id = %s", (exam_paper_id,))
+                    attempts = [row[0] for row in cursor.fetchall()]
+                    
+                    # Delete answers for each attempt
+                    if attempts:
+                        for attempt_id in attempts:
+                            cursor.execute("DELETE FROM applicant_answers WHERE Attempt_Id = %s", (attempt_id,))
+                    
+                    # Delete attempts
+                    cursor.execute("DELETE FROM applicant_attempt WHERE Exam_Paper_Id = %s", (exam_paper_id,))
+            
+            # Delete applicant exam assignments
+            cursor.execute("DELETE FROM applicant_exam_assign WHERE Exam_Id = %s", (exam_id,))
+            
+            # Delete exam papers
+            cursor.execute("DELETE FROM exam_paper WHERE Exam_Id = %s", (exam_id,))
+            
+            # Delete the exam
+            cursor.execute("DELETE FROM Entrance_Exam WHERE Exam_Id = %s", (exam_id,))
+            
+            mysql.connection.commit()
+            cursor.close()
+            
+            return jsonify({"success": True, "message": "Exam deleted successfully"}), 200
+        except Exception as e:
+            print("Error deleting exam:", e)
+            mysql.connection.rollback()
+            return jsonify({"success": False, "error": f"Unable to delete exam: {str(e)}"}), 500
+
+    @admin_bp.route('/admin/exam/delete/<int:exam_id>', methods=['DELETE'])
+    def admin_delete_exam(exam_id):
+        """Admin-specific exam deletion endpoint"""
+        try:
+            cursor = mysql.connection.cursor()
+            
+            # Get all exam papers for this exam
+            cursor.execute("SELECT Exam_Paper_Id FROM exam_paper WHERE Exam_Id = %s", (exam_id,))
+            exam_papers = [row[0] for row in cursor.fetchall()]
+            
+            # Delete exam attempts and answers for all exam papers
+            if exam_papers:
+                for exam_paper_id in exam_papers:
+                    # Get all attempts for this exam paper
+                    cursor.execute("SELECT Attempt_Id FROM applicant_attempt WHERE Exam_Paper_Id = %s", (exam_paper_id,))
+                    attempts = [row[0] for row in cursor.fetchall()]
+                    
+                    # Delete answers for each attempt
+                    if attempts:
+                        for attempt_id in attempts:
+                            cursor.execute("DELETE FROM applicant_answers WHERE Attempt_Id = %s", (attempt_id,))
+                    
+                    # Delete attempts
+                    cursor.execute("DELETE FROM applicant_attempt WHERE Exam_Paper_Id = %s", (exam_paper_id,))
+            
+            # Delete applicant exam assignments
+            cursor.execute("DELETE FROM applicant_exam_assign WHERE Exam_Id = %s", (exam_id,))
+            
+            # Delete exam papers
+            cursor.execute("DELETE FROM exam_paper WHERE Exam_Id = %s", (exam_id,))
+            
+            # Delete the exam
+            cursor.execute("DELETE FROM Entrance_Exam WHERE Exam_Id = %s", (exam_id,))
+            
+            mysql.connection.commit()
+            cursor.close()
+            
+            return jsonify({"success": True, "message": "Exam deleted successfully"}), 200
+        except Exception as e:
+            print("Error deleting exam:", e)
+            mysql.connection.rollback()
+            return jsonify({"success": False, "error": f"Unable to delete exam: {str(e)}"}), 500
 
     return admin_bp

@@ -96,12 +96,7 @@
           Please enter your unique Exam ID provided by the examiner. Double-check before submitting. This will start your official attempt.
         </p>
 
-<div v-if="examIdError" class="w-full mb-4 p-4 bg-red-50 border border-red-200 rounded-lg">
-  <p class="text-red-700 text-lg font-bold">❌ Unable to Access Exam</p>
-  <div v-if="inlineMessage && inlineMessage.type === 'error'" class="mt-2">
-    <p class="text-red-600 text-base font-medium">{{ inlineMessage.text }}</p>
-  </div>      
-</div>
+<!-- Error Message for Invalid Exam ID -->
 <div v-if="examIdError" class="w-full mb-4 p-4 bg-red-50 border border-red-200 rounded-lg">
   <p class="text-red-700 text-lg font-bold">❌ Unable to Access Exam</p>
   <div v-if="inlineMessage && inlineMessage.type === 'error'" class="mt-2">
@@ -348,6 +343,9 @@
 
   </div>
 </template>
+
+
+
 
 <script>
 import axios from 'axios'
@@ -977,9 +975,8 @@ export default {
   0%, 100% { opacity: 1; transform: scale(1); }
   50% { opacity: 0.7; transform: scale(1.05); }
 }
-
 .animate-blink {
   animation: blink 1.2s infinite;
 }
-
 </style>
+

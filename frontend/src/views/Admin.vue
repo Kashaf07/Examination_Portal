@@ -1,5 +1,6 @@
 <template>
-  <div class="min-h-screen bg-gradient-to-br from-purple-100 to-pink-100">
+  <!-- Updated background to use custom linear gradient with specified colors -->
+  <div class="min-h-screen" style="background: linear-gradient(to bottom right, #E3F2FD, #F3E5F5, #FCE4EC);">
     <!-- Header -->
     <div class="px-6 py-6">
       <div class="flex justify-between items-center mb-8">
@@ -29,12 +30,6 @@
         </button>
       </div>
 
-      <!-- Error/Success Messages -->
-      <div v-if="message" class="mb-6 p-4 rounded-xl shadow-lg" :class="messageType === 'error' ? 'bg-red-100 text-red-700 border border-red-200' : 'bg-green-100 text-green-700 border border-green-200'">
-        {{ message }}
-        <button @click="message = ''" class="float-right text-lg font-bold hover:opacity-70">&times;</button>
-      </div>
-
       <!-- Faculty Management -->
       <div v-if="activeTab === 'faculty'" class="space-y-6">
         <div class="bg-white/80 backdrop-blur-sm shadow-xl rounded-2xl p-8 border border-white/20">
@@ -49,36 +44,37 @@
           </div>
 
           <!-- Faculty Table -->
-          <div class="bg-purple-100 rounded-xl p-6 border border-purple-200">
+          <!-- Updated faculty table to match modern design with light blue header -->          
+          <div class="bg-white rounded-2xl shadow-lg overflow-hidden border border-gray-200">
             <div class="overflow-x-auto">
               <table class="w-full">
-                <thead>
-                  <tr class="border-b border-purple-200">
-                    <th class="text-left py-4 px-4 font-semibold text-purple-800">ID</th>
-                    <th class="text-left py-4 px-4 font-semibold text-purple-800">Name</th>
-                    <th class="text-left py-4 px-4 font-semibold text-purple-800">Email</th>
-                    <th class="text-left py-4 px-4 font-semibold text-purple-800">School</th>
-                    <th class="text-left py-4 px-4 font-semibold text-purple-800">Designation</th>
-                    <th class="text-left py-4 px-4 font-semibold text-purple-800">Actions</th>
+                <thead class="bg-gradient-to-r from-blue-50 to-blue-100">
+                  <tr>
+                    <th class="text-left py-4 px-6 font-semibold text-blue-900">ID</th>
+                    <th class="text-left py-4 px-6 font-semibold text-blue-900">Name</th>
+                    <th class="text-left py-4 px-6 font-semibold text-blue-900">Email</th>
+                    <th class="text-left py-4 px-6 font-semibold text-blue-900">School</th>
+                    <th class="text-left py-4 px-6 font-semibold text-blue-900">Designation</th>
+                    <th class="text-left py-4 px-6 font-semibold text-blue-900">Actions</th>
                   </tr>
                 </thead>
-                <tbody>
-                  <tr v-for="faculty in facultyList" :key="faculty.Faculty_Id" class="border-b border-purple-200 hover:bg-purple-50">
-                    <td class="py-4 px-4 text-gray-700">{{ faculty.Faculty_Id }}</td>
-                    <td class="py-4 px-4 text-gray-700">{{ faculty.F_Name }}</td>
-                    <td class="py-4 px-4 text-gray-700">{{ faculty.F_Email }}</td>
-                    <td class="py-4 px-4 text-gray-700">{{ getSchoolName(faculty.School_Id) }}</td>
-                    <td class="py-4 px-4 text-gray-700">{{ faculty.Designation }}</td>
-                    <td class="py-4 px-4 space-x-2">
+                <tbody class="bg-white divide-y divide-gray-100">
+                  <tr v-for="(faculty, idx) in facultyList" :key="faculty.Faculty_Id" class="hover:bg-gray-50 transition-colors duration-200">
+                    <td class="py-4 px-6 text-gray-900">{{ idx + 1 }}</td>
+                    <td class="py-4 px-6 text-gray-900">{{ faculty.F_Name }}</td>
+                    <td class="py-4 px-6 text-gray-900">{{ faculty.F_Email }}</td>
+                    <td class="py-4 px-6 text-gray-900">{{ getSchoolName(faculty.School_Id) }}</td>
+                    <td class="py-4 px-6 text-gray-900">{{ faculty.Designation }}</td>
+                    <td class="py-4 px-6 space-x-2">
                       <button
                         @click="editFaculty(faculty)"
-                        class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 transform hover:scale-105"
+                        class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 transform hover:scale-105"
                       >
                         Edit
                       </button>
                       <button
                         @click="deleteFaculty(faculty.Faculty_Id)"
-                        class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 transform hover:scale-105"
+                        class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 transform hover:scale-105"
                       >
                         Delete
                       </button>
@@ -105,32 +101,33 @@
           </div>
 
           <!-- Schools Table -->
-          <div class="bg-purple-100 rounded-xl p-6 border border-purple-200">
+          <!-- Updated schools table to match modern design -->          
+          <div class="bg-white rounded-2xl shadow-lg overflow-hidden border border-gray-200">
             <div class="overflow-x-auto">
               <table class="w-full">
-                <thead>
-                  <tr class="border-b border-purple-200">
-                    <th class="text-left py-4 px-4 font-semibold text-purple-800">ID</th>
-                    <th class="text-left py-4 px-4 font-semibold text-purple-800">School Name</th>
-                    <th class="text-left py-4 px-4 font-semibold text-purple-800">Short Name</th>
-                    <th class="text-left py-4 px-4 font-semibold text-purple-800">Actions</th>
+                <thead class="bg-gradient-to-r from-blue-50 to-blue-100">
+                  <tr>
+                    <th class="text-left py-4 px-6 font-semibold text-blue-900">ID</th>
+                    <th class="text-left py-4 px-6 font-semibold text-blue-900">School Name</th>
+                    <th class="text-left py-4 px-6 font-semibold text-blue-900">Short Name</th>
+                    <th class="text-left py-4 px-6 font-semibold text-blue-900">Actions</th>
                   </tr>
                 </thead>
-                <tbody>
-                  <tr v-for="school in schoolsList" :key="school.School_Id" class="border-b border-purple-200 hover:bg-purple-50">
-                    <td class="py-4 px-4 text-gray-700">{{ school.School_Id }}</td>
-                    <td class="py-4 px-4 text-gray-700">{{ school.School_Name }}</td>
-                    <td class="py-4 px-4 text-gray-700">{{ school.School_Short }}</td>
-                    <td class="py-4 px-4 space-x-2">
+                <tbody class="bg-white divide-y divide-gray-100">
+                  <tr v-for="(school, idx) in schoolsList" :key="school.School_Id" class="hover:bg-gray-50 transition-colors duration-200">
+                    <td class="py-4 px-6 text-gray-900">{{ idx + 1 }}</td>
+                    <td class="py-4 px-6 text-gray-900">{{ school.School_Name }}</td>
+                    <td class="py-4 px-6 text-gray-900">{{ school.School_Short }}</td>
+                    <td class="py-4 px-6 space-x-2">
                       <button
                         @click="editSchool(school)"
-                        class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 transform hover:scale-105"
+                        class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 transform hover:scale-105"
                       >
                         Edit
                       </button>
                       <button
                         @click="deleteSchool(school.School_Id)"
-                        class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 transform hover:scale-105"
+                        class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 transform hover:scale-105"
                       >
                         Delete
                       </button>
@@ -153,8 +150,9 @@
           >
             {{ showAddApplicantForm ? 'Close' : 'Add Applicants' }}
           </button>
+          <!-- CHANGE: navigate to UploadStudents.vue instead of opening modal -->
           <button
-            @click="showUploadApplicantsModal = true"
+            @click="navigateTo('UploadStudents')"
             class="bg-purple-500 hover:bg-purple-600 text-white font-semibold px-6 py-3 rounded-full shadow-lg transition-all duration-200 transform hover:scale-105"
           >
             Upload Applicants
@@ -254,81 +252,262 @@
         </div>
 
         <!-- Applicants Table -->
-        <div class="bg-white/80 backdrop-blur-sm shadow-xl rounded-2xl border border-white/20">
-          <div class="flex justify-between items-center p-8 border-b border-gray-200">
-            <h2 class="text-2xl font-bold text-gray-800">Applicants Management</h2>
-            <div class="space-x-2">
-              <button
-                v-if="selectedApplicants.length > 0"
-                @click="bulkDeleteApplicants"
-                class="bg-red-500 hover:bg-red-600 text-white font-semibold px-6 py-3 rounded-full shadow-lg transition-all duration-200 transform hover:scale-105"
-              >
-                Delete Selected ({{ selectedApplicants.length }})
-              </button>
-            </div>
+        <!-- Updated applicants table to match modern design -->        
+        <div class="bg-white rounded-2xl shadow-lg overflow-hidden border border-gray-200">
+          <div class="overflow-x-auto">
+            <table class="w-full">
+              <thead class="bg-gradient-to-r from-blue-50 to-blue-100">
+                <tr>
+                  <th class="text-left py-4 px-6 font-semibold text-blue-900">
+                    <input type="checkbox" @change="toggleAllApplicants" :checked="selectedApplicants.length === applicantsList.length && applicantsList.length > 0" />
+                  </th>
+                  <th class="text-left py-4 px-6 font-semibold text-blue-900">ID</th>
+                  <th class="text-left py-4 px-6 font-semibold text-blue-900">Name</th>
+                  <th class="text-left py-4 px-6 font-semibold text-blue-900">Email</th>
+                  <th class="text-left py-4 px-6 font-semibold text-blue-900">Phone</th>
+                  <th class="text-left py-4 px-6 font-semibold text-blue-900">Gender</th>
+                  <th class="text-left py-4 px-6 font-semibold text-blue-900">Registration Date</th>
+                  <th class="text-left py-4 px-6 font-semibold text-blue-900">Actions</th>
+                </tr>
+              </thead>
+              <tbody class="bg-white divide-y divide-gray-100">
+                <tr v-for="(applicant, idx) in applicantsList" :key="applicant.Applicant_Id" class="hover:bg-gray-50 transition-colors duration-200">
+                  <td class="py-4 px-6">
+                    <input type="checkbox" :value="applicant.Applicant_Id" v-model="selectedApplicants" />
+                  </td>
+                  <td class="py-4 px-6 text-gray-900">{{ idx + 1 }}</td>
+                  <td class="py-4 px-6 text-gray-900">{{ applicant.Full_Name }}</td>
+                  <td class="py-4 px-6 text-gray-900">{{ applicant.Email }}</td>
+                  <td class="py-4 px-6 text-gray-900">{{ applicant.Phone }}</td>
+                  <td class="py-4 px-6 text-gray-900">{{ applicant.Gender }}</td>
+                  <td class="py-4 px-6 text-gray-900">{{ formatDate(applicant.Registration_Date) }}</td>
+                  <td class="py-4 px-6 space-x-2">
+                    <button
+                      @click="viewApplicant(applicant)"
+                      class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 transform hover:scale-105"
+                    >
+                      View
+                    </button>
+                    <button
+                      @click="deleteApplicant(applicant.Applicant_Id)"
+                      class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 transform hover:scale-105"
+                    >
+                      Delete
+                    </button>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
           </div>
 
-          <!-- Applicants Table -->
-          <div class="bg-purple-100 rounded-b-2xl p-6">
-            <div class="overflow-x-auto">
-              <table class="w-full">
-                <thead>
-                  <tr class="border-b border-purple-200">
-                    <th class="text-left py-4 px-4 font-semibold text-purple-800">
-                      <input 
-                        type="checkbox" 
-                        @change="toggleAllApplicants"
-                        :checked="selectedApplicants.length === applicantsList.length && applicantsList.length > 0"
-                        class="rounded border-purple-300 text-purple-600 focus:ring-purple-500"
-                      >
-                    </th>
-                    <th class="text-left py-4 px-4 font-semibold text-purple-800">ID</th>
-                    <th class="text-left py-4 px-4 font-semibold text-purple-800">Name</th>
-                    <th class="text-left py-4 px-4 font-semibold text-purple-800">Email</th>
-                    <th class="text-left py-4 px-4 font-semibold text-purple-800">Phone</th>
-                    <th class="text-left py-4 px-4 font-semibold text-purple-800">Gender</th>
-                    <th class="text-left py-4 px-4 font-semibold text-purple-800">Registration Date</th>
-                    <th class="text-left py-4 px-4 font-semibold text-purple-800">Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr v-for="applicant in applicantsList" :key="applicant.Applicant_Id" class="border-b border-purple-200 hover:bg-purple-50">
-                    <td class="py-4 px-4">
-                      <input 
-                        type="checkbox" 
-                        :value="applicant.Applicant_Id"
-                        v-model="selectedApplicants"
-                        class="rounded border-purple-300 text-purple-600 focus:ring-purple-500"
-                      >
-                    </td>
-                    <td class="py-4 px-4 text-gray-700">{{ applicant.Applicant_Id }}</td>
-                    <td class="py-4 px-4 text-gray-700">{{ applicant.Full_Name }}</td>
-                    <td class="py-4 px-4 text-gray-700">{{ applicant.Email }}</td>
-                    <td class="py-4 px-4 text-gray-700">{{ applicant.Phone }}</td>
-                    <td class="py-4 px-4 text-gray-700">{{ applicant.Gender }}</td>
-                    <td class="py-4 px-4 text-gray-700">{{ formatDate(applicant.Registration_Date) }}</td>
-                    <td class="py-4 px-4 space-x-2">
-                      <button
-                        @click="viewApplicant(applicant)"
-                        class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 transform hover:scale-105"
-                      >
-                        View
-                      </button>
-                      <button
-                        @click="deleteApplicant(applicant.Applicant_Id)"
-                        class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 transform hover:scale-105"
-                      >
-                        Delete
-                      </button>
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
+          <div v-if="applicantsList.length === 0" class="text-center py-12 text-gray-500">
+            No applicants found. Add some applicants to get started.
+          </div>
+          <div v-else class="flex justify-end px-6 py-4 bg-gray-50">
+            <button
+              @click="bulkDeleteApplicants"
+              :disabled="selectedApplicants.length === 0"
+              class="bg-red-500 hover:bg-red-600 text-white font-semibold px-4 py-2 rounded-lg text-sm shadow-md disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 transform hover:scale-105"
+            >
+              Delete Selected ({{ selectedApplicants.length }})
+            </button>
+          </div>
+        </div>
+      </div>
 
-            <div v-if="applicantsList.length === 0" class="text-center py-12 text-gray-500">
-              No applicants found. Add some applicants to get started.
+      <!-- Exams Management -->
+      <div v-if="activeTab === 'exams'" class="space-y-6">
+        <!-- Action Buttons -->
+        <div class="flex gap-4 mb-6">
+          <button
+            @click="showCreateExamForm = !showCreateExamForm"
+            class="bg-blue-500 hover:bg-blue-600 text-white font-semibold px-6 py-3 rounded-full shadow-lg transition-all duration-200 transform hover:scale-105"
+          >
+            {{ showCreateExamForm ? 'Close' : 'Create Exam' }}
+          </button>
+        </div>
+
+        <!-- Create Exam Form -->
+        <div v-if="showCreateExamForm" class="bg-white/80 backdrop-blur-sm shadow-xl rounded-2xl p-8 border border-white/20 mb-6">
+          <h3 class="text-2xl font-bold text-gray-800 mb-6">Create New Exam</h3>
+          <form @submit.prevent="submitExam">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <label class="block text-sm font-semibold text-gray-700 mb-2">Exam Name</label>
+                <input
+                  v-model="examForm.exam_name"
+                  type="text"
+                  required
+                  class="w-full border border-gray-300 rounded-xl px-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
+                  placeholder="Enter exam name"
+                >
+              </div>
+              <div>
+                <label class="block text-sm font-semibold text-gray-700 mb-2">Exam Date</label>
+                <input
+                  v-model="examForm.exam_date"
+                  type="date"
+                  required
+                  class="w-full border border-gray-300 rounded-xl px-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200" :min="todayDate"
+                >
+              </div>
+              <div>
+                <label class="block text-sm font-semibold text-gray-700 mb-2">Exam Time</label>
+                <input
+                  v-model="examForm.exam_time"
+                  type="time"
+                  required
+                  class="w-full border border-gray-300 rounded-xl px-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
+                >
+              </div>
+              <div>
+                <label class="block text-sm font-semibold text-gray-700 mb-2">Duration (Minutes)</label>
+                <input
+                  v-model="examForm.duration"
+                  type="number"
+                  required
+                  class="w-full border border-gray-300 rounded-xl px-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
+                  placeholder="Enter duration in minutes"
+                >
+              </div>
+              <div>
+                <label class="block text-sm font-semibold text-gray-700 mb-2">Total Questions</label>
+                <input
+                  v-model="examForm.total_questions"
+                  type="number"
+                  required
+                  class="w-full border border-gray-300 rounded-xl px-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
+                  placeholder="Enter total questions"
+                >
+              </div>
+              <div>
+                <label class="block text-sm font-semibold text-gray-700 mb-2">Maximum Marks</label>
+                <input
+                  v-model="examForm.max_marks"
+                  type="number"
+                  required
+                  class="w-full border border-gray-300 rounded-xl px-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
+                  placeholder="Enter maximum marks"
+                >
+              </div>
             </div>
+            <div class="flex justify-end space-x-4 mt-8">
+              <button
+                type="button"
+                @click="showCreateExamForm = false"
+                class="px-6 py-3 text-sm font-semibold text-gray-700 bg-gray-200 hover:bg-gray-300 rounded-full transition-all duration-200 transform hover:scale-105"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                class="px-6 py-3 text-sm font-semibold text-white bg-blue-500 hover:bg-blue-600 rounded-full transition-all duration-200 transform hover:scale-105"
+              >
+                Create Exam
+              </button>
+            </div>
+          </form>
+        </div>
+
+        <!-- Created Exams Table -->
+        <!-- Updated exams table to match modern design with colored action buttons -->        
+        <div class="bg-white rounded-2xl shadow-lg overflow-hidden border border-gray-200">
+          <div class="overflow-x-auto">
+            <table class="w-full">
+              <thead class="bg-gradient-to-r from-blue-50 to-blue-100">
+                <tr>
+                  <th class="text-left py-4 px-6 font-semibold text-blue-900">ID</th>
+                  <th class="text-left py-4 px-6 font-semibold text-blue-900">Exam Name</th>
+                  <th class="text-left py-4 px-6 font-semibold text-blue-900">Date</th>
+                  <th class="text-left py-4 px-6 font-semibold text-blue-900">Time</th>
+                  <th class="text-left py-4 px-6 font-semibold text-blue-900">Duration (Min)</th>
+                  <th class="text-left py-4 px-6 font-semibold text-blue-900">Questions</th>
+                  <th class="text-left py-4 px-6 font-semibold text-blue-900">Max Marks</th>
+                  <th class="text-left py-4 px-6 font-semibold text-blue-900">Actions</th>
+                </tr>
+              </thead>
+              <tbody class="bg-white divide-y divide-gray-100">
+                <tr v-for="(exam, idx) in visibleCreatedExams" :key="exam.Exam_Id" class="hover:bg-gray-50 transition-colors duration-200">
+                  <td class="py-4 px-6 text-gray-900">{{ idx + 1 }}</td>
+                  <td class="py-4 px-6 text-gray-900">{{ exam.Exam_Name }}</td>
+                  <td class="py-4 px-6 text-gray-900">{{ formatDate(exam.Exam_Date) }}</td>
+                  <td class="py-4 px-6 text-gray-900">{{ exam.Exam_Time }}</td>
+                  <td class="py-4 px-6 text-gray-900">{{ exam.Duration_Minutes }}</td>
+                  <td class="py-4 px-6 text-gray-900">{{ exam.Total_Questions }}</td>
+                  <td class="py-4 px-6 text-gray-900">{{ exam.Max_Marks }}</td>
+                  <td class="py-4 px-6 space-x-2">
+                    <button
+                      @click="navigateToAddStudents(exam.Exam_Id)"
+                      class="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1.5 rounded-lg text-xs font-medium transition-all duration-200 transform hover:scale-105"
+                    >
+                      Add Students
+                    </button>
+                    <button
+                      @click="navigateToAddQuestions(exam.Exam_Id)"
+                      class="bg-green-500 hover:bg-green-600 text-white px-3 py-1.5 rounded-lg text-xs font-medium transition-all duration-200 transform hover:scale-105"
+                    >
+                      Add Question Bank
+                    </button>
+                    <button
+                      @click="navigateToMakeQuestionPaper(exam.Exam_Id)"
+                      class="bg-purple-500 hover:bg-purple-600 text-white px-3 py-1.5 rounded-lg text-xs font-medium transition-all duration-200 transform hover:scale-105"
+                    >
+                      Make Question Paper
+                    </button>
+                    <button
+                      @click="deleteExam(exam.Exam_Id)"
+                      class="bg-red-500 hover:bg-red-600 text-white px-3 py-1.5 rounded-lg text-xs font-medium transition-all duration-200 transform hover:scale-105"
+                    >
+                      Delete
+                    </button>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div v-if="visibleCreatedExams.length === 0" class="text-center py-12 text-gray-500">
+            No exams created yet. Create your first exam to get started.
+          </div>
+        </div>
+
+        <!-- Conducted Exams Table -->
+        <div v-if="conductedExams && conductedExams.length" class="mt-12 bg-white rounded-2xl shadow-lg overflow-hidden border border-gray-200">
+          <div class="px-6 py-4 bg-gradient-to-r from-purple-50 to-purple-100 border-b border-purple-200">
+            <h2 class="text-2xl font-bold text-purple-900">Conducted Exams</h2>
+          </div>
+          <div class="overflow-x-auto">
+            <table class="w-full">
+              <thead class="bg-gradient-to-r from-blue-50 to-blue-100">
+                <tr>
+                  <th class="text-left py-4 px-6 font-semibold text-blue-900">ID</th>
+                  <th class="text-left py-4 px-6 font-semibold text-blue-900">Exam Name</th>
+                  <th class="text-left py-4 px-6 font-semibold text-blue-900">Date</th>
+                  <th class="text-left py-4 px-6 font-semibold text-blue-900">Faculty Email</th>
+                  <th class="text-left py-4 px-6 font-semibold text-blue-900">Total Applicants</th>
+                  <th class="text-left py-4 px-6 font-semibold text-blue-900">Attempted</th>
+                  <th class="text-center py-4 px-6 font-semibold text-blue-900">Actions</th>
+                </tr>
+              </thead>
+              <tbody class="bg-white divide-y divide-gray-100">
+                <tr v-for="(exam, idx) in conductedExams" :key="exam.Exam_Id" class="hover:bg-gray-50 transition-colors duration-200">
+                  <td class="py-4 px-6 text-gray-900">{{ idx + 1 }}</td>
+                  <td class="py-4 px-6 text-gray-900">{{ exam.Exam_Name || 'N/A' }}</td>
+                  <td class="py-4 px-6 text-gray-900">{{ formatDate(exam.Exam_Date) }}</td>
+                  <td class="py-4 px-6 text-gray-900">{{ exam.faculty_email || 'N/A' }}</td>
+                  <td class="py-4 px-6 text-gray-900">{{ exam.total_applicants || 0 }}</td>
+                  <td class="py-4 px-6 text-gray-900">{{ exam.attempted_applicants || 0 }}</td>
+                  <td class="py-4 px-6 text-center">
+                   <button
+                    @click="$router.push({ name: 'ViewResponsesAdmin', params: { examId: exam.Exam_Id } })"
+                    class="bg-purple-500 hover:bg-purple-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 transform hover:scale-105 shadow-md"
+                  >
+                    View Responses
+                  </button>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
           </div>
         </div>
       </div>
@@ -346,25 +525,26 @@
             </button>
           </div>
 
-          <div class="bg-purple-100 rounded-xl p-6 border border-purple-200">
+          <!-- Updated table design to match modern style with light blue header -->
+          <div class="bg-white rounded-2xl shadow-lg border border-gray-200 overflow-hidden">
             <div class="overflow-x-auto">
               <table class="w-full">
                 <thead>
-                  <tr class="border-b border-purple-200">
-                    <th class="text-left py-4 px-4 font-semibold text-purple-800">ID</th>
-                    <th class="text-left py-4 px-4 font-semibold text-purple-800">Name</th>
-                    <th class="text-left py-4 px-4 font-semibold text-purple-800">Email</th>
-                    <th class="text-left py-4 px-4 font-semibold text-purple-800">Actions</th>
+                  <tr class="bg-gradient-to-r from-blue-50 to-blue-100 border-b border-blue-200">
+                    <th class="text-left py-4 px-6 font-semibold text-blue-900">ID</th>
+                    <th class="text-left py-4 px-6 font-semibold text-blue-900">Name</th>
+                    <th class="text-left py-4 px-6 font-semibold text-blue-900">Email</th>
+                    <th class="text-left py-4 px-6 font-semibold text-blue-900">Actions</th>
                   </tr>
                 </thead>
-                <tbody>
-                  <tr v-for="admin in adminsList" :key="admin.Admin_ID" class="border-b border-purple-200 hover:bg-purple-50">
-                    <td class="py-4 px-4 text-gray-700">{{ admin.Admin_ID }}</td>
-                    <td class="py-4 px-4 text-gray-700">{{ admin.Name }}</td>
-                    <td class="py-4 px-4 text-gray-700">{{ admin.Email }}</td>
-                    <td class="py-4 px-4 space-x-2">
-                      <button @click="editAdmin(admin)" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 transform hover:scale-105">Edit</button>
-                      <button @click="deleteAdmin(admin.Admin_ID)" class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 transform hover:scale-105">Delete</button>
+                <tbody class="bg-white">
+                  <tr v-for="(admin, idx) in adminsList" :key="admin.Admin_ID" class="border-b border-gray-100 hover:bg-gray-50 transition-colors duration-200">
+                    <td class="py-4 px-6 text-gray-700 font-medium">{{ idx + 1 }}</td>
+                    <td class="py-4 px-6 text-gray-700">{{ admin.Name }}</td>
+                    <td class="py-4 px-6 text-gray-700">{{ admin.Email }}</td>
+                    <td class="py-4 px-6 space-x-2">
+                      <button @click="editAdmin(admin)" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 transform hover:scale-105 shadow-md">Edit</button>
+                      <button @click="deleteAdmin(admin.Admin_ID)" class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 transform hover:scale-105 shadow-md">Delete</button>
                     </td>
                   </tr>
                 </tbody>
@@ -379,38 +559,74 @@
         <div class="bg-white/80 backdrop-blur-sm shadow-xl rounded-2xl p-8 border border-white/20">
           <h2 class="text-2xl font-bold text-gray-800 mb-6">Login Logs</h2>
 
-          <div class="bg-purple-100 rounded-xl p-6 border border-purple-200">
+          <!-- Updated login logs table design to match modern style -->
+          <div class="bg-white rounded-2xl shadow-lg border border-gray-200 overflow-hidden">
             <div class="overflow-x-auto">
               <table class="w-full">
                 <thead>
-                  <tr class="border-b border-purple-200">
-                    <th class="text-left py-4 px-4 font-semibold text-purple-800">Log ID</th>
-                    <th class="text-left py-4 px-4 font-semibold text-purple-800">User Email</th>
-                    <th class="text-left py-4 px-4 font-semibold text-purple-800">Role</th>
-                    <th class="text-left py-4 px-4 font-semibold text-purple-800">Login Time</th>
-                    <th class="text-left py-4 px-4 font-semibold text-purple-800">Logout Time</th>
-                    <th class="text-left py-4 px-4 font-semibold text-purple-800">Actions</th>
+                  <tr class="bg-gradient-to-r from-blue-50 to-blue-100 border-b border-blue-200">
+                    <th class="text-left py-4 px-6 font-semibold text-blue-900">ID</th>
+                    <th class="text-left py-4 px-6 font-semibold text-blue-900">User Email</th>
+                    <th class="text-left py-4 px-6 font-semibold text-blue-900">Role</th>
+                    <th class="text-left py-4 px-6 font-semibold text-blue-900">Login Time</th>
+                    <th class="text-left py-4 px-6 font-semibold text-blue-900">Logout Time</th>
+                    <th class="text-left py-4 px-6 font-semibold text-blue-900">Actions</th>
                   </tr>
                 </thead>
-                <tbody>
-                  <tr v-for="log in logsList" :key="log.Log_ID" class="border-b border-purple-200 hover:bg-purple-50">
-                    <td class="py-4 px-4 text-gray-700">{{ log.Log_ID }}</td>
-                    <td class="py-4 px-4 text-gray-700">{{ log.User_Email }}</td>
-                    <td class="py-4 px-4">
+                <tbody class="bg-white">
+                  <tr v-for="(log, idx) in logsList" :key="log.Log_ID" class="border-b border-gray-100 hover:bg-gray-50 transition-colors duration-200">
+                    <td class="py-4 px-6 text-gray-700 font-medium">{{ idx + 1 }}</td>
+                    <td class="py-4 px-6 text-gray-700">{{ log.User_Email }}</td>
+                    <td class="py-4 px-6">
                       <span :class="getRoleColor(log.Role)" class="px-3 py-1 rounded-full text-xs font-medium">
                         {{ log.Role }}
                       </span>
                     </td>
-                    <td class="py-4 px-4 text-gray-700">{{ log.Login_Time || 'N/A' }}</td>
-                    <td class="py-4 px-4 text-gray-700">{{ log.Logout_Time || 'N/A' }}</td>
-                    <td class="py-4 px-4 space-x-2">
-                      <button @click="viewLog(log)" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 transform hover:scale-105">View</button>
-                      <button @click="deleteLog(log.Log_ID)" class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 transform hover:scale-105">Delete</button>
+                    <td class="py-4 px-6 text-gray-700">{{ formatDateTime(log.Login_Time) || 'N/A' }}</td>
+                    <td class="py-4 px-6 text-gray-700">{{ formatDateTime(log.Logout_Time) || 'N/A' }}</td>
+                    <td class="py-4 px-6 space-x-2">
+                      <button @click="viewLog(log)" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 transform hover:scale-105 shadow-md">View</button>
                     </td>
                   </tr>
                 </tbody>
               </table>
             </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Notification Popup -->
+    <div v-if="message" class="fixed top-4 right-4 z-[100] max-w-md">
+      <div
+        :class="[
+          'p-4 rounded-xl shadow-2xl border-l-4 transform transition-all duration-300 ease-in-out',
+          messageType === 'error'
+            ? 'bg-red-50 text-red-800 border-red-500'
+            : 'bg-green-50 text-green-800 border-green-500'
+        ]"
+        class="animate-slide-in-right"
+      >
+        <div class="flex items-center justify-between">
+          <div class="flex items-center">
+            <div class="flex-shrink-0">
+              <svg v-if="messageType === 'error'" class="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
+                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" />
+              </svg>
+              <svg v-else class="h-5 w-5 text-green-400" viewBox="0 0 20 20" fill="currentColor">
+                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+              </svg>
+            </div>
+            <div class="ml-3">
+              <p class="text-sm font-medium">{{ message }}</p>
+            </div>
+          </div>
+          <div class="ml-4 flex-shrink-0">
+            <button @click="message = ''" class="inline-flex text-gray-400 hover:text-gray-600 focus:outline-none focus:text-gray-600 transition ease-in-out duration-150">
+              <svg class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" />
+              </svg>
+            </button>
           </div>
         </div>
       </div>
@@ -425,6 +641,7 @@
         </h3>
         <form @submit.prevent="showAddFacultyModal ? addFaculty() : updateFaculty()">
           <div class="space-y-4">
+            <input v-model="facultyForm.Faculty_Id" type="hidden">
             <div>
               <label class="block text-sm font-semibold text-gray-700 mb-3">Name</label>
               <input
@@ -475,7 +692,7 @@
               >
             </div>
           </div>
-          <div class="flex justify-center space-x-4 mt-8 pt-4">
+          <div class="flex justify-center space-x-4 mt-8">
             <button
               type="button"
               @click="closeFacultyModal"
@@ -502,6 +719,7 @@
         </h3>
         <form @submit.prevent="showAddSchoolModal ? addSchool() : updateSchool()">
           <div class="space-y-4">
+            <input v-model="schoolForm.School_Id" type="hidden">
             <div>
               <label class="block text-sm font-semibold text-gray-700 mb-3">School Name</label>
               <input
@@ -521,7 +739,7 @@
               >
             </div>
           </div>
-          <div class="flex justify-center space-x-4 mt-8 pt-4">
+          <div class="flex justify-center space-x-4 mt-8">
             <button
               type="button"
               @click="closeSchoolModal"
@@ -574,7 +792,7 @@
             <span class="text-gray-800 font-medium">{{ formatDate(selectedApplicant.Registration_Date) }}</span>
           </div>
         </div>
-        <div class="flex justify-center space-x-4 mt-8 pt-4">
+        <div class="flex justify-center space-x-4 mt-8">
           <button
             @click="showViewApplicantModal = false"
             class="px-8 py-3 text-sm font-semibold text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-full transition-all duration-200 transform hover:scale-105 min-w-[100px]"
@@ -593,6 +811,7 @@
         </h3>
         <form @submit.prevent="showAddAdminModal ? addAdmin() : updateAdmin()">
           <div class="space-y-4">
+            <input v-model="adminForm.Admin_ID" type="hidden">
             <div>
               <label class="block text-sm font-semibold text-gray-700 mb-3">Name</label>
               <input v-model="adminForm.Name" type="text" required class="w-full border border-gray-200 rounded-2xl px-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-purple-50 focus:bg-white">
@@ -606,7 +825,7 @@
               <input v-model="adminForm.Password" type="password" required class="w-full border border-gray-200 rounded-2xl px-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-purple-50 focus:bg-white">
             </div>
           </div>
-          <div class="flex justify-center space-x-4 mt-8 pt-4">
+          <div class="flex justify-center space-x-4 mt-8">
             <button type="button" @click="closeAdminModal" class="px-8 py-3 text-sm font-semibold text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-full transition-all duration-200 transform hover:scale-105 min-w-[100px]">Cancel</button>
             <button type="submit" class="px-8 py-3 text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-full transition-all duration-200 transform hover:scale-105 min-w-[100px]">
               {{ showAddAdminModal ? 'Add' : 'Update' }}
@@ -635,11 +854,11 @@
           </div>
           <div class="flex justify-between items-center py-2 border-b border-gray-100">
             <span class="font-semibold text-gray-700">Login Time:</span>
-            <span>{{ selectedLog.Login_Time || 'N/A' }}</span>
+            <span>{{ formatDateTime(selectedLog.Login_Time) || 'N/A' }}</span>
           </div>
           <div class="flex justify-between items-center py-2 border-b border-gray-100">
             <span class="font-semibold text-gray-700">Logout Time:</span>
-            <span>{{ selectedLog.Logout_Time || 'N/A' }}</span>
+            <span>{{ formatDateTime(selectedLog.Logout_Time) || 'N/A' }}</span>
           </div>
           <div v-if="selectedLog.Student_ID" class="flex justify-between items-center py-2 border-b border-gray-100">
             <span class="font-semibold text-gray-700">Student ID:</span>
@@ -654,7 +873,7 @@
             <span>{{ selectedLog.Applicant_ID }}</span>
           </div>
         </div>
-        <div class="flex justify-center space-x-4 mt-8 pt-4">
+        <div class="flex justify-center space-x-4 mt-8">
           <button @click="showViewLogModal = false" class="px-8 py-3 text-sm font-semibold text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-full transition-all duration-200 transform hover:scale-105 min-w-[100px]">Close</button>
         </div>
       </div>
@@ -716,7 +935,7 @@
           </div>
         </div>
         
-        <div class="flex justify-center space-x-4 mt-8 pt-4">
+        <div class="flex justify-center space-x-4 mt-8">
           <button
             type="button"
             @click="closeUploadModal"
@@ -738,16 +957,36 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+/* eslint-disable react-hooks/rules-of-hooks, react-hooks/exhaustive-deps */
+import { ref, onMounted, computed, watch, onUnmounted } from 'vue'
 import axios from 'axios'
+import { useRouter, useRoute } from 'vue-router'
+
+// --- Vue Router Setup ---
+const route = useRoute()
+const router = useRouter()
+// --- End Vue Router Setup ---
+
+// Date blocking
+const todayDate = computed(() => {
+  const today = new Date()
+  const year = today.getFullYear()
+  const month = String(today.getMonth() + 1).padStart(2, '0')
+  const day = String(today.getDate()).padStart(2, '0')
+  return `${year}-${month}-${day}`
+})
 
 // Data
-const activeTab = ref('faculty')
+// Initialize activeTab from the query string (fallback to 'faculty')
+const activeTab = ref(typeof route.query.tab === 'string' ? route.query.tab : 'faculty')
 const facultyList = ref([])
 const schoolsList = ref([])
 const applicantsList = ref([])
 const adminsList = ref([])
 const logsList = ref([])
+
+// Added for conducted exams
+const conductedExamsList = ref([]) // Updated initialization
 
 // Message system
 const message = ref('')
@@ -765,6 +1004,7 @@ const showViewApplicantModal = ref(false)
 const showAddAdminModal = ref(false)
 const showEditAdminModal = ref(false)
 const showViewLogModal = ref(false)
+const showUploadApplicantsModal = ref(false) // Added for upload modal
 
 // Forms
 const facultyForm = ref({
@@ -794,7 +1034,6 @@ const selectedLog = ref(null)
 
 // Add these new reactive variables
 const showAddApplicantForm = ref(false)
-const showUploadApplicantsModal = ref(false)
 const selectedFile = ref(null)
 const isUploading = ref(false)
 const uploadProgress = ref(0)
@@ -810,15 +1049,31 @@ const newApplicant = ref({
   Address: ''
 })
 
+// Exam management
+const showCreateExamForm = ref(false)
+const examsList = ref([])
+// const conductedExamsList = ref([]) // This was moved up
+
+const examForm = ref({
+  exam_name: '',
+  exam_date: '',
+  exam_time: '',
+  duration: '',
+  total_questions: '',
+  max_marks: '',
+  faculty_email: localStorage.getItem('admin_email') || ''
+})
+
 // Admin user info
 const adminName = ref('Admin')
-const adminEmail = ref(localStorage.getItem('faculty_email') || '') // Reuse same key as mentioned in the code
+const adminEmail = ref(localStorage.getItem('admin_email') || '') // Reuse same key as mentioned in the code
 
 // Tabs
 const tabs = [
   { id: 'faculty', name: 'Faculty' },
   { id: 'schools', name: 'Schools' },
   { id: 'applicants', name: 'Applicants' },
+  { id: 'exams', name: 'Exams' },
   { id: 'admins', name: 'Admins' },
   { id: 'logs', name: 'Login Logs' }
 ]
@@ -826,13 +1081,35 @@ const tabs = [
 // API Base URL
 const API_BASE = 'http://localhost:5000/api'
 
-// Message helper
+// Computed property for conducted exams
+const conductedExams = computed(() => conductedExamsList.value) // Added computed property
+
+const isExamEnded = (exam) => {
+  try {
+    const dateStr = typeof exam.Exam_Date === 'string'
+      ? exam.Exam_Date
+      : new Date(exam.Exam_Date).toISOString().slice(0, 10)
+    const timeStr = (exam.Exam_Time ?? '00:00:00').toString()
+    const start = new Date(`${dateStr}T${timeStr}`)
+    if (Number.isNaN(start.getTime())) return false
+    const durationMin = Number(exam.Duration_Minutes || 0)
+    const end = new Date(start.getTime() + durationMin * 60_000)
+    return end.getTime() <= Date.now()
+  } catch {
+    return false
+  }
+}
+
+// Created exams: only show exams that have NOT ended yet
+const visibleCreatedExams = computed(() => examsList.value.filter(exam => !isExamEnded(exam)))
+
+// Message system helper
 const showMessage = (msg, type = 'success') => {
   message.value = msg
   messageType.value = type
   setTimeout(() => {
     message.value = ''
-  }, 5000)
+  }, 6000) // Auto-hide after 6 seconds
 }
 
 // Bulk operations
@@ -854,7 +1131,7 @@ const bulkDeleteApplicants = async () => {
       })
       await fetchApplicants()
       selectedApplicants.value = []
-      showMessage(`Successfully deleted ${selectedApplicants.value.length} applicants`)
+      showMessage(`Successfully deleted applicants`)
     } catch (error) {
       console.error('Error in bulk delete:', error)
       showMessage(error.response?.data?.error || 'Error deleting applicants', 'error')
@@ -875,6 +1152,8 @@ const fetchAdmins = async () => {
 const fetchLogs = async () => {
   try {
     const response = await axios.get(`${API_BASE}/admin/logs`)
+    console.log('Raw logs response:', response.data)
+    console.log('First log item:', response.data[0])
     logsList.value = response.data
   } catch (error) {
     console.error('Error fetching logs:', error)
@@ -929,19 +1208,6 @@ const deleteAdmin = async (id) => {
 const viewLog = (log) => {
   selectedLog.value = log
   showViewLogModal.value = true
-}
-
-const deleteLog = async (id) => {
-  if (confirm('Are you sure you want to delete this log entry?')) {
-    try {
-      await axios.delete(`${API_BASE}/admin/logs/${id}`)
-      await fetchLogs()
-      showMessage('Log deleted successfully')
-    } catch (error) {
-      console.error('Error deleting log:', error)
-      showMessage(error.response?.data?.error || 'Error deleting log', 'error')
-    }
-  }
 }
 
 // Modal close methods
@@ -1131,7 +1397,7 @@ const submitApplicant = async () => {
         Address: ''
       }
     } else {
-      showMessage(response.data.message || 'Failed to add applicant', 'error')
+      showMessage(response.data.message || 'Failed to add applicant Duplicate entry ', 'error')
     }
   } catch (error) {
     console.error('Error adding applicant:', error)
@@ -1211,18 +1477,114 @@ const closeUploadModal = () => {
   isUploading.value = false
 }
 
+// Exam methods
+const fetchExams = async () => {
+  if (!adminEmail.value) return;
+  try {
+    const response = await axios.get(`${API_BASE}/exam/get_exams/${adminEmail.value}`)
+    if (response.data.success) {
+      examsList.value = response.data.exams
+    }
+  } catch (error) {
+    console.error('Error fetching exams:', error)
+    showMessage('Error fetching exams data', 'error')
+  }
+}
+
+// Updated fetchConductedExams function
+const fetchConductedExams = async () => {
+  try {
+    const response = await axios.get(`${API_BASE}/admin/conducted_exams`)
+    if (response.data.success) {
+      conductedExamsList.value = response.data.exams
+    }
+  } catch (error) {
+    console.error('Error fetching conducted exams:', error)
+    showMessage('Error fetching conducted exams', 'error')
+  }
+}
+
+const submitExam = async () => {
+  try {
+    const response = await axios.post(`${API_BASE}/exam/create`, examForm.value)
+    if (response.data.success) {
+      showMessage('Exam created successfully!')
+      await fetchExams()
+      showCreateExamForm.value = false
+      // Reset form
+      examForm.value = {
+        exam_name: '',
+        exam_date: '',
+        exam_time: '',
+        duration: '',
+        total_questions: '',
+        max_marks: '',
+        admin_email: adminEmail.value
+      }
+    } else {
+      showMessage(response.data.message || 'Failed to create exam', 'error')
+    }
+  } catch (error) {
+    console.error('Error creating exam:', error)
+    showMessage('Error creating exam', 'error')
+  }
+}
+
+const deleteExam = async (examId) => {
+  if (confirm('Are you sure you want to delete this exam?')) {
+    try {
+      const response = await axios.delete(`${API_BASE}/exam/delete/${examId}`)
+      if (response.data.success) {
+        showMessage('Exam deleted successfully!')
+        await fetchExams()
+        await fetchConductedExams()
+      } else {
+        showMessage(response.data.error || 'Failed to delete exam', 'error')
+      }
+    } catch (error) {
+      console.error('Error deleting exam:', error)
+      const errorMsg = error.response?.data?.error || error.message || 'Error deleting exam'
+      showMessage(errorMsg, 'error')
+    }
+  }
+}
+
+// Navigation function with route mapping (same as Faculty.vue)
+const navigateTo = (action, examId) => {
+  const routeMap = {
+    AddApplicants_exam: 'AddApplicantsexam',
+    AddQuestion: 'AddQuestion',
+    MakeQuestionPaper: 'MakeQuestionPaper',
+    UploadStudents: 'UploadStudents', // Added for the upload button
+    ViewResponses: 'ViewResponses'
+  }
+  if (examId) {
+    router.push({ name: routeMap[action], params: { examId } })
+  } else {
+    router.push({ name: routeMap[action] })
+  }
+}
+
+// Navigation methods for exam actions
+const navigateToAddStudents = (examId) => {
+  navigateTo('AddApplicants_exam', examId)
+}
+
+const navigateToAddQuestions = (examId) => {
+  navigateTo('AddQuestion', examId)
+}
+
+const navigateToMakeQuestionPaper = (examId) => {
+  navigateTo('MakeQuestionPaper', examId)
+}
+
 const getSchoolName = (schoolId) => {
   const school = schoolsList.value.find(s => s.School_Id === schoolId)
   return school ? school.School_Name : 'Unknown'
 }
 
-const formatDate = (dateString) => {
-  if (!dateString) return 'N/A'
-  return new Date(dateString).toLocaleDateString()
-}
-
 const logout = async () => {
-  const email = localStorage.getItem('faculty_email') // Again, adjust if you use different keys for admin
+  const email = localStorage.getItem('admin_email') // Again, adjust if you use different keys for admin
   const role = 'Admin'
   
   try {
@@ -1233,8 +1595,8 @@ const logout = async () => {
     });
     
     // Clear local storage
-    localStorage.removeItem('faculty_email')
-    localStorage.removeItem('faculty_name')
+    localStorage.removeItem('admin_email')
+    localStorage.removeItem('admin_name')
     
     // Redirect to login page
     window.location.href = '/'
@@ -1244,10 +1606,21 @@ const logout = async () => {
   }
 }
 
+const formatDate = (dateString) => {
+  if (!dateString) return 'N/A'
+  
+  const isoString = dateString.includes('T') ? dateString : dateString.replace(' ', 'T')
+  const date = new Date(isoString)
+  return isNaN(date.getTime()) ? 'Invalid Date' : date.toLocaleDateString('en-IN')
+}
+
 // Utility methods
 const formatDateTime = (dateString) => {
   if (!dateString) return 'N/A'
-  return new Date(dateString).toLocaleString()
+  // Convert MySQL datetime to ISO format
+  const isoString = dateString.includes('T') ? dateString : dateString.replace(' ', 'T')
+  const date = new Date(isoString)
+  return isNaN(date.getTime()) ? 'Invalid Date' : date.toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' })
 }
 
 const getRoleColor = (role) => {
@@ -1259,15 +1632,52 @@ const getRoleColor = (role) => {
   }
 }
 
-// Initialize
+// Watcher to update URL when activeTab changes
+watch(activeTab, (val) => {
+  // Keep other existing query params
+  const q = { ...route.query, tab: val }
+  router.replace({ name: 'Admin', query: q })
+})
+
+let refreshTimer
 onMounted(async () => {
-  const name = localStorage.getItem('faculty_name') // Reuse same key if you're not storing separately for admin
-  if (name) adminName.value = name
+  adminName.value = localStorage.getItem('admin_name') || 'Admin';
+  adminEmail.value = localStorage.getItem('admin_email') || '';
+  examForm.value.admin_email = adminEmail.value; // Set email for exam form
   
   await fetchSchools()
   await fetchFaculty()
   await fetchApplicants()
   await fetchAdmins()
   await fetchLogs()
+  await fetchExams()
+  await fetchConductedExams() // Call the updated function
+
+  // refresh every 60s to auto-move ended exams
+  refreshTimer = setInterval(async () => {
+    await fetchExams()
+    await fetchConductedExams()
+  }, 60_000)
+})
+
+onUnmounted(() => {
+  if (refreshTimer) clearInterval(refreshTimer)
 })
 </script>
+
+<style scoped>
+@keyframes slide-in-right {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+.animate-slide-in-right {
+  animation: slide-in-right 0.3s ease-out;
+}
+</style>

@@ -2,47 +2,59 @@ from flask import Blueprint, request, jsonify
 import pandas as pd
 import os
 from werkzeug.utils import secure_filename
+from datetime import datetime
+
 
 def create_add_students_bp(mysql):
     add_students_bp = Blueprint('add_students', __name__)
     ALLOWED_EXTENSIONS = {'csv', 'xlsx'}
 
+    # --------------------------------------------------
+    # Helper Function: Validate File Type
+    # --------------------------------------------------
     def allowed_file(filename):
         return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
+    # --------------------------------------------------
+    # Route 1: Add Students Directly (basic upload)
+    # --------------------------------------------------
     @add_students_bp.route('/add_students', methods=['POST'])
     def add_students():
         file = request.files.get('file')
-        exam_id = request.form.get('exam_id')  # optional exam linkage
+        exam_id = request.form.get('exam_id')  # Optional exam linkage
 
         if not file or not allowed_file(file.filename):
             return jsonify({'error': 'Invalid or missing file'}), 400
 
         try:
-            # Read Excel or CSV file
+            # Read Excel or CSV
             if file.filename.endswith('.csv'):
                 df = pd.read_csv(file)
             else:
                 df = pd.read_excel(file)
 
-
+            df.columns = [col.strip() for col in df.columns]
             required_columns = ['Full_Name', 'Email', 'Password', 'Phone', 'DOB', 'Gender', 'Address']
             if not all(col in df.columns for col in required_columns):
                 return jsonify({'error': 'Missing required columns in uploaded file'}), 400
-        
-        
 
-            # Connect to MySQL
-            connection = mysql.connector.connect(
-                host='localhost',
-                user='root',
-                password='manager',
-                database='entrance_database'
-            )
-            cursor = connection.cursor()
+            cursor = mysql.connection.cursor()
 
             for _, row in df.iterrows():
                 try:
+                    dob_value = row['DOB']
+                    if pd.notnull(dob_value):
+                        if isinstance(dob_value, datetime):
+                            dob_mysql = dob_value.strftime("%Y-%m-%d")
+                        else:
+                            try:
+                                dob_obj = datetime.strptime(str(dob_value).strip(), "%d/%m/%Y")
+                                dob_mysql = dob_obj.strftime("%Y-%m-%d")
+                            except:
+                                dob_mysql = None
+                    else:
+                        dob_mysql = None
+
                     cursor.execute("""
                         INSERT INTO applicants (Full_Name, Email, Password, Phone, DOB, Gender, Address)
                         VALUES (%s, %s, %s, %s, %s, %s, %s)
@@ -51,31 +63,34 @@ def create_add_students_bp(mysql):
                         row['Email'],
                         row['Password'],
                         row['Phone'],
-                        row['DOB'],
+                        dob_mysql,
                         row['Gender'],
                         row['Address']
                     ))
 
-                # OPTIONAL: Insert into exam_applicants/exam_student mapping table
-                # if exam_id:
-                #     applicant_id = cursor.lastrowid
-                #     cursor.execute("INSERT INTO exam_applicants (exam_id, applicant_id) VALUES (%s, %s)", (exam_id, applicant_id))
+                    # Optionally link to an exam
+                    # if exam_id:
+                    #     applicant_id = cursor.lastrowid
+                    #     cursor.execute("INSERT INTO exam_applicants (exam_id, applicant_id) VALUES (%s, %s)", (exam_id, applicant_id))
 
-                except mysql.connector.errors.IntegrityError:
-                    continue  # Skip duplicate emails
+                except Exception as e:
+                    print("Skipping row due to error:", e)
+                    continue
 
-            connection.commit()
+            mysql.connection.commit()
             cursor.close()
-            connection.close()
 
-            return jsonify({'message': 'Students uploaded successfully'}), 200
+            return jsonify({'message': 'Students added successfully'}), 200
 
         except Exception as e:
+            print("Error:", e)
             return jsonify({'error': str(e)}), 500
-    
+
+    # --------------------------------------------------
+    # Route 2: Upload Students File (logged version)
+    # --------------------------------------------------
     @add_students_bp.route('/upload_students', methods=['POST'])
     def upload_students():
-
         file = request.files.get('file')
         exam_id = request.form.get('exam_id')
         uploaded_by = request.form.get('email')
@@ -97,6 +112,7 @@ def create_add_students_bp(mysql):
             else:
                 df = pd.read_excel(upload_path)
 
+            df.columns = [col.strip() for col in df.columns]
             required_columns = ['Full_Name', 'Email', 'Password', 'Phone', 'DOB', 'Gender', 'Address']
             if not all(col in df.columns for col in required_columns):
                 return jsonify({'error': 'Missing required columns in uploaded file'}), 400
@@ -105,6 +121,19 @@ def create_add_students_bp(mysql):
 
             for _, row in df.iterrows():
                 try:
+                    dob_value = row['DOB']
+                    if pd.notnull(dob_value):
+                        if isinstance(dob_value, datetime):
+                            dob_mysql = dob_value.strftime("%Y-%m-%d")
+                        else:
+                            try:
+                                dob_obj = datetime.strptime(str(dob_value).strip(), "%d/%m/%Y")
+                                dob_mysql = dob_obj.strftime("%Y-%m-%d")
+                            except:
+                                dob_mysql = None
+                    else:
+                        dob_mysql = None
+
                     cursor.execute("""
                         INSERT INTO applicants (Full_Name, Email, Password, Phone, DOB, Gender, Address)
                         VALUES (%s, %s, %s, %s, %s, %s, %s)
@@ -113,21 +142,21 @@ def create_add_students_bp(mysql):
                         row['Email'],
                         row['Password'],
                         row['Phone'],
-                        row['DOB'],
+                        dob_mysql,
                         row['Gender'],
                         row['Address']
                     ))
 
-                # Optional: Insert into exam_applicants
-                # if exam_id:
-                #     applicant_id = cursor.lastrowid
-                #     cursor.execute("INSERT INTO exam_applicants (exam_id, applicant_id) VALUES (%s, %s)", (exam_id, applicant_id))
+                    # Optionally link student to exam
+                    # if exam_id:
+                    #     applicant_id = cursor.lastrowid
+                    #     cursor.execute("INSERT INTO exam_applicants (exam_id, applicant_id) VALUES (%s, %s)", (exam_id, applicant_id))
 
                 except Exception as e:
-                    print("Skip duplicate or error:", e)
-                    continue  # skip duplicates or bad rows
+                    print("Skipping row due to:", e)
+                    continue
 
-            # Log the upload
+            # Log file upload
             cursor.execute("""
                 INSERT INTO file_uploads (Uploaded_By, Role, File_Name, File_Path)
                 VALUES (%s, %s, %s, %s)
@@ -139,8 +168,7 @@ def create_add_students_bp(mysql):
             return jsonify({'message': 'Students uploaded and logged successfully'}), 200
 
         except Exception as e:
-            print("Upload Error:", e)
+            print("Error inserting row:", e)
             return jsonify({'error': str(e)}), 500
-        
-    return add_students_bp
 
+    return add_students_bp

@@ -1,6 +1,7 @@
 from flask import Blueprint, request, jsonify
 from datetime import datetime, timedelta
 
+
 def create_student_routes(mysql):
     student_routes = Blueprint('student_routes', __name__)
 
@@ -18,7 +19,7 @@ def create_student_routes(mysql):
     def get_exam_data():
         try:
             cur = mysql.connection.cursor()
-            
+
             # Get the next upcoming exam
             cur.execute("""
                 SELECT Exam_Id, Exam_Name, Exam_Date, Exam_Time, Duration_Minutes, 
@@ -31,6 +32,7 @@ def create_student_routes(mysql):
             exam = cur.fetchone()
 
             if not exam:
+                cur.close()
                 return jsonify({"message": "No upcoming exam found"}), 404
 
             exam_id = exam[0]
@@ -96,26 +98,26 @@ def create_student_routes(mysql):
             data = request.json
             applicant_id = data.get('applicant_id')
             exam_id = data.get('exam_id')
-            
+
             if not applicant_id or not exam_id:
                 return jsonify({"message": "Applicant ID and Exam ID are required"}), 400
-            
+
             cur = mysql.connection.cursor()
-            
+
             # Get student email
             cur.execute("SELECT Email FROM applicants WHERE Applicant_Id = %s", (applicant_id,))
             applicant_result = cur.fetchone()
-            
+
             if not applicant_result:
                 cur.close()
                 return jsonify({"error": "Applicant not found"}), 404
-            
+
             student_email = applicant_result[0]
-            
+
             # Get exam paper ID
             cur.execute("SELECT Exam_Paper_Id FROM exam_paper WHERE Exam_Id = %s", (exam_id,))
             exam_paper_result = cur.fetchone()
-            
+
             if not exam_paper_result:
                 # Attempt to create exam paper if it doesn't exist (robustness)
                 cur.execute("""
@@ -142,7 +144,7 @@ def create_student_routes(mysql):
                 WHERE aa.Applicant_Id = %s AND ep.Exam_Id = %s
                 ORDER BY aa.Start_Time DESC LIMIT 1
             """, (applicant_id, exam_id))
-            
+
             existing_attempt = cur.fetchone()
             if existing_attempt and existing_attempt[1] in ('Submitted', 'Restricted'):
                 cur.close()
@@ -165,17 +167,17 @@ def create_student_routes(mysql):
                 INSERT INTO applicant_attempt (Applicant_Id, Student_Email, Exam_Paper_Id, Start_Time, Status)
                 VALUES (%s, %s, %s, %s, %s)
             """, (applicant_id, student_email, exam_paper_id, start_time, "In Progress"))
-            
+
             attempt_id = cur.lastrowid
             mysql.connection.commit()
             cur.close()
-            
+
             return jsonify({
                 "message": "Exam attempt started successfully",
                 "attempt_id": attempt_id,
                 "start_time": start_time.strftime('%Y-%m-%d %H:%M:%S')
             })
-            
+
         except Exception as e:
             mysql.connection.rollback()
             return jsonify({"error": str(e)}), 500
@@ -189,7 +191,7 @@ def create_student_routes(mysql):
             
             if not applicant_id:
                 return jsonify({"message": "Applicant ID is required"}), 400
-            
+
             cur = mysql.connection.cursor()
             
             # Check if exam exists
@@ -208,14 +210,16 @@ def create_student_routes(mysql):
             exam_datetime = get_exam_datetime(exam_date, exam_time)
             exam_end_entry_window = exam_datetime + timedelta(minutes=10)
             current_time = datetime.now()
-            
+
+            # Not started
             if current_time < exam_datetime:
                 cur.close()
                 return jsonify({
                     "error": f"Exam has not started yet. Please wait until {exam_datetime.strftime('%Y-%m-%d %H:%M:%S')}"
                 }), 425
-            
-            if current_time > exam_end_entry_window:
+
+            # Entry window over
+            if current_time > exam_end_10_minutes:
                 cur.close()
                 return jsonify({
                     "error": f"Exam entry time has expired. You cannot start the exam after 10 minutes of exam start time."
@@ -226,11 +230,13 @@ def create_student_routes(mysql):
                 SELECT COUNT(*) FROM applicant_exam_assign 
                 WHERE Applicant_Id = %s AND Exam_Id = %s
             """, (applicant_id, exam_id))
-            
-            if cur.fetchone()[0] == 0:
+
+            is_assigned = cur.fetchone()[0] > 0
+
+            if not is_assigned:
                 cur.close()
                 return jsonify({
-                    "message": "Access Denied", 
+                    "message": "Access Denied",
                     "error": "You are not assigned to this exam. Please contact your faculty."
                 }), 403
 
@@ -243,7 +249,7 @@ def create_student_routes(mysql):
                 WHERE aa.Applicant_Id = %s AND ep.Exam_Id = %s
                 ORDER BY aa.Start_Time DESC LIMIT 1
             """, (applicant_id, exam_id))
-            
+
             attempt_result = cur.fetchone()
             
             attempt_id = None
@@ -254,7 +260,7 @@ def create_student_routes(mysql):
                 if status == 'Submitted' or restriction_id is not None:
                     cur.close()
                     return jsonify({
-                        "message": "Already Attempted", 
+                        "message": "Already Attempted",
                         "error": "You have already attempted this exam. Multiple attempts are not allowed."
                     }), 409
                 
@@ -496,23 +502,39 @@ def create_student_routes(mysql):
             restriction_reason = data.get('restriction_reason', 'Academic misconduct detected')
 
             cur = mysql.connection.cursor()
+
             end_time = datetime.now()
-            total_marks = 0.00 
 
-            cur.execute("SELECT Email FROM applicants WHERE Applicant_Id = %s", (applicant_id,))
-            applicant_result = cur.fetchone()
-            if not applicant_result:
-                cur.close()
-                return jsonify({"error": "Applicant not found"}), 404
-            student_email = applicant_result[0]
+            # Update or create attempt
+            if attempt_id:
+                cur.execute("""
+                    UPDATE applicant_attempt 
+                    SET End_Time = %s, Status = %s
+                    WHERE Attempt_Id = %s
+                """, (end_time, "Submitted", attempt_id))
+            else:
+                cur.execute("SELECT Email FROM applicants WHERE Applicant_Id = %s", (applicant_id,))
+                applicant_result = cur.fetchone()
+                if not applicant_result:
+                    cur.close()
+                    return jsonify({"error": "Applicant not found"}), 404
+                student_email = applicant_result[0]
+                start_time = end_time
+                cur.execute("""
+                    INSERT INTO applicant_attempt (Applicant_Id, Student_Email, Exam_Paper_Id, Start_Time, End_Time, Status)
+                    VALUES (%s, %s, %s, %s, %s, %s)
+                """, (applicant_id, student_email, exam_paper_id, start_time, end_time, "Submitted"))
+                attempt_id = cur.lastrowid
 
-            # --- 1. Process Answers and Calculate Marks ---
+            total_marks = 0
+
+            # Evaluate and store answers
             for ans in answers:
                 question_id = ans['question_id']
                 selected_option = ans.get('selected_option') or ans.get('answer_text')
                 if not selected_option:
                     continue
-                
+
                 cur.execute("""
                     SELECT Question_Type, Correct_Answer, Marks,
                            Option_A, Option_B, Option_C, Option_D
@@ -536,7 +558,7 @@ def create_student_routes(mysql):
                 elif q_type in ('Fill', 'OneWord'):
                     # Selected_option/answer_text is the user's input
                     is_correct = selected_text.strip().lower() == correct_answer.strip().lower()
-                
+
                 # Award marks only if correct and NOT restricted
                 if is_correct and not is_restricted:
                     total_marks += marks
@@ -614,7 +636,7 @@ def create_student_routes(mysql):
 
             mysql.connection.commit()
 
-            # --- 4. Auto-logout ---
+            # Auto logout (normal)
             cur2 = mysql.connection.cursor()
             cur2.execute("""
                 UPDATE login_log
@@ -684,37 +706,41 @@ def create_student_routes(mysql):
         except Exception as e:
             return jsonify({"error": str(e)}), 500
 
-    # Get exam status
+    # Exam status helper
     @student_routes.route('/exam-status/<int:exam_id>/<int:applicant_id>', methods=['GET'])
     def get_exam_status(exam_id, applicant_id):
         try:
             cur = mysql.connection.cursor()
             cur.execute("SELECT * FROM entrance_exam WHERE Exam_Id = %s", (exam_id,))
             exam = cur.fetchone()
-            
+
             if not exam:
+                cur.close()
                 return jsonify({"error": "Exam not found"}), 404
-            
+
             exam_date = exam[2]
             exam_time = exam[3]
-            
-            exam_datetime = get_exam_datetime(exam_date, exam_time)
-            
+            duration_minutes = exam[4]
+            if isinstance(exam_time, timedelta):
+                exam_datetime = datetime.combine(exam_date, (datetime.min + exam_time).time())
+            else:
+                exam_datetime = datetime.combine(exam_date, exam_time)
+
             exam_end_entry_window = exam_datetime + timedelta(minutes=10)
             current_time = datetime.now()
-            
+
             status = "NOT_STARTED"
             message = f"Exam will start at {exam_datetime.strftime('%Y-%m-%d %H:%M:%S')}"
             
             if current_time > exam_datetime:
                 if current_time > exam_end_entry_window:
                     status = "EXPIRED"
-                    message = f"Exam entry time expired."
+                    message = "Exam entry time expired."
                 else:
                     status = "ACTIVE"
                     remaining_seconds = int((exam_end_entry_window - current_time).total_seconds())
                     message = f"Exam entry window is active. {remaining_seconds} seconds remaining."
-            
+
             # Check for existing attempts (submitted or restricted)
             cur.execute("""
                 SELECT aa.Attempt_Id, aa.Status, ra.Id as Restriction_Id
@@ -741,6 +767,12 @@ def create_student_routes(mysql):
                     status = "IN_PROGRESS"
                     message = "You have an ongoing attempt."
             
+            already_attempted = cur.fetchone()[0] > 0
+
+            if already_attempted:
+                status = "COMPLETED"
+                message = "You have already completed this exam."
+
             cur.close()
             return jsonify({
                 "status": status,
@@ -750,6 +782,90 @@ def create_student_routes(mysql):
                 "current_time": current_time.strftime('%Y-%m-%d %H:%M:%S')
             })
         except Exception as e:
+            return jsonify({"error": str(e)}), 500
+
+    # Force‑end exam due to misconduct (0 marks, Fail, reason logged)
+    @student_routes.route('/force-end-exam', methods=['POST'])
+    def force_end_exam():
+        try:
+            data = request.json
+            attempt_id = data.get('attempt_id')
+            reason = data.get('reason', 'Misconduct')
+            
+            if not attempt_id:
+                return jsonify({"error": "Attempt ID required"}), 400
+            
+            cur = mysql.connection.cursor()
+            
+            # Validate attempt exists and get details
+            cur.execute("""
+                SELECT Attempt_Id, Applicant_Id, Student_Email, Exam_Paper_Id 
+                FROM applicant_attempt 
+                WHERE Attempt_Id = %s
+            """, (attempt_id,))
+            
+            attempt_data = cur.fetchone()
+            if not attempt_data:
+                cur.close()
+                return jsonify({"error": "Attempt ID not found"}), 404
+
+            end_time = datetime.now()
+            print(f"Force ending attempt {attempt_id} at {end_time} - Reason: {reason}")
+
+            # Update attempt as forcibly ended with 0 marks
+            cur.execute("""
+                UPDATE applicant_attempt
+                SET End_Time = %s, Status = %s, Marks_Obtained = 0
+                WHERE Attempt_Id = %s
+            """, (end_time, 'Forcibly Ended', attempt_id))
+
+            # Insert/update auto grading with fail status
+            cur.execute("""
+                SELECT Attempt_Id FROM auto_grading WHERE Attempt_Id = %s
+            """, (attempt_id,))
+            
+            if cur.fetchone():
+                # Update existing grading
+                cur.execute("""
+                    UPDATE auto_grading 
+                    SET Total_Score = 0, Status = 'Fail'
+                    WHERE Attempt_Id = %s
+                """, (attempt_id,))
+            else:
+                # Insert new grading
+                cur.execute("""
+                    INSERT INTO auto_grading (Attempt_Id, Total_Score, Status)
+                    VALUES (%s, 0, 'Fail')
+                """, (attempt_id,))
+
+            # Auto logout the student
+            student_email = attempt_data[2]
+            cur.execute("""
+                UPDATE login_log
+                SET Logout_Time = %s
+                WHERE User_Email = %s
+                AND Role = 'Student'
+                AND Logout_Time IS NULL
+                ORDER BY Log_ID DESC
+                LIMIT 1
+            """, (end_time, student_email))
+
+            mysql.connection.commit()
+            cur.close()
+            
+            print(f"Forced end recorded and committed for attempt {attempt_id}")
+
+            return jsonify({
+                "message": "Exam forcibly ended",
+                "Attempt_Id": attempt_id,
+                "Status": "Forcibly Ended",
+                "Marks_Obtained": 0,
+                "Reason": reason
+            })
+            
+        except Exception as e:
+            mysql.connection.rollback()
+            print("Error in force-end-exam route:", str(e))
             return jsonify({"error": str(e)}), 500
 
     # Get all restricted attempts (Admin/Faculty view)

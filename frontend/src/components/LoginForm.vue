@@ -1,6 +1,6 @@
 <template>
-  <div class="min-h-screen flex items-center justify-center bg-cover bg-center bg-no-repeat px-4"
-       style="background-image: url('https://i.ibb.co/4Z8nwSwK/Picsart-25-06-11-14-38-24-117.png');">    <div class="bg-white p-8 rounded-2xl shadow-lg w-full max-w-md animate-fade-in">
+  <div class="min-h-screen flex items-center justify-center bg-cover bg-center bg-no-repeat px-4" style="background-image: url('https://i.ibb.co/4Z8nwSwK/Picsart-25-06-11-14-38-24-117.png');">    
+    <div class="bg-white p-8 rounded-2xl shadow-lg w-full max-w-md animate-fade-in">
       <div class="flex justify-center mb-4">
         <img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTpCQrjNAF4Mn0LHjgvQizYtxEzhovvhVohzw&s" style="height:100px" class="nuvlogo" alt="Navrachna University Logo">
       </div>
@@ -53,7 +53,7 @@
 
 <script setup>
 import { ref } from 'vue'
-import axios from 'axios'
+import axios from '../utils/axiosInstance'
 import { useRouter } from 'vue-router'
 
 const email = ref('')
@@ -70,15 +70,21 @@ const login = async () => {
     })
 
     if (res.data.status === 'success') {
-    if (role.value.toLowerCase() === 'student') {
+      localStorage.setItem('role', role.value)
+      localStorage.setItem('token', res.data.token) // or JWT if backend returns one
+
+      if (role.value.toLowerCase() === 'student') {
         localStorage.setItem('student_email', res.data.email)
         localStorage.setItem('student_name', res.data.name)
         localStorage.setItem('applicant_id', res.data.id)
+      } else if (role.value.toLowerCase() === 'faculty') {
+        localStorage.setItem('faculty_email', res.data.email)
+        localStorage.setItem('faculty_name', res.data.name)
+      } else if (role.value.toLowerCase() === 'admin') {
+        localStorage.setItem('admin_email', res.data.email)
+        localStorage.setItem('admin_name', res.data.name)
       }
-      router.push(`/${role.value.toLowerCase()}`)
-      // Save to localStorage
-      localStorage.setItem('faculty_email', res.data.email)
-      localStorage.setItem('faculty_name', res.data.name)
+
       router.push(`/${role.value.toLowerCase()}`)
     } else {
       alert('Invalid credentials')

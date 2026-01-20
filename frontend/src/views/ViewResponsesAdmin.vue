@@ -126,7 +126,7 @@ const viewAnswers = (attemptId) => {
 }
 
 const goToDashboard = () => {
-  router.push({ name: 'Faculty' }) // Faculty.vue route name
+  router.push({ name: 'Admin', query: { tab: 'exams' } }) // Updated goToDashboard
 }
 
 onMounted(() => {

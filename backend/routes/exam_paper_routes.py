@@ -41,6 +41,13 @@ def create_exam_paper_routes(mysql):
 
         print(f"➡️ Received exam_id: {exam_id}")
         print(f"➡️ Received questions: {question_ids}")
+        
+        if not exam_id:
+            return jsonify({'error': 'exam_id is required'}), 400
+
+        # require at least one question (you can adjust if empty allowed)
+        if not isinstance(question_ids, list) or len(question_ids) == 0:
+            return jsonify({'error': 'questions must be a non-empty list of question IDs'}), 400
 
         conn = mysql.connection
         cur = conn.cursor()
@@ -56,7 +63,30 @@ def create_exam_paper_routes(mysql):
             exam_name, duration, max_marks = exam_info
             print(f"📘 Fetched exam info: {exam_name}, {duration} min, {max_marks} marks")
 
-            # 🟢 Check if paper exists
+            # --- Validate sum of selected question marks against exam Max_Marks ---
+            # Use DB to sum marks for the provided question IDs (protects against tampering)
+            format_strings = ','.join(['%s'] * len(question_ids))
+            sum_query = f"""
+                SELECT COALESCE(SUM(Marks), 0) 
+                FROM entrance_question_bank
+                WHERE Question_Id IN ({format_strings}) AND Exam_Id = %s
+            """
+            # params are question_ids + exam_id
+            cur.execute(sum_query, (*question_ids, exam_id))
+            sum_row = cur.fetchone()
+            selected_sum = sum_row[0] if sum_row else 0
+            print(f"🔎 Selected questions total marks: {selected_sum}")
+
+            if selected_sum != max_marks:
+                # Return clear error so frontend can show it
+                return jsonify({
+                    'error': 'Total marks mismatch',
+                    'exam_total': max_marks,
+                    'selected_total': selected_sum,
+                    'message': f'Selected questions sum ({selected_sum}) must equal exam Max_Marks ({max_marks})'
+                }), 400
+
+            # --- At this point totals match, proceed to create/update paper ---          
             cur.execute("SELECT Exam_Paper_Id FROM exam_paper WHERE Exam_Id = %s ORDER BY Created_At DESC LIMIT 1", (exam_id,))
             paper = cur.fetchone()
 
@@ -86,6 +116,8 @@ def create_exam_paper_routes(mysql):
             conn.rollback()
             print("❌ Error occurred:", str(e))
             return jsonify({'error': 'Failed to save question paper'}), 500
+        finally:
+            cur.close()
         
     @exam_paper_bp.route('/randomize/<int:exam_id>', methods=['POST'])
     def randomize_questions(exam_id):
