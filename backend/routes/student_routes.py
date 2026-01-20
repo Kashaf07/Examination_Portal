@@ -218,12 +218,13 @@ def create_student_routes(mysql):
                     "error": f"Exam has not started yet. Please wait until {exam_datetime.strftime('%Y-%m-%d %H:%M:%S')}"
                 }), 425
 
-            # Entry window over
-            if current_time > exam_end_10_minutes:
+           # Entry window over (10-minute rule)
+            if current_time > exam_end_entry_window:
                 cur.close()
                 return jsonify({
-                    "error": f"Exam entry time has expired. You cannot start the exam after 10 minutes of exam start time."
+                    "error": "Exam entry time has expired. You cannot start the exam after 10 minutes of exam start time."
                 }), 410
+
 
             # Check if student is assigned
             cur.execute("""
@@ -780,131 +781,6 @@ def create_student_routes(mysql):
                 "exam_datetime": exam_datetime.strftime('%Y-%m-%d %H:%M:%S'),
                 "exam_end_entry_window": exam_end_entry_window.strftime('%Y-%m-%d %H:%M:%S'),
                 "current_time": current_time.strftime('%Y-%m-%d %H:%M:%S')
-            })
-        except Exception as e:
-            return jsonify({"error": str(e)}), 500
-
-    # Force‑end exam due to misconduct (0 marks, Fail, reason logged)
-    @student_routes.route('/force-end-exam', methods=['POST'])
-    def force_end_exam():
-        try:
-            data = request.json
-            attempt_id = data.get('attempt_id')
-            reason = data.get('reason', 'Misconduct')
-            
-            if not attempt_id:
-                return jsonify({"error": "Attempt ID required"}), 400
-            
-            cur = mysql.connection.cursor()
-            
-            # Validate attempt exists and get details
-            cur.execute("""
-                SELECT Attempt_Id, Applicant_Id, Student_Email, Exam_Paper_Id 
-                FROM applicant_attempt 
-                WHERE Attempt_Id = %s
-            """, (attempt_id,))
-            
-            attempt_data = cur.fetchone()
-            if not attempt_data:
-                cur.close()
-                return jsonify({"error": "Attempt ID not found"}), 404
-
-            end_time = datetime.now()
-            print(f"Force ending attempt {attempt_id} at {end_time} - Reason: {reason}")
-
-            # Update attempt as forcibly ended with 0 marks
-            cur.execute("""
-                UPDATE applicant_attempt
-                SET End_Time = %s, Status = %s, Marks_Obtained = 0
-                WHERE Attempt_Id = %s
-            """, (end_time, 'Forcibly Ended', attempt_id))
-
-            # Insert/update auto grading with fail status
-            cur.execute("""
-                SELECT Attempt_Id FROM auto_grading WHERE Attempt_Id = %s
-            """, (attempt_id,))
-            
-            if cur.fetchone():
-                # Update existing grading
-                cur.execute("""
-                    UPDATE auto_grading 
-                    SET Total_Score = 0, Status = 'Fail'
-                    WHERE Attempt_Id = %s
-                """, (attempt_id,))
-            else:
-                # Insert new grading
-                cur.execute("""
-                    INSERT INTO auto_grading (Attempt_Id, Total_Score, Status)
-                    VALUES (%s, 0, 'Fail')
-                """, (attempt_id,))
-
-            # Auto logout the student
-            student_email = attempt_data[2]
-            cur.execute("""
-                UPDATE login_log
-                SET Logout_Time = %s
-                WHERE User_Email = %s
-                AND Role = 'Student'
-                AND Logout_Time IS NULL
-                ORDER BY Log_ID DESC
-                LIMIT 1
-            """, (end_time, student_email))
-
-            mysql.connection.commit()
-            cur.close()
-            
-            print(f"Forced end recorded and committed for attempt {attempt_id}")
-
-            return jsonify({
-                "message": "Exam forcibly ended",
-                "Attempt_Id": attempt_id,
-                "Status": "Forcibly Ended",
-                "Marks_Obtained": 0,
-                "Reason": reason
-            })
-            
-        except Exception as e:
-            mysql.connection.rollback()
-            print("Error in force-end-exam route:", str(e))
-            return jsonify({"error": str(e)}), 500
-
-    # Get all restricted attempts (Admin/Faculty view)
-    @student_routes.route('/restricted-attempts', methods=['GET'])
-    def get_restricted_attempts():
-        try:
-            cur = mysql.connection.cursor()
-            cur.execute("""
-                SELECT ra.Id, ra.Attempt_Id, ra.Applicant_Id, ra.Exam_Paper_Id, 
-                       ra.Reason, ra.Restricted_Timestamp,
-                       ap.Full_Name, ap.Email,
-                       ee.Exam_Name, ep.Title as Paper_Title,
-                       aa.Marks_Obtained
-                FROM restricted_attempts ra
-                JOIN applicants ap ON ra.Applicant_Id = ap.Applicant_Id
-                JOIN exam_paper ep ON ra.Exam_Paper_Id = ep.Exam_Paper_Id
-                JOIN entrance_exam ee ON ep.Exam_Id = ee.Exam_Id
-                JOIN applicant_attempt aa ON ra.Attempt_Id = aa.Attempt_Id
-                ORDER BY ra.Restricted_Timestamp DESC
-            """)
-            
-            restricted = cur.fetchall()
-            cur.close()
-            
-            return jsonify({
-                "restricted_attempts": [{
-                    "Id": r[0],
-                    "Attempt_Id": r[1],
-                    "Applicant_Id": r[2],
-                    "Exam_Paper_Id": r[3],
-                    "Reason": r[4],
-                    "Restricted_Timestamp": str(r[5]),
-                    "Student_Name": r[6],
-                    "Student_Email": r[7],
-                    "Exam_Name": r[8],
-                    "Paper_Title": r[9],
-                    "Marks_Obtained": 0.00 # Marks are always 0.00 for restricted attempts
-                } for r in restricted],
-                "total_restricted": len(restricted)
             })
         except Exception as e:
             return jsonify({"error": str(e)}), 500
