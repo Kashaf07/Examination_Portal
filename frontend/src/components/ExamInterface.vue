@@ -1,6 +1,6 @@
 <template>
   <div class="w-full h-full flex flex-col items-center px-4 py-4">
-    <!-- Timer - Top Left Corner -->
+    <!-- Timer - Fixed Top Left Corner -->
     <div class="fixed top-20 left-6 z-40">
       <div class="flex items-center bg-white px-4 py-2 rounded-xl shadow-lg border border-indigo-200">
         <span class="text-xl mr-2">⏳</span>
@@ -21,7 +21,7 @@
       </div>
     </div>
 
-    <!-- Question Navigator - Top Right -->
+    <!-- Question Navigator - Fixed Top Right -->
     <div class="fixed top-20 right-6 z-40">
       <div class="grid grid-cols-3 gap-3 bg-white p-4 rounded-xl shadow-lg border border-indigo-200">
         <div
@@ -31,7 +31,8 @@
           :class="{
             'bg-indigo-600 text-white shadow-lg scale-110': currentIndex === idx,
             'bg-green-100 text-green-800 border border-green-300': answers[idx] !== null && currentIndex !== idx,
-            'bg-gray-100 text-gray-700 hover:bg-indigo-100 hover:text-indigo-700': answers[idx] === null && currentIndex !== idx
+            'bg-yellow-100 text-yellow-800 border border-yellow-300': answers[idx] === null && visitedQuestions.includes(idx) && currentIndex !== idx,
+            'bg-gray-100 text-gray-700 hover:bg-indigo-100 hover:text-indigo-700': answers[idx] === null && !visitedQuestions.includes(idx) && currentIndex !== idx
           }"
           @click="$emit('jump-to-question', idx)"
         >
@@ -40,7 +41,7 @@
       </div>
     </div>
 
-    <!-- Warning Counter - Below Timer -->
+    <!-- Warning Counter - Fixed Below Timer -->
     <div v-if="violationCount > 0 && violationCount < 3"
          class="fixed top-36 left-6 z-40">
       <div class="bg-red-600 text-white px-4 py-2 rounded-lg shadow-xl text-sm font-semibold tracking-wide border border-red-700 flex items-center gap-2">
@@ -153,7 +154,7 @@
             <div class="flex items-center">
               <button 
                 v-if="allAnswersFilled"
-                @click="$emit('finish-exam', '✅ All questions submitted!')"
+                @click="$emit('finish-exam', 'All questions submitted!')"
                 class="bg-gradient-to-r from-purple-600 to-pink-500 hover:from-purple-700 hover:to-pink-600 text-white px-8 py-3 rounded-lg font-bold shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 text-lg tracking-wide transition-all duration-300"
               >
                 Submit Exam
@@ -207,7 +208,8 @@ const props = defineProps({
   textAnswer: String,
   answers: Array,
   violationCount: Number,
-  inlineMessage: Object
+  inlineMessage: Object,
+  visitedQuestions: Array
 })
 
 const emit = defineEmits([

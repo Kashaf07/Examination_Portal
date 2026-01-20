@@ -1,7 +1,7 @@
 <template>
-  <!-- Student Info Box -->
-  <div class="absolute top-4 right-6 z-50 group">
-    <div class="bg-white px-6 py-3 rounded-2xl shadow-lg border border-indigo-200 text-base font-semibold text-indigo-800 cursor-default transition-all duration-300 hover:shadow-xl hover:scale-105">
+  <!-- Student Info Box - Fixed Position -->
+  <div class="fixed top-4 right-6 z-50 group">
+    <div class="bg-white px-6 py-3 rounded-2xl shadow-lg border-2 border-black text-base font-semibold text-indigo-800 cursor-default transition-all duration-300 hover:shadow-xl hover:scale-105">
       👤 {{ studentName || studentEmail }}
     </div>
     
@@ -59,6 +59,7 @@
         :answers="answers"
         :violation-count="violationCount"
         :inline-message="inlineMessage"
+        :visited-questions="visitedQuestions"
         @jump-to-question="jumpToQuestion"
         @select-option="selectOption"
         @finish-exam="finishExam"
@@ -117,7 +118,8 @@ export default {
       fullscreenRecoveryTimeout: null,
       redirectCountdown: 10,
       redirectTimer: null,
-      isProcessingViolation: false
+      isProcessingViolation: false,
+      visitedQuestions: []
     }
   },
 
@@ -417,6 +419,7 @@ export default {
       this.examAttemptId = null
       this.currentIndex = 0
       this.answers = []
+      this.visitedQuestions = []
     },
 
     async fetchExam(examId) {
@@ -566,7 +569,17 @@ export default {
       if (last) {
         const anyUnanswered = this.answers.some(ans => ans === null)
         if (anyUnanswered) {
-          this.showInlineMessage('⚠️ Please answer all questions.', 'warning')
+          // Mark all unanswered questions as visited/skipped
+          this.questions.forEach((_, idx) => {
+            if (this.answers[idx] === null && !this.visitedQuestions.includes(idx)) {
+              this.visitedQuestions.push(idx)
+            }
+          })
+          
+          // Wait a bit to show the yellow color change
+          setTimeout(() => {
+            this.showInlineMessage('⚠️ Please answer all questions.', 'warning')
+          }, 100)
           return
         }
         clearInterval(this.interval)
@@ -596,11 +609,23 @@ export default {
     },
 
     jumpToQuestion(idx) {
+      // Mark current question as visited before jumping
+      if (!this.visitedQuestions.includes(this.currentIndex)) {
+        this.visitedQuestions.push(this.currentIndex)
+      }
+      
       this.currentIndex = idx
       this.loadCurrentAnswer()
     },
 
     async finishExam(msg) {
+      // Mark all unanswered questions as visited/skipped
+      this.questions.forEach((_, idx) => {
+        if (this.answers[idx] === null && !this.visitedQuestions.includes(idx)) {
+          this.visitedQuestions.push(idx)
+        }
+      })
+      
       this.stage = 'finished'
       this.finishMessage = msg
       window.removeEventListener('beforeunload', this.preventRefresh)
