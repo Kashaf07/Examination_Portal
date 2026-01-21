@@ -14,12 +14,14 @@ import ViewResponsesAdmin from '../views/ViewResponsesAdmin.vue'
 import ViewResponsesFaculty from '../views/ViewResponses.vue'
 import ViewAnswers from '../views/ViewAnswers.vue'
 
+
 // ✅ Define routes
 const routes = [
   { path: '/', component: Login, name: 'Login' },
   { path: '/admin', name: 'Admin', component: Admin, meta: { requiresAuth: true, role: 'Admin' } },
   { path: '/faculty', name: 'Faculty', component: Faculty, meta: { requiresAuth: true, role: 'Faculty' } },
   { path: '/student', name: 'Student', component: Student, meta: { requiresAuth: true, role: 'Student' } },
+  
 
   // Admin + Faculty shared routes
   { path: '/exam/:examId/upload-question-bank', name: 'UploadQuestionBank', component: UploadQuestionBank, meta: { requiresAuth: true, role: ['Admin', 'Faculty'] } },
@@ -36,9 +38,12 @@ const routes = [
 
   // Faculty specific
   { path: '/faculty/view-responses/:examId', name: 'ViewResponses', component: ViewResponsesFaculty, props: true, meta: { requiresAuth: true, role: 'Faculty' } },
-
-  // 404 Redirect
-  { path: '/:pathMatch(.*)*', redirect: '/' }
+  {
+  path: '/groups',
+  name: 'Groups',
+  component: () => import('../views/Groups.vue')
+},
+{ path: '/:pathMatch(.*)*', redirect: '/' }
 ]
 
 // ✅ Create router

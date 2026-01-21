@@ -21,12 +21,15 @@ from routes.AddStudents import create_add_students_bp
 from routes.faculty_routes import create_faculty_routes
 from routes.ViewResponses import create_view_responses_bp
 from routes.ViewAnswers import create_view_answers_bp
+from routes.groups_routes import group_bp
+
 
 app = Flask(__name__)
 CORS(app)
 
 # Initialize MySQL
 mysql = init_mysql(app)
+app.config['MYSQL'] = mysql
 
 # Mail configuration
 app.config['MAIL_SERVER'] = 'smtp.gmail.com'
@@ -43,6 +46,7 @@ app.register_blueprint(create_auth_routes(mysql), url_prefix="/api/auth")
 app.register_blueprint(create_question_routes(mysql), url_prefix="/api/questions")
 app.register_blueprint(create_exam_routes(mysql), url_prefix="/api/exam")
 app.register_blueprint(create_add_students_bp(mysql), url_prefix="/api")
+
 app.register_blueprint(create_faculty_routes(mysql), url_prefix='/api/faculty')  
 app.register_blueprint(create_view_responses_bp(mysql), url_prefix='/responses')
 
@@ -58,6 +62,7 @@ app.register_blueprint(create_applicants_bp(mysql))
 app.register_blueprint(create_assigned_applicants_routes(mysql))
 app.register_blueprint(create_view_answers_bp(mysql))
 app.register_blueprint(create_admin_routes(mysql), url_prefix='/api/admin')
+app.register_blueprint(group_bp, url_prefix="/api/groups")
 
 student_bp = create_student_routes(mysql)
 app.register_blueprint(student_bp, url_prefix="/api/student")

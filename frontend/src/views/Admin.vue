@@ -165,6 +165,20 @@
           <form @submit.prevent="submitApplicant">
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
+  <label class="block text-sm font-semibold text-gray-700 mb-2">Group</label>
+  <select
+    v-model="newApplicant.group_id"
+    required
+    class="w-full border border-gray-300 rounded-xl px-4 py-3"
+  >
+    <option value="">Select Group</option>
+    <option v-for="g in groupsList" :key="g.group_id" :value="g.group_id">
+      {{ g.group_name }}
+    </option>
+  </select>
+</div>
+
+              <div>
                 <label class="block text-sm font-semibold text-gray-700 mb-2">Full Name</label>
                 <input
                   v-model="newApplicant.Full_Name"
@@ -757,6 +771,96 @@
         </form>
       </div>
     </div>
+   <!-- Groups Management -->
+<div v-if="activeTab === 'groups'" class="space-y-6">
+  <div class="bg-white/80 backdrop-blur-sm shadow-xl rounded-2xl p-8 border border-white/20">
+
+    <h2 class="text-2xl font-bold text-gray-800 mb-6">Groups Management</h2>
+
+    <!-- Add Group -->
+    <div class="flex gap-4 mb-6">
+      <input
+        v-model="newGroupName"
+        placeholder="Enter group name (e.g. BCA)"
+        class="flex-1 border border-gray-300 rounded-xl px-4 py-3"
+      />
+      <button
+        @click="addGroup"
+        class="bg-green-500 hover:bg-green-600 text-white px-6 py-3 rounded-full font-semibold"
+      >
+        Add Group
+      </button>
+    </div>
+
+    <!-- Groups Table -->
+    <div class="bg-white rounded-2xl shadow-lg overflow-hidden border border-gray-200">
+      <table class="w-full">
+        <thead class="bg-gradient-to-r from-blue-50 to-blue-100">
+          <tr>
+            <th class="py-4 px-6 text-left">#</th>
+            <th class="py-4 px-6 text-left">Group Name</th>
+            <th class="py-4 px-6 text-center">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr
+            v-for="(g, i) in groupsList"
+            :key="g.group_id"
+            class="border-b hover:bg-gray-50"
+          >
+            <td class="py-4 px-6">{{ i + 1 }}</td>
+
+            <td class="py-4 px-6">
+              <input
+                v-if="editGroupId === g.group_id"
+                v-model="editGroupName"
+                class="border px-3 py-2 rounded w-full"
+              />
+              <span v-else class="font-medium">
+                {{ g.group_name }}
+              </span>
+            </td>
+
+            <td class="py-4 px-6 text-center space-x-2">
+              <button
+                @click="viewGroupApplicants(g)"
+                class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg text-sm"
+              >
+                View
+              </button>
+
+              <button
+                v-if="editGroupId !== g.group_id"
+                @click="startEditGroup(g)"
+                class="bg-yellow-500 hover:bg-yellow-600 text-white px-4 py-2 rounded-lg text-sm"
+              >
+                Edit
+              </button>
+
+              <button
+                v-if="editGroupId === g.group_id"
+                @click="updateGroup"
+                class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg text-sm"
+              >
+                Save
+              </button>
+
+              <button
+                @click="deleteGroup(g.group_id)"
+                class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg text-sm"
+              >
+                Delete
+              </button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+  </div>
+</div>
+
+
 
     <!-- View Applicant Modal -->
     <div v-if="showViewApplicantModal" class="fixed inset-0 bg-black/60 backdrop-blur-md overflow-y-auto h-full w-full z-50 flex items-center justify-center p-4">
@@ -981,6 +1085,12 @@ const todayDate = computed(() => {
 const activeTab = ref(typeof route.query.tab === 'string' ? route.query.tab : 'faculty')
 const facultyList = ref([])
 const schoolsList = ref([])
+const groupsList = ref([])
+const newGroupName = ref('')
+// Group edit state
+const editGroupId = ref(null)
+const editGroupName = ref('')
+
 const applicantsList = ref([])
 const adminsList = ref([])
 const logsList = ref([])
@@ -1029,6 +1139,8 @@ const adminForm = ref({
   Password: ''
 })
 
+
+
 const selectedApplicant = ref(null)
 const selectedLog = ref(null)
 
@@ -1072,6 +1184,7 @@ const adminEmail = ref(localStorage.getItem('admin_email') || '') // Reuse same 
 const tabs = [
   { id: 'faculty', name: 'Faculty' },
   { id: 'schools', name: 'Schools' },
+  { id: 'groups', name: 'Groups' },
   { id: 'applicants', name: 'Applicants' },
   { id: 'exams', name: 'Exams' },
   { id: 'admins', name: 'Admins' },
@@ -1230,6 +1343,29 @@ const fetchFaculty = async () => {
   } catch (error) {
     console.error('Error fetching faculty:', error)
     showMessage('Error fetching faculty data', 'error')
+  }
+}
+const fetchGroups = async () => {
+  try {
+    const res = await axios.get(`${API_BASE}/groups/`)
+    groupsList.value = res.data
+  } catch (err) {
+    showMessage('Error fetching groups', 'error')
+  }
+}
+
+const addGroup = async () => {
+  if (!newGroupName.value.trim()) return
+
+  try {
+    await axios.post(`${API_BASE}/groups/add`, {
+      group_name: newGroupName.value
+    })
+    newGroupName.value = ''
+    await fetchGroups()
+    showMessage('Group added successfully')
+  } catch (err) {
+    showMessage('Error adding group', 'error')
   }
 }
 
@@ -1394,7 +1530,8 @@ const submitApplicant = async () => {
         Phone: '',
         DOB: '',
         Gender: '',
-        Address: ''
+        Address: '',
+        group_id: ''
       }
     } else {
       showMessage(response.data.message || 'Failed to add applicant Duplicate entry ', 'error')
@@ -1652,6 +1789,8 @@ onMounted(async () => {
   await fetchLogs()
   await fetchExams()
   await fetchConductedExams() // Call the updated function
+  await fetchGroups()
+
 
   // refresh every 60s to auto-move ended exams
   refreshTimer = setInterval(async () => {

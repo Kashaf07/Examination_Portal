@@ -3,29 +3,85 @@
     <!-- Header -->
     <h2 class="text-4xl font-bold text-blue-800 mb-2 text-center">📝 Add Question Bank</h2>
     <p class="text-black-600 text-center mb-8">
-      Adding questions for <strong class="text-purple-700">Exam ID: {{ $route.params.examId }}</strong>
+      Adding questions for
+      <strong class="text-purple-700">Exam ID: {{ $route.params.examId }}</strong>
     </p>
 
-    <!-- Upload CSV Button and File Input -->
-    <div class="mb-8 text-center">
-      <input type="file" ref="csvFile" @change="handleFileChange" accept=".csv" class="mb-6"/>
-      <button
-        @click="uploadCSV"
-        :disabled="!selectedFile"
-        class="bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white px-6 py-2 rounded-full shadow-md transition duration-300 ease-in-out ml-2"
+    <!-- Need a format + download link -->
+    <div class="mb-4 text-sm text-gray-700 text-center">
+      Need a format?
+      <a
+        href="http://localhost:5000/static/sample_question_bank.csv"
+        download
+        class="ml-1 text-blue-600 underline hover:text-blue-800 transition duration-150"
       >
-        📤 Upload CSV
-      </button>
-      <div v-if="csvErrors.length" class="mt-4 text-left max-w-2xl mx-auto">
-        <div class="font-bold text-red-600 mb-2">CSV Errors:</div>
-        <ul class="text-red-700 pl-6 list-disc">
-          <li v-for="err in csvErrors" :key="err">{{ err }}</li>
-        </ul>
+        Download Sample Excel Template
+      </a>
+    </div>
+
+    <!-- Pill file input + Upload button -->
+    <div class="flex items-center justify-center mb-4">
+      <div
+        class="flex items-center w-full max-w-3xl border border-green-300 rounded-full overflow-hidden shadow-sm bg-white py-1"
+      >
+        <!-- Hidden real input -->
+        <input
+          id="csv-file"
+          type="file"
+          ref="csvFile"
+          accept=".csv"
+          class="hidden"
+          @change="handleFileChange"
+        />
+
+        <!-- Left green 'Choose File' -->
+        <label
+          for="csv-file"
+          class="cursor-pointer px-7 py-2 bg-green-100 text-green-700 font-semibold text-sm flex items-center justify-center"
+          style="border-top-right-radius: 0; border-bottom-right-radius: 0;"
+        >
+          Choose File
+        </label>
+
+        <!-- Middle filename text -->
+        <span class="flex-1 px-5 text-sm text-gray-600 truncate text-left">
+          {{ selectedFile ? selectedFile.name : 'No file chosen' }}
+        </span>
+
+        <!-- Right green Upload -->
+        <button
+          @click="uploadCSV"
+          :disabled="!selectedFile"
+          class="px-9 py-2 bg-green-500 text-white text-sm font-semibold hover:bg-green-600 transition
+                 disabled:opacity-50 disabled:cursor-not-allowed"
+          style="border-top-left-radius: 0; border-bottom-left-radius: 0;"
+        >
+          Upload
+        </button>
       </div>
     </div>
 
+    <!-- Success message -->
+    <p
+      v-if="successMessage"
+      class="text-center text-sm text-green-600 font-semibold mt-4 mb-2"
+    >
+      {{ successMessage }}
+    </p>
+
+    <!-- CSV error list -->
+    <div v-if="csvErrors.length" class="mt-2 mb-6 text-left max-w-2xl mx-auto">
+      <div class="font-bold text-red-600 mb-2">CSV Errors:</div>
+      <ul class="text-red-700 pl-6 list-disc">
+        <li v-for="err in csvErrors" :key="err">{{ err }}</li>
+      </ul>
+    </div>
+
     <!-- Add Question Form -->
-    <form @submit.prevent="submitForm" class="max-w-4xl mx-auto space-y-6 bg-white p-8 rounded-xl shadow-lg">
+    <form
+      @submit.prevent="submitForm"
+      class="max-w-4xl mx-auto space-y-6 bg-white p-8 rounded-xl shadow-lg mt-4"
+    >
       <!-- Question Type -->
       <div>
         <label class="block text-gray-800 font-semibold mb-2">Question Type</label>
@@ -51,16 +107,18 @@
         <input v-model="form.option_d" placeholder="Option D" class="input-box" required />
       </div>
 
-      <!-- True/False Options (auto handled, so only show info) -->
+      <!-- True/False info -->
       <div v-if="form.question_type === 'TF'" class="p-4 bg-gray-100 rounded-md text-gray-700">
-        Options will be automatically set as: <br />
+        Options will be automatically set as:
+        <br />
         <strong>Option A = True</strong>, <strong>Option B = False</strong>
       </div>
 
       <!-- Correct Answer -->
       <div>
         <label class="block text-gray-800 font-semibold mb-2">Correct Answer</label>
-        <!-- MCQ: Dropdown of the options -->
+
+        <!-- MCQ: dropdown -->
         <select
           v-if="form.question_type === 'MCQ'"
           v-model="form.correct_answer"
@@ -74,7 +132,7 @@
           <option v-if="form.option_d" :value="form.option_d">{{ form.option_d }}</option>
         </select>
 
-        <!-- TF: True/False select -->
+        <!-- TF: True/False -->
         <select
           v-else-if="form.question_type === 'TF'"
           v-model="form.correct_answer"
@@ -85,7 +143,7 @@
           <option value="False">False</option>
         </select>
 
-        <!-- Others: Free input -->
+        <!-- Others: free input -->
         <input
           v-else
           v-model="form.correct_answer"
@@ -107,7 +165,7 @@
           type="submit"
           class="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-purple-700 hover:to-blue-700 text-white font-semibold px-8 py-3 rounded-full shadow-lg transition duration-300"
         >
-           Submit Question
+          Submit Question
         </button>
       </div>
     </form>
@@ -130,7 +188,8 @@ export default {
         marks: 1
       },
       selectedFile: null,
-      csvErrors: []
+      csvErrors: [],
+      successMessage: ''
     };
   },
   methods: {
@@ -155,7 +214,6 @@ export default {
       }
     },
     async submitForm() {
-      // MCQ validation
       if (this.form.question_type === 'MCQ') {
         const options = [
           (this.form.option_a || '').trim(),
@@ -169,7 +227,6 @@ export default {
           return;
         }
       }
-      // General validation
       if (!String(this.form.correct_answer).trim()) {
         alert('Error: Please enter the correct answer.');
         return;
@@ -209,6 +266,7 @@ export default {
     handleFileChange(e) {
       this.selectedFile = e.target.files[0] || null;
       this.csvErrors = [];
+      this.successMessage = '';
     },
     async uploadCSV() {
       if (!this.selectedFile) {
@@ -216,6 +274,7 @@ export default {
         return;
       }
       this.csvErrors = [];
+      this.successMessage = '';
       try {
         const formData = new FormData();
         formData.append('file', this.selectedFile);
@@ -228,12 +287,12 @@ export default {
         });
         const result = await response.json();
         if (response.ok) {
-          alert(result.message);
+          this.successMessage = result.message || 'CSV uploaded successfully.';
           this.csvErrors = [];
           this.$refs.csvFile.value = '';
           this.selectedFile = null;
         } else {
-          // Show all row errors
+          this.successMessage = '';
           if (result.details) {
             this.csvErrors = result.details;
           } else {
@@ -242,6 +301,7 @@ export default {
         }
       } catch (err) {
         console.error('CSV upload failed:', err);
+        this.successMessage = '';
         alert('An error occurred while uploading CSV.');
       }
     }
@@ -251,4 +311,3 @@ export default {
   }
 };
 </script>
-
