@@ -26,11 +26,18 @@
         {{ showForm ? 'Close' : 'Create Exam' }}
       </button>
       <button
-        @click="showApplicantForm = !showApplicantForm"
+      @click="navigateTo('Groups')"
         class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
       >
-        {{ showApplicantForm ? 'Close' : 'Add Applicants' }}
+        Groups
       </button>
+      <button
+      @click="navigateTo('AddApplicants')"
+      class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+      >
+      Add Applicants
+    </button>
+
       <button
         @click="navigateTo('UploadStudents')"
         class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
@@ -58,30 +65,7 @@
       </form>
     </div>
 
-    <!-- Add Applicant Form -->
-    <div v-if="showApplicantForm" class="bg-white shadow rounded p-4 max-w-xl mb-8">
-      <h2 class="text-xl font-semibold mb-4">Add Applicant</h2>
-      <form @submit.prevent="submitApplicant">
-        <div class="grid grid-cols-2 gap-4">
-          <input v-model="applicant.Full_Name" type="text" placeholder="Full Name" required class="border p-2 rounded" />
-          <input v-model="applicant.Email" type="email" placeholder="Email" required class="border p-2 rounded" />
-          <input v-model="applicant.Password" type="password" placeholder="Password" required class="border p-2 rounded" />
-          <input v-model="applicant.Phone" type="text" placeholder="Phone" class="border p-2 rounded" />
-          <input v-model="applicant.DOB" type="date" placeholder="DOB" class="border p-2 rounded" />
-          <select v-model="applicant.Gender" class="border p-2 rounded">
-            <option disabled value="">Select Gender</option>
-            <option>Male</option>
-            <option>Female</option>
-            <option>Other</option>
-          </select>
-          <textarea v-model="applicant.Address" placeholder="Address" class="border p-2 rounded col-span-2"></textarea>
-        </div>
-        <button type="submit" class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 mt-4">
-          Submit
-        </button>
-        <p v-if="submitMessage" class="mt-2 text-sm text-blue-700">{{ submitMessage }}</p>
-      </form>
-    </div>
+    
 
     <!-- Exam Table (Upcoming/Created) -->
     <div v-if="createdExams.length" class="mt-8">
@@ -400,10 +384,12 @@ const submitApplicant = async () => {
 const navigateTo = (action, examId) => {
   const routeMap = {
     AddApplicants_exam: 'AddApplicantsexam',
+    AddApplicants: 'AddApplicants',
     AddQuestion: 'AddQuestion',
     MakeQuestionPaper: 'MakeQuestionPaper',
     UploadStudents: 'UploadStudents',
-    ViewResponses: 'ViewResponses'
+    ViewResponses: 'ViewResponses',
+    Groups: 'Groups'
   }
   examId
     ? router.push({ name: routeMap[action], params: { examId } })

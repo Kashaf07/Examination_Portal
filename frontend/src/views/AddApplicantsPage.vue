@@ -1,6 +1,7 @@
 <template>
   <div class="p-6 max-w-2xl mx-auto">
     <h2 class="text-2xl font-bold mb-6">Add Applicant</h2>
+
     <form @submit.prevent="submitApplicant" class="space-y-4">
 
       <div>
@@ -43,7 +44,25 @@
         <textarea v-model="applicant.Address" class="w-full border px-3 py-2 rounded"></textarea>
       </div>
 
-      <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
+      <!-- ✅ GROUP DROPDOWN -->
+      <div>
+        <label class="block font-semibold">Group</label>
+        <select v-model="applicant.group_id" required class="w-full border px-3 py-2 rounded">
+          <option value="">Select Group</option>
+          <option
+            v-for="g in groups"
+            :key="g.Group_Id"
+            :value="g.Group_Id"
+          >
+            {{ g.Group_Name }}
+          </option>
+        </select>
+      </div>
+
+      <button
+        type="submit"
+        class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+      >
         Save Applicant
       </button>
     </form>
@@ -51,8 +70,10 @@
 </template>
 
 <script setup>
-import { reactive } from 'vue'
-import axios from 'axios'
+import { reactive, ref, onMounted } from 'vue'
+import axios from '../utils/axiosInstance'
+
+const facultyEmail = localStorage.getItem('faculty_email')
 
 const applicant = reactive({
   Full_Name: '',
@@ -61,17 +82,40 @@ const applicant = reactive({
   Phone: '',
   DOB: '',
   Gender: '',
-  Address: ''
+  Address: '',
+  group_id: ''
 })
 
-const submitApplicant = async () => {
+const groups = ref([])
+
+/* -------------------------------
+   LOAD GROUPS (FACULTY-WISE)
+-------------------------------- */
+const loadGroups = async () => {
   try {
-    const res = await axios.post('http://localhost:5000/api/applicants/add', applicant)
-    alert('Applicant added successfully!')
-    Object.keys(applicant).forEach(key => applicant[key] = '')  // reset form
+    const res = await axios.get(`/groups/${facultyEmail}`)
+    if (res.data.success) {
+      groups.value = res.data.groups
+    }
   } catch (err) {
-    console.error(err)
-    alert('Error adding applicant.')
+    console.error('Failed to load groups', err)
   }
 }
+
+/* -------------------------------
+   SUBMIT APPLICANT
+-------------------------------- */
+const submitApplicant = async () => {
+  try {
+    await axios.post('/applicants/add', applicant)
+    alert('Applicant added successfully')
+
+    Object.keys(applicant).forEach(k => applicant[k] = '')
+  } catch (err) {
+    console.error(err)
+    alert('Error adding applicant')
+  }
+}
+
+onMounted(loadGroups)
 </script>

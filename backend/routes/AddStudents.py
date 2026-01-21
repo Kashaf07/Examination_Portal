@@ -1,8 +1,9 @@
 from flask import Blueprint, request, jsonify
 import pandas as pd
+from datetime import datetime
 import os
 from werkzeug.utils import secure_filename
-from datetime import datetime
+from werkzeug.security import generate_password_hash
 
 
 def create_add_students_bp(mysql):
@@ -10,165 +11,129 @@ def create_add_students_bp(mysql):
     ALLOWED_EXTENSIONS = {'csv', 'xlsx'}
 
     # --------------------------------------------------
-    # Helper Function: Validate File Type
+    # HELPERS
     # --------------------------------------------------
     def allowed_file(filename):
         return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
     # --------------------------------------------------
-    # Route 1: Add Students Directly (basic upload)
+    # ADD SINGLE APPLICANT (MANUAL FORM)
     # --------------------------------------------------
-    @add_students_bp.route('/add_students', methods=['POST'])
-    def add_students():
-        file = request.files.get('file')
-        exam_id = request.form.get('exam_id')  # Optional exam linkage
+    @add_students_bp.route('/applicants/add', methods=['POST'])
+    def add_single_applicant():
+        data = request.get_json()
 
-        if not file or not allowed_file(file.filename):
-            return jsonify({'error': 'Invalid or missing file'}), 400
+        required = ['Full_Name', 'Email', 'Password', 'group_id']
+        for field in required:
+            if field not in data:
+                return jsonify(success=False, message=f'{field} is required'), 400
 
-        try:
-            # Read Excel or CSV
-            if file.filename.endswith('.csv'):
-                df = pd.read_csv(file)
-            else:
-                df = pd.read_excel(file)
+        hashed_password = generate_password_hash(data['Password'])
 
-            df.columns = [col.strip() for col in df.columns]
-            required_columns = ['Full_Name', 'Email', 'Password', 'Phone', 'DOB', 'Gender', 'Address']
-            if not all(col in df.columns for col in required_columns):
-                return jsonify({'error': 'Missing required columns in uploaded file'}), 400
+        cursor = mysql.connection.cursor()
+        cursor.execute("""
+            INSERT INTO applicants
+            (Full_Name, Email, Password, Phone, DOB, Gender, Address, group_id)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+        """, (
+            data['Full_Name'],
+            data['Email'],
+            hashed_password,
+            data.get('Phone'),
+            data.get('DOB'),
+            data.get('Gender'),
+            data.get('Address'),
+            data['group_id']
+        ))
 
-            cursor = mysql.connection.cursor()
+        mysql.connection.commit()
+        cursor.close()
 
-            for _, row in df.iterrows():
-                try:
-                    dob_value = row['DOB']
-                    if pd.notnull(dob_value):
-                        if isinstance(dob_value, datetime):
-                            dob_mysql = dob_value.strftime("%Y-%m-%d")
-                        else:
-                            try:
-                                dob_obj = datetime.strptime(str(dob_value).strip(), "%d/%m/%Y")
-                                dob_mysql = dob_obj.strftime("%Y-%m-%d")
-                            except:
-                                dob_mysql = None
-                    else:
-                        dob_mysql = None
-
-                    cursor.execute("""
-                        INSERT INTO applicants (Full_Name, Email, Password, Phone, DOB, Gender, Address)
-                        VALUES (%s, %s, %s, %s, %s, %s, %s)
-                    """, (
-                        row['Full_Name'],
-                        row['Email'],
-                        row['Password'],
-                        row['Phone'],
-                        dob_mysql,
-                        row['Gender'],
-                        row['Address']
-                    ))
-
-                    # Optionally link to an exam
-                    # if exam_id:
-                    #     applicant_id = cursor.lastrowid
-                    #     cursor.execute("INSERT INTO exam_applicants (exam_id, applicant_id) VALUES (%s, %s)", (exam_id, applicant_id))
-
-                except Exception as e:
-                    print("Skipping row due to error:", e)
-                    continue
-
-            mysql.connection.commit()
-            cursor.close()
-
-            return jsonify({'message': 'Students added successfully'}), 200
-
-        except Exception as e:
-            print("Error:", e)
-            return jsonify({'error': str(e)}), 500
+        return jsonify(success=True, message='Applicant added successfully'), 201
 
     # --------------------------------------------------
-    # Route 2: Upload Students File (logged version)
+    # BULK UPLOAD APPLICANTS (EXCEL HAS group_id)
     # --------------------------------------------------
     @add_students_bp.route('/upload_students', methods=['POST'])
     def upload_students():
-        file = request.files.get('file')
-        exam_id = request.form.get('exam_id')
-        uploaded_by = request.form.get('email')
-        role = request.form.get('role')
+        if 'file' not in request.files:
+            return jsonify(success=False, message='File missing'), 400
 
-        if not file or not allowed_file(file.filename):
-            return jsonify({'error': 'Invalid or missing file'}), 400
+        file = request.files['file']
 
+        if file.filename == '':
+            return jsonify(success=False, message='No file selected'), 400
+
+        if not allowed_file(file.filename):
+            return jsonify(success=False, message='Invalid file format'), 400
+
+        filename = secure_filename(file.filename)
+        upload_dir = 'uploads'
+        os.makedirs(upload_dir, exist_ok=True)
+        path = os.path.join(upload_dir, filename)
+        file.save(path)
+
+        # Read file
         try:
-            # Save uploaded file
-            filename = secure_filename(file.filename)
-            upload_path = os.path.join('uploads/students', filename)
-            os.makedirs(os.path.dirname(upload_path), exist_ok=True)
-            file.save(upload_path)
-
-            # Read Excel or CSV
-            if filename.endswith('.csv'):
-                df = pd.read_csv(upload_path)
-            else:
-                df = pd.read_excel(upload_path)
-
-            df.columns = [col.strip() for col in df.columns]
-            required_columns = ['Full_Name', 'Email', 'Password', 'Phone', 'DOB', 'Gender', 'Address']
-            if not all(col in df.columns for col in required_columns):
-                return jsonify({'error': 'Missing required columns in uploaded file'}), 400
-
-            cursor = mysql.connection.cursor()
-
-            for _, row in df.iterrows():
-                try:
-                    dob_value = row['DOB']
-                    if pd.notnull(dob_value):
-                        if isinstance(dob_value, datetime):
-                            dob_mysql = dob_value.strftime("%Y-%m-%d")
-                        else:
-                            try:
-                                dob_obj = datetime.strptime(str(dob_value).strip(), "%d/%m/%Y")
-                                dob_mysql = dob_obj.strftime("%Y-%m-%d")
-                            except:
-                                dob_mysql = None
-                    else:
-                        dob_mysql = None
-
-                    cursor.execute("""
-                        INSERT INTO applicants (Full_Name, Email, Password, Phone, DOB, Gender, Address)
-                        VALUES (%s, %s, %s, %s, %s, %s, %s)
-                    """, (
-                        row['Full_Name'],
-                        row['Email'],
-                        row['Password'],
-                        row['Phone'],
-                        dob_mysql,
-                        row['Gender'],
-                        row['Address']
-                    ))
-
-                    # Optionally link student to exam
-                    # if exam_id:
-                    #     applicant_id = cursor.lastrowid
-                    #     cursor.execute("INSERT INTO exam_applicants (exam_id, applicant_id) VALUES (%s, %s)", (exam_id, applicant_id))
-
-                except Exception as e:
-                    print("Skipping row due to:", e)
-                    continue
-
-            # Log file upload
-            cursor.execute("""
-                INSERT INTO file_uploads (Uploaded_By, Role, File_Name, File_Path)
-                VALUES (%s, %s, %s, %s)
-            """, (uploaded_by, role, filename, upload_path))
-
-            mysql.connection.commit()
-            cursor.close()
-
-            return jsonify({'message': 'Students uploaded and logged successfully'}), 200
-
+            df = pd.read_excel(path) if filename.endswith('.xlsx') else pd.read_csv(path)
         except Exception as e:
-            print("Error inserting row:", e)
-            return jsonify({'error': str(e)}), 500
+            return jsonify(success=False, message=f'Failed to read file: {str(e)}'), 400
+
+        df.columns = [c.strip() for c in df.columns]
+
+        required_columns = [
+            'Full_Name', 'Email', 'Password',
+            'Phone', 'DOB', 'Gender', 'Address', 'group_id'
+        ]
+
+        missing = [col for col in required_columns if col not in df.columns]
+        if missing:
+            return jsonify(success=False, message=f'Missing columns: {missing}'), 400
+
+        cursor = mysql.connection.cursor()
+        success_count = 0
+        failed_rows = []
+
+        for index, row in df.iterrows():
+            try:
+                dob_mysql = None
+                if pd.notnull(row['DOB']):
+                    dob_mysql = pd.to_datetime(row['DOB']).strftime('%Y-%m-%d')
+
+                hashed_password = generate_password_hash(str(row['Password']))
+
+                cursor.execute("""
+                    INSERT INTO applicants
+                    (Full_Name, Email, Password, Phone, DOB, Gender, Address, group_id)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+                """, (
+                    row['Full_Name'],
+                    row['Email'],
+                    hashed_password,
+                    row['Phone'],
+                    dob_mysql,
+                    row['Gender'],
+                    row['Address'],
+                    int(row['group_id'])
+                ))
+
+                success_count += 1
+
+            except Exception as e:
+                failed_rows.append({
+                    'row': index + 2,  # Excel row number
+                    'error': str(e)
+                })
+
+        mysql.connection.commit()
+        cursor.close()
+
+        return jsonify(
+            success=True,
+            message='Applicants uploaded successfully',
+            inserted=success_count,
+            failed=len(failed_rows),
+            errors=failed_rows
+        ), 200
 
     return add_students_bp

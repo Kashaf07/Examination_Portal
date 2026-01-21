@@ -188,6 +188,110 @@ def create_admin_routes(mysql):
         except Exception as e:
             print("Error deleting faculty:", e)
             return jsonify({"error": "Unable to delete faculty"}), 500
+        
+    # ----------------------------------
+    # GET ALL GROUPS
+    # ----------------------------------
+    @admin_bp.route('/groups', methods=['GET'])
+    def get_groups():
+        cursor = mysql.connection.cursor()
+        cursor.execute("SELECT group_id, group_name FROM applicant_groups ORDER BY group_id DESC")
+        rows = cursor.fetchall()
+        cursor.close()
+
+        return jsonify([
+            {'group_id': r[0], 'group_name': r[1]}
+            for r in rows
+        ]), 200
+
+    # ----------------------------------
+    # ADD GROUP
+    # ----------------------------------
+    @admin_bp.route('/groups/add', methods=['POST'])
+    def add_group():
+        data = request.json
+        group_name = data.get('group_name')
+
+        if not group_name:
+            return jsonify({'error': 'Group name required'}), 400
+
+        cursor = mysql.connection.cursor()
+        cursor.execute(
+            "INSERT INTO applicant_groups (group_name) VALUES (%s)",
+            (group_name,)
+        )
+        mysql.connection.commit()
+        cursor.close()
+
+        return jsonify({'message': 'Group added successfully'}), 201
+
+    # ----------------------------------
+    # UPDATE GROUP
+    # ----------------------------------
+    @admin_bp.route('/groups/<int:group_id>', methods=['PUT'])
+    def update_group(group_id):
+        data = request.json
+        group_name = data.get('group_name')
+
+        if not group_name:
+            return jsonify({'error': 'Group name required'}), 400
+
+        cursor = mysql.connection.cursor()
+        cursor.execute(
+            "UPDATE applicant_groups SET group_name=%s WHERE group_id=%s",
+            (group_name, group_id)
+        )
+        mysql.connection.commit()
+        cursor.close()
+
+        return jsonify({'message': 'Group updated successfully'}), 200
+
+    # ----------------------------------
+    # DELETE GROUP
+    # ----------------------------------
+    @admin_bp.route('/groups/<int:group_id>', methods=['DELETE'])
+    def delete_group(group_id):
+        cursor = mysql.connection.cursor()
+
+        # Optional safety: check applicants exist
+        cursor.execute("SELECT COUNT(*) FROM applicants WHERE group_id=%s", (group_id,))
+        count = cursor.fetchone()[0]
+
+        if count > 0:
+            cursor.close()
+            return jsonify({
+                'error': 'Cannot delete group. Applicants exist.'
+            }), 400
+
+        cursor.execute("DELETE FROM applicant_groups WHERE group_id=%s", (group_id,))
+        mysql.connection.commit()
+        cursor.close()
+
+        return jsonify({'message': 'Group deleted successfully'}), 200
+
+    # ----------------------------------
+    # VIEW APPLICANTS OF A GROUP
+    # ----------------------------------
+    @admin_bp.route('/groups/<int:group_id>/applicants', methods=['GET'])
+    def get_group_applicants(group_id):
+        cursor = mysql.connection.cursor()
+        cursor.execute("""
+            SELECT Applicant_Id, Full_Name, Email
+            FROM applicants
+            WHERE group_id=%s
+            ORDER BY Applicant_Id DESC
+        """, (group_id,))
+        rows = cursor.fetchall()
+        cursor.close()
+
+        return jsonify([
+            {
+                'Applicant_Id': r[0],
+                'Full_Name': r[1],
+                'Email': r[2]
+            }
+            for r in rows
+        ]), 200
 
     # Schools Routes
     @admin_bp.route('/schools', methods=['GET'])
