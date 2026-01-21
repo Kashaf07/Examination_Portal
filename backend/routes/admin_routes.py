@@ -659,7 +659,7 @@ def create_admin_routes(mysql):
                         cursor.execute("SELECT COUNT(*) FROM login_log WHERE User_Email = %s", (applicant_email,))
                         log_count = cursor.fetchone()[0]
                         if log_count > 0:
-                            cursor.execute("DELETE FROM login_log WHERE User_Email = %s", (applicant_id,))
+                            cursor.execute("DELETE FROM login_log WHERE User_Email = %s", (applicant_email,))
                             total_logs_deleted += log_count
                 
                     # Delete the applicant
@@ -948,7 +948,7 @@ def create_admin_routes(mysql):
             mysql.connection.rollback()
             return jsonify({"success": False, "error": f"Unable to delete exam: {str(e)}"}), 500
 
-    @admin_bp.route('/admin/exam/delete/<int:exam_id>', methods=['DELETE'])
+    @admin_bp.route('/exam/delete/<int:exam_id>', methods=['DELETE'])
     def admin_delete_exam(exam_id):
         """Admin-specific exam deletion endpoint"""
         try:

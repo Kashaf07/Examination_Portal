@@ -1,7 +1,14 @@
 <template>
   <div class="p-6">
     <div class="flex justify-between items-center mb-6">
-      <h1 class="text-3xl font-bold mb-6">Welcome, {{ facultyName }}</h1>
+      <h1 class="text-3xl font-bold mb-6">Welcome, {{ name }}</h1>
+      <button 
+      v-if="canSwitch"
+      @click="switchRole"
+      class="bg-purple-500 text-white px-4 py-2 rounded-lg"
+      >
+        Switch to Admin
+      </button>
       <button
         @click="logout"
         class="logout-btn"
@@ -218,26 +225,58 @@ import { useRouter } from 'vue-router'
 import axios from '../utils/axiosInstance'
 
 const router = useRouter()
-const facultyName = ref('')
-const facultyEmail = localStorage.getItem('faculty_email') || ''
+
+// ---------------------
+// NEW STORAGE SYSTEM
+// ---------------------
+const roles = JSON.parse(localStorage.getItem("roles") || "[]")
+const activeRole = ref(localStorage.getItem("active_role"))
+const canSwitch = roles.includes("Admin") && roles.includes("Faculty")
+
+// Switch Role Button
+const switchRole = () => {
+  const newRole = activeRole.value === "Faculty" ? "Admin" : "Faculty"
+  localStorage.setItem("active_role", newRole)
+  activeRole.value = newRole
+  router.push(`/${newRole.toLowerCase()}`)
+}
+
+// ---------------------
+// USER INFO
+// ---------------------
+const name = ref(localStorage.getItem("name"))
+const email = localStorage.getItem("email")
+
+// ---------------------
+// OLD faculty_email → NEW email
+// ---------------------
+const facultyEmail = email
+
+// ---------------------
+// AUTH CHECK ON MOUNT
+// ---------------------
+onMounted(() => {
+  console.log("FACULTY EMAIL:", facultyEmail)
+  console.log("DEBUG: activeRole =", activeRole.value)
+  console.log("DEBUG: facultyEmail =", facultyEmail)
+  if (activeRole.value !== "Faculty") {
+    router.push("/")
+  } else {
+    fetchExamsAndCategorize()
+  }
+})
+
+// ---------------------
+// EXAM DATA
+// ---------------------
+
 const showForm = ref(false)
 const showApplicantForm = ref(false)
 const submitMessage = ref('')
 const examSubmitMessage = ref('')
 const createdExams = ref([])
 const conductedExams = ref([])
-
 const examStatus = ref({})
-
-onMounted(() => {
-  const role = localStorage.getItem('role')
-  if (role !== 'Faculty') {
-    router.push('/')
-  } else {
-    facultyName.value = localStorage.getItem('faculty_name') || 'Faculty'
-    fetchExamsAndCategorize()
-  }
-})
 
 const todayDate = computed(() => {
   const today = new Date()
@@ -267,6 +306,11 @@ const applicant = ref({
   Address: ''
 })
 
+const toggleExamForm = () => {
+  showForm.value = !showForm.value
+  examSubmitMessage.value = ''
+}
+
 const formatDate = (dateString) => {
   if (!dateString) return 'N/A'
   return new Date(dateString).toLocaleDateString('en-GB', {
@@ -274,76 +318,6 @@ const formatDate = (dateString) => {
     month: 'short',
     year: 'numeric'
   })
-}
-
-const toggleExamForm = () => {
-  showForm.value = !showForm.value
-  examSubmitMessage.value = ''
-}
-
-const deleteExam = async (examId) => {
-  const confirmDelete = confirm('Are you sure you want to delete this exam?')
-  if (!confirmDelete) return
-  try {
-    const res = await axios.delete(`/exam/delete/${examId}`)
-    if (res.data.success) {
-      alert('Exam deleted successfully!')
-      fetchExamsAndCategorize()
-    } else {
-      alert('Failed to delete exam: ' + (res.data.message || 'Unknown error'))
-    }
-  } catch (err) {
-    console.error('Error deleting exam:', err)
-    alert('Server error while deleting exam')
-  }
-}
-
-const submitExam = async () => {
-  try {
-    const res = await axios.post('/exam/create', exam.value)
-    if (res.data.success) {
-      examSubmitMessage.value = 'Exam created successfully!'
-      showForm.value = false
-      fetchExamsAndCategorize()
-      exam.value = {
-        exam_name: '',
-        exam_date: '',
-        exam_time: '',
-        duration: '',
-        total_questions: '',
-        max_marks: '',
-        faculty_email: facultyEmail
-      }
-    } else {
-      examSubmitMessage.value = res.data.message || 'Failed to create exam.'
-    }
-  } catch (err) {
-    console.error('Error creating exam:', err)
-    examSubmitMessage.value = 'Error occurred while creating exam.'
-  }
-}
-
-const submitApplicant = async () => {
-  try {
-    const res = await axios.post('/applicants/add', applicant.value)
-    if (res.data.success) {
-      submitMessage.value = 'Applicant added successfully!'
-      applicant.value = {
-        Full_Name: '',
-        Email: '',
-        Password: '',
-        Phone: '',
-        DOB: '',
-        Gender: '',
-        Address: ''
-      }
-    } else {
-      submitMessage.value = 'Failed to add applicant.'
-    }
-  } catch (err) {
-    console.error('Error adding applicant:', err)
-    submitMessage.value = 'Error occurred while adding applicant.'
-  }
 }
 
 const getExamEndTime = (exam) => {
@@ -357,13 +331,8 @@ const loadExamStatuses = async (exams) => {
   for (const exam of exams) {
     try {
       const res = await axios.get(`/exam/status/${exam.Exam_Id}`)
-      if (res.data.success) {
-        statusMap[exam.Exam_Id] = res.data.status
-      } else {
-        statusMap[exam.Exam_Id] = { has_question_bank: false, has_question_paper: false }
-      }
-    } catch (err) {
-      console.error('Failed to load status for exam', exam.Exam_Id, err)
+      statusMap[exam.Exam_Id] = res.data.success ? res.data.status : { has_question_bank: false, has_question_paper: false }
+    } catch {
       statusMap[exam.Exam_Id] = { has_question_bank: false, has_question_paper: false }
     }
   }
@@ -371,23 +340,16 @@ const loadExamStatuses = async (exams) => {
 }
 
 const fetchExamsAndCategorize = async () => {
+  console.log("DEBUG: Fetching exams for →", facultyEmail)
   try {
     const res = await axios.get(`/exam/get_exams/${facultyEmail}`)
+    console.log("DEBUG: /exam/get_exams response →", res.data)
     if (res.data.success) {
       const now = new Date()
       const allExams = res.data.exams || []
 
-      createdExams.value = allExams.filter(exam => {
-        const endTime = getExamEndTime(exam)
-        if (!endTime) return false
-        return now < endTime
-      })
-
-      conductedExams.value = allExams.filter(exam => {
-        const endTime = getExamEndTime(exam)
-        if (!endTime) return false
-        return now >= endTime
-      })
+      createdExams.value = allExams.filter(exam => now < getExamEndTime(exam))
+      conductedExams.value = allExams.filter(exam => now >= getExamEndTime(exam))
 
       await loadExamStatuses(createdExams.value)
     }
@@ -401,6 +363,40 @@ const fetchExamsAndCategorize = async () => {
   }
 }
 
+const submitExam = async () => {
+  try {
+    const res = await axios.post('/exam/create', exam.value)
+    if (res.data.success) {
+      examSubmitMessage.value = 'Exam created successfully!'
+      showForm.value = false
+      fetchExamsAndCategorize()
+
+      exam.value = {
+        exam_name: '',
+        exam_date: '',
+        exam_time: '',
+        duration: '',
+        total_questions: '',
+        max_marks: '',
+        faculty_email: facultyEmail
+      }
+    } else {
+      examSubmitMessage.value = res.data.message || 'Failed to create exam.'
+    }
+  } catch {
+    examSubmitMessage.value = 'Error creating exam.'
+  }
+}
+
+const submitApplicant = async () => {
+  try {
+    const res = await axios.post('/applicants/add', applicant.value)
+    submitMessage.value = res.data.success ? 'Applicant added successfully!' : 'Failed to add applicant.'
+  } catch {
+    submitMessage.value = 'Error occurred while adding applicant.'
+  }
+}
+
 const navigateTo = (action, examId) => {
   const routeMap = {
     AddApplicants_exam: 'AddApplicantsexam',
@@ -409,29 +405,26 @@ const navigateTo = (action, examId) => {
     UploadStudents: 'UploadStudents',
     ViewResponses: 'ViewResponses'
   }
-  if (examId) {
-    router.push({ name: routeMap[action], params: { examId } })
-  } else {
-    router.push({ name: routeMap[action] })
-  }
+  examId
+    ? router.push({ name: routeMap[action], params: { examId } })
+    : router.push({ name: routeMap[action] })
 }
 
 const logout = async () => {
-  const email = localStorage.getItem('faculty_email')
-  const role = 'Faculty'
   try {
-    await axios.post('/auth/logout', { email, role })
-    localStorage.removeItem('token')
-    localStorage.removeItem('role')
-    localStorage.removeItem('faculty_email')
-    localStorage.removeItem('faculty_name')
+    await axios.post('/auth/logout', {
+      email,
+      role: activeRole.value
+    })
+
+    localStorage.clear()
     router.push('/')
-  } catch (err) {
-    console.error('Logout error:', err)
+  } catch {
     alert('Logout failed. Try again.')
   }
 }
 </script>
+
 
 <style scoped>
 .p-6 {

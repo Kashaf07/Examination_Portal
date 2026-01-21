@@ -28,18 +28,6 @@
           />
         </div>
 
-        <div>
-          <label class="text-sm font-semibold text-gray-700 mb-1 block">Select Role</label>
-          <select
-            v-model="role"
-            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500"
-          >
-            <option>Admin</option>
-            <option>Faculty</option>
-            <option>Student</option>
-          </select>
-        </div>
-
         <button
           @click="login"
           class="w-full bg-blue-500 hover:bg-[#386dcd] text-white py-2 rounded-lg font-semibold transition"
@@ -53,48 +41,54 @@
 
 <script setup>
 import { ref } from 'vue'
-import axios from '../utils/axiosInstance'
 import { useRouter } from 'vue-router'
+import axios from '../utils/axiosInstance'
 
-const email = ref('')
-const password = ref('')
-const role = ref('Admin')
+const email = ref("")
+const password = ref("")
+const message = ref("")
 const router = useRouter()
 
 const login = async () => {
   try {
-    const res = await axios.post('http://localhost:5000/api/auth/login', {
+    const response = await axios.post('/auth/login', {
       email: email.value,
-      password: password.value,
-      role: role.value
+      password: password.value
     })
 
-    if (res.data.status === 'success') {
-      localStorage.setItem('role', role.value)
-      localStorage.setItem('token', res.data.token) // or JWT if backend returns one
+    const res = response.data       // << FIX: NOW res IS DEFINED
+    console.log("LOGIN RESPONSE:", res)
 
-      if (role.value.toLowerCase() === 'student') {
-        localStorage.setItem('student_email', res.data.email)
-        localStorage.setItem('student_name', res.data.name)
-        localStorage.setItem('applicant_id', res.data.id)
-      } else if (role.value.toLowerCase() === 'faculty') {
-        localStorage.setItem('faculty_email', res.data.email)
-        localStorage.setItem('faculty_name', res.data.name)
-      } else if (role.value.toLowerCase() === 'admin') {
-        localStorage.setItem('admin_email', res.data.email)
-        localStorage.setItem('admin_name', res.data.name)
-      }
-
-      router.push(`/${role.value.toLowerCase()}`)
-    } else {
-      alert('Invalid credentials')
+    if (res.status !== "success") {
+      message.value = res.message || "Invalid credentials"
+      return
     }
-  } catch (err) {
-    console.error(err)
-    alert('Server error. Try again.')
+
+    // --------------------------
+    // SAVE DATA TO LOCAL STORAGE
+    // --------------------------
+    localStorage.setItem("token", res.token)
+    localStorage.setItem("roles", JSON.stringify(res.roles))
+    localStorage.setItem("active_role", res.active_role)
+    localStorage.setItem("email", res.email)
+    localStorage.setItem("name", res.name)
+
+    // --------------------------
+    // REDIRECT BASED ON ROLE
+    // --------------------------
+    const activeRole = res.active_role.toLowerCase()
+    setTimeout(() => {
+      router.push(`/${activeRole}`)
+    }, 50)
+
+
+  } catch (e) {
+    console.error("LOGIN ERROR:", e)
+    message.value = "Server error"
   }
 }
 </script>
+
 
 
 <style scoped>

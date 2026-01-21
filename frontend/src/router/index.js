@@ -17,7 +17,17 @@ import ViewAnswers from '../views/ViewAnswers.vue'
 // ✅ Define routes
 const routes = [
   { path: '/', component: Login, name: 'Login' },
-  { path: '/admin', name: 'Admin', component: Admin, meta: { requiresAuth: true, role: 'Admin' } },
+  { path: "/admin", component: Admin, name: "Admin", meta: { requiresAuth: true, role: "Admin" }, redirect: "/admin/faculty",
+  children: [
+    { path: "faculty", name: "AdminFaculty", component: () => import("../views/admin/AdminFaculty.vue"),},
+    { path: "schools", name: "AdminSchools", component: () => import("../views/admin/AdminSchools.vue"),},
+    { path: "applicants", name: "AdminApplicants", component: () => import("../views/admin/AdminApplicants.vue"),},
+    { path: "exams", name: "AdminExams", component: () => import("../views/admin/AdminExams.vue"),},
+    { path: "admins", name: "AdminAdmins", component: () => import("../views/admin/AdminAdmins.vue"),},
+    { path: "logs", name: "AdminLogs", component: () => import("../views/admin/AdminLogs.vue"),},
+    { path: "upload-students", name: "AdminUploadStudents", component: () => import("../views/UploadStudents.vue"), meta: { requiresAuth: true, role: "Admin" }}
+  ]},
+
   { path: '/faculty', name: 'Faculty', component: Faculty, meta: { requiresAuth: true, role: 'Faculty' } },
   { path: '/student', name: 'Student', component: Student, meta: { requiresAuth: true, role: 'Student' } },
 
@@ -49,44 +59,46 @@ const router = createRouter({
 
 // ✅ Enhanced Navigation Guard
 router.beforeEach((to, from, next) => {
-  const token = localStorage.getItem('token')
-  const userRole = localStorage.getItem('role') // saved during login
+  const token = localStorage.getItem("token")
+  const activeRole = localStorage.getItem("active_role") // NEW SYSTEM
+  const roles = JSON.parse(localStorage.getItem("roles") || "[]")
 
-  // Find meta.role for matched route
+  // Get required role for route
   const routeMeta = to.matched.find(record => record.meta && record.meta.role)
   const requiredRole = routeMeta ? routeMeta.meta.role : null
 
-  console.log(`🔒 Navigating to: ${to.path} | Required role: ${requiredRole} | User role: ${userRole}`)
+  console.log(
+    `🔒 Navigating to: ${to.path} | Required: ${requiredRole} | Active: ${activeRole} | Roles: ${roles}`
+  )
 
-  // --- AUTH REQUIRED ---
-  if (to.meta.requiresAuth) {
-    if (!token || !userRole) {
-      alert('Please login first.')
-      return next({ name: 'Login' })
-    }
-
-    // Role check
-    const hasAccess = Array.isArray(requiredRole)
-      ? requiredRole.map(r => r.toLowerCase()).includes(userRole.toLowerCase())
-      : requiredRole?.toLowerCase() === userRole.toLowerCase()
-
-    if (!hasAccess) {
-      alert('Access denied! Unauthorized role.')
-      return next({ path: `/${userRole.toLowerCase()}` })
-    }
-
-    console.log('✅ Authorized access')
+  // --- PUBLIC ROUTE (login) ---
+  if (!requiredRole) {
     return next()
   }
 
-  /* --- PUBLIC ROUTE ---
-  if (to.name === 'Login' && userRole && token) {
-    // already logged in, redirect to dashboard
-    console.log('🔁 Already logged in, redirecting to dashboard')
-    return next({ path: `/${userRole.toLowerCase()}` })
-  }*/
+  // --- AUTH REQUIRED ---
+  if (!token || !activeRole) {
+    return next("/")
+  }
 
-  next()
+  // Convert requiredRole to array for easy checking
+  const requiredList = Array.isArray(requiredRole)
+    ? requiredRole.map(r => r.toLowerCase())
+    : [requiredRole.toLowerCase()]
+
+  // Check if user's roles include ANY required role
+  const hasRequiredRole = roles
+    .map(r => r.toLowerCase())
+    .some(r => requiredList.includes(r))
+
+  if (!hasRequiredRole) {
+    alert("Access denied!")
+    return next(`/${activeRole.toLowerCase()}`)
+  }
+
+  // All good
+  return next()
 })
+
 
 export default router

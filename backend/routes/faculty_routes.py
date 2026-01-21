@@ -13,59 +13,32 @@ def create_faculty_routes(mysql):
     def token_required(f):
         @wraps(f)
         def decorated(*args, **kwargs):
-            current_user = { "email": data["email"], "role": data["role"] }
             token = None
+
             if "Authorization" in request.headers:
                 auth_header = request.headers["Authorization"]
                 token = auth_header.split(" ")[1] if " " in auth_header else auth_header
 
             if not token:
-                return jsonify({"success": False, "message": "Token is missing!"}), 401
+                return jsonify({"success": False, "message": "Token is missing"}), 401
 
             try:
-                data = jwt.decode(token, SECRET_KEY, algorithms=["HS256"])
-                request.faculty_email = data["email"]
+                decoded = jwt.decode(token, SECRET_KEY, algorithms=["HS256"])
+
+                # Store user email for all routes
+                request.faculty_email = decoded["email"]
+
+                current_user = {
+                    "email": decoded["email"],
+                    "roles": decoded.get("roles", []),
+                    "active_role": decoded.get("active_role")
+                }
+
             except Exception as e:
-                return jsonify({"success": False, "message": f"Token is invalid: {str(e)}"}), 401
+                return jsonify({"success": False, "message": f"Invalid token: {str(e)}"}), 401
 
             return f(current_user, *args, **kwargs)
         return decorated
-
-    # -------------------------
-    # Faculty Login
-    # -------------------------
-    @faculty_bp.route("/login", methods=["POST"])
-    def faculty_login():
-        data = request.get_json()
-        email = data.get("email")
-        password = data.get("password")
-
-        try:
-            cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
-            cursor.execute("SELECT * FROM Mst_Faculty WHERE F_Email = %s", (email,))
-            faculty = cursor.fetchone()
-            cursor.close()
-
-            if not faculty:
-                return jsonify({"success": False, "message": "Faculty not found"}), 404
-
-            # Plain text password check (insecure, consider hashing)
-            if faculty["F_Password"] == password:
-                token = jwt.encode({"email": faculty["F_Email"]}, SECRET_KEY, algorithm="HS256")
-                return jsonify({
-                    "success": True,
-                    "token": token,
-                    "faculty": {
-                        "id": faculty["F_ID"],
-                        "name": faculty["F_Name"],
-                        "email": faculty["F_Email"]
-                    }
-                })
-            else:
-                return jsonify({"success": False, "message": "Invalid password"}), 401
-
-        except Exception as e:
-            return jsonify({"success": False, "message": str(e)}), 500
 
     # -------------------------
     # Faculty Profile
@@ -73,23 +46,20 @@ def create_faculty_routes(mysql):
     @faculty_bp.route("/profile", methods=["GET"])
     @token_required
     def get_faculty_profile(current_user):
+        if "Faculty" not in current_user["roles"]:
+            return jsonify({"success": False, "message": "Access denied"}), 403
+
         email = current_user["email"]
-        if current_user["role"] != "Faculty":
-            return jsonify({"message": "Unauthorized"}), 403
-        
-        try:
-            cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
-            cursor.execute("SELECT F_ID, F_Name, F_Email FROM Mst_Faculty WHERE F_Email = %s", (email,))
-            faculty = cursor.fetchone()
-            cursor.close()
 
-            if faculty:
-                return jsonify({"success": True, "faculty": faculty})
-            else:
-                return jsonify({"success": False, "message": "Faculty not found"}), 404
+        cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+        cursor.execute("SELECT F_ID, F_Name, F_Email FROM Mst_Faculty WHERE F_Email = %s", (email,))
+        faculty = cursor.fetchone()
+        cursor.close()
 
-        except Exception as e:
-            return jsonify({"success": False, "message": str(e)}), 500
+        if faculty:
+            return jsonify({"success": True, "faculty": faculty})
+        else:
+            return jsonify({"success": False, "message": "Faculty not found"}), 404
 
 
     # -------------------------

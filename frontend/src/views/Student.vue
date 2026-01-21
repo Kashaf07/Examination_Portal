@@ -3,7 +3,7 @@
   <!-- Student Info Box -->
   <div class="absolute top-4 right-6 z-50 group">
     <div class="bg-white px-6 py-3 rounded-2xl shadow-lg border border-indigo-200 text-base font-semibold text-indigo-800 cursor-default transition-all duration-300 hover:shadow-xl hover:scale-105">
-      👤 {{ studentName || studentEmail }}
+      👤 {{ name || email }}
     </div>
     
 

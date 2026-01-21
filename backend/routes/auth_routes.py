@@ -40,74 +40,88 @@ def create_auth_routes(mysql):
         data = request.json
         email = data.get('email')
         password = data.get('password')
-        role = data.get('role')
 
         cursor = mysql.connection.cursor()
 
-        # Map of table name and email column for each role
-        table_map = {
-            "Admin": ("Mst_Admin", "Email", "Name"),
-            "Faculty": ("Mst_Faculty", "F_Email", "F_Name"),
-            "Student": ("Applicants", "Email", "Full_Name")
+        roles = []
+        user_name = None
+        student_id = None
+        selected_role = None
+        password_matched = False
+
+        # ---- CHECK FACULTY ----
+        cursor.execute("SELECT F_Name, F_Email, Password FROM mst_faculty WHERE F_Email=%s", (email,))
+        faculty = cursor.fetchone()
+
+        if faculty:
+            f_name, f_email, f_pass = faculty
+            roles.append("Faculty")   # add role even if password doesn't match
+            if f_pass == password:    # if password matches → this is the login role
+                password_matched = True
+                selected_role = "Faculty"
+                user_name = f_name
+
+        # ---- CHECK ADMIN ----
+        cursor.execute("SELECT Name, Email, Password FROM mst_admin WHERE Email=%s", (email,))
+        admin = cursor.fetchone()
+
+        if admin:
+            a_name, a_email, a_pass = admin
+            roles.append("Admin")    # add role even if password doesn't match
+            if a_pass == password:
+                password_matched = True
+                selected_role = "Admin"
+                user_name = a_name
+
+        # ---- CHECK STUDENT ----
+        cursor.execute("SELECT Full_Name, Email, Password, Applicant_Id FROM applicants WHERE Email=%s", (email,))
+        student = cursor.fetchone()
+
+        if student:
+            s_name, s_email, s_pass, sid = student
+            roles.append("Student")
+            if s_pass == password:
+                password_matched = True
+                selected_role = "Student"
+                user_name = s_name
+                student_id = sid
+
+        # ===== NO PASSWORD MATCHED =====
+        if not password_matched:
+            return jsonify({"status": "fail", "message": "Invalid credentials"}), 401
+
+        # ===== LOGIN SUCCESS =====
+        # Save login time
+        login_time = datetime.now()
+        cursor.execute("""
+            INSERT INTO login_log (User_Email, Role, Login_Time)
+            VALUES (%s, %s, %s)
+        """, (email, selected_role, login_time))
+        mysql.connection.commit()
+
+        # Create JWT
+        token = jwt.encode({
+            "email": email,
+            "roles": roles,
+            "active_role": selected_role,
+            "exp": datetime.now(timezone.utc) + timedelta(hours=2)
+        }, SECRET_KEY, algorithm="HS256")
+
+        response = {
+            "status": "success",
+            "token": token,
+            "roles": roles,
+            "active_role": selected_role,
+            "name": user_name,
+            "email": email,
+            "login_time": login_time.strftime("%Y-%m-%d %H:%M:%S")
         }
 
-        if role not in table_map:
-            return jsonify({"error": "Invalid role"}), 400
+        if selected_role == "Student":
+            response["id"] = student_id
 
-        table, email_col, name_col = table_map[role]
-
-        # Query the table for the given role
-        query = f"SELECT {name_col}, {email_col}, Password FROM {table} WHERE {email_col}=%s"
-        cursor.execute(query, (email,))
-        result = cursor.fetchone()
-
-        if result:
-            name_from_db, email_from_db, password_from_db = result
-            if password_from_db == password:
-                
-                # ✅ Explicitly insert login time as NOW
-                login_time = datetime.now()
-                insert_log_query = """
-                    INSERT INTO login_log (User_Email, Role, Login_Time)
-                    VALUES (%s, %s, %s)
-                """
-                cursor.execute(insert_log_query, (email_from_db, role, login_time))
-                mysql.connection.commit()
-                
-                # ✅ Generate JWT token (valid 2 hours)
-                token = jwt.encode({
-                    'email': email_from_db,
-                    'role': role,
-                    'exp': datetime.now(timezone.utc) + timedelta(hours=2)
-                }, SECRET_KEY, algorithm="HS256")
-
-                if role == "Student":
-                    # Fetch student ID
-                    cursor.execute("SELECT Applicant_Id FROM Applicants WHERE Email = %s", (email,))
-                    student_row = cursor.fetchone()
-                    student_id = student_row[0] if student_row else None
-
-                    return jsonify({
-                        'status': 'success',
-                        'token': token,
-                        'role': role,
-                        'id': student_id,
-                        'name': name_from_db,
-                        'email': email_from_db,
-                        'login_time': login_time.strftime('%Y-%m-%d %H:%M:%S')
-                    }), 200
-
-                return jsonify({
-                    'status': 'success',
-                    'token': token,
-                    'role': role,
-                    'name': name_from_db,
-                    'email': email_from_db,
-                    'login_time': login_time.strftime('%Y-%m-%d %H:%M:%S')
-                }), 200
-
-        return jsonify({'status': 'fail', 'message': 'Invalid credentials'}), 401
-
+        return jsonify(response), 200
+        
     @auth_bp.route('/logout', methods=['POST'])
     def logout():
         data = request.json
