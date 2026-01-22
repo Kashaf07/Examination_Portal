@@ -39,7 +39,7 @@
                 <td class="py-4 px-6">{{ faculty.F_Name }}</td>
                 <td class="py-4 px-6">{{ faculty.F_Email }}</td>
                 <td class="py-4 px-6">{{ getSchoolName(faculty.School_Id) }}</td>
-                <td class="py-4 px-6">{{ faculty.Designation }}</td>
+                <td class="py-4 px-6">{{ faculty.Designation_Name }}</td>
                 <td class="py-4 px-6 space-x-2">
                   <button
                     @click="openEditModal(faculty)"
@@ -114,8 +114,12 @@
 
             <div>
               <label class="font-semibold text-gray-700 mb-2 block">Designation</label>
+              <!-- DEBUG: Show if designationsList is loading correctly -->
+              <!--<p class="text-black text-sm mb-1">Loaded: {{ designationsList }}</p>-->
+
               <select
-                v-model="facultyForm.Designation"
+                v-model="facultyForm.Designation_Id"
+                @change="autoAssignRole"
                 required
                 class="w-full px-4 py-3 rounded-xl border bg-purple-50 focus:bg-white focus:ring-2"
               >
@@ -123,7 +127,7 @@
                 <option
                   v-for="d in designationsList"
                   :key="d.id"
-                  :value="d.name"
+                  :value="d.id"
                 >
                   {{ d.name }}
                 </option>
@@ -184,13 +188,22 @@ const designationsList = ref([]);
 const showModal = ref(false);
 const isEdit = ref(false);
 
+// Auto Assign Role
+const autoAssignRole = () => {
+  const selected = designationsList.value.find(
+    d => d.id === facultyForm.value.Designation_Id
+  );
+
+  facultyForm.value.Role_Id = selected?.Role_Id || null;
+};
+
 // Form
 const facultyForm = ref({
   Faculty_Id: null,
   F_Name: "",
   F_Email: "",
   School_Id: "",
-  Designation: "",
+  Designation_Id: "",
   Password: "",
 });
 
@@ -203,7 +216,8 @@ const openAddModal = () => {
     F_Name: "",
     F_Email: "",
     School_Id: "",
-    Designation: "",
+    Designation_Id: "",
+    Role_Id: null,   
     Password: "",
   };
 };
@@ -217,7 +231,8 @@ const openEditModal = (faculty) => {
     F_Name: faculty.F_Name,
     F_Email: faculty.F_Email,
     School_Id: faculty.School_Id,
-    Designation: faculty.Designation,
+    Designation_Id: faculty.Designation_Id,
+    Role_Id: faculty.Role_Id,
     Password: "" // ONLY for add, ignored for update
   };
 };

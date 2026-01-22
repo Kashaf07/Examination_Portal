@@ -77,6 +77,7 @@ const activeTab = ref(route.query.tab || "faculty");
 const tabs = [
   { id: "faculty", name: "Faculty" },
   { id: "designations", name: "Designations" },
+  { id: "role-assignment", name: "Role Assignment" },
   { id: "schools", name: "Schools" },
   { id: "applicants", name: "Applicants" },
   { id: "exams", name: "Exams" },
