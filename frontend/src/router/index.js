@@ -1,8 +1,12 @@
 import { createRouter, createWebHistory } from 'vue-router'
+
+// Core views
 import Login from '../views/Login.vue'
 import Admin from '../views/Admin.vue'
 import Faculty from '../views/Faculty.vue'
 import Student from '../views/Student.vue'
+
+// Shared / feature views
 import AddQuestion from '../components/AddQuestion.vue'
 import UploadQuestionBank from '../views/UploadQuestionBank.vue'
 import CreateExamForm from '../components/CreateExamForm.vue'
@@ -14,96 +18,96 @@ import ViewResponsesAdmin from '../views/ViewResponsesAdmin.vue'
 import ViewResponsesFaculty from '../views/ViewResponses.vue'
 import ViewAnswers from '../views/ViewAnswers.vue'
 
-
-// ✅ Define routes
+// ---------------- ROUTES ----------------
 const routes = [
-  { path: '/', component: Login, name: 'Login' },
-  { path: "/admin", component: Admin, name: "Admin", meta: { requiresAuth: true, role: "Admin" }, redirect: "/admin/faculty",
-  children: [
-    { path: "faculty", name: "AdminFaculty", component: () => import("../views/admin/AdminFaculty.vue"),},
-    { path: "schools", name: "AdminSchools", component: () => import("../views/admin/AdminSchools.vue"),},
-    { path: "applicants", name: "AdminApplicants", component: () => import("../views/admin/AdminApplicants.vue"),},
-    { path: "exams", name: "AdminExams", component: () => import("../views/admin/AdminExams.vue"),},
-    { path: "admins", name: "AdminAdmins", component: () => import("../views/admin/AdminAdmins.vue"),},
-    { path: "logs", name: "AdminLogs", component: () => import("../views/admin/AdminLogs.vue"),},
-    { path: "upload-students", name: "AdminUploadStudents", component: () => import("../views/UploadStudents.vue"), meta: { requiresAuth: true, role: "Admin" }}
-  ]},
-
-  { path: '/faculty', name: 'Faculty', component: Faculty, meta: { requiresAuth: true, role: 'Faculty' } },
-  { path: '/student', name: 'Student', component: Student, meta: { requiresAuth: true, role: 'Student' } },
-  
-
-  // Admin + Faculty shared routes
-  { path: '/exam/:examId/upload-question-bank', name: 'UploadQuestionBank', component: UploadQuestionBank, meta: { requiresAuth: true, role: ['Admin', 'Faculty'] } },
-  { path: '/create-exam', component: CreateExamForm, meta: { requiresAuth: true, role: ['Admin', 'Faculty'] } },
-  { path: '/upload-students', name: 'UploadStudents', component: UploadStudents, meta: { requiresAuth: true, role: ['Admin', 'Faculty'] } },
-  { path: '/exam/:examId/add-applicants-exam', name: 'AddApplicantsexam', component: AddApplicants_exam, meta: { requiresAuth: true, role: ['Admin', 'Faculty'] } },
-  { path: '/exam/:examId/add-question', name: 'AddQuestion', component: AddQuestion, meta: { requiresAuth: true, role: ['Admin', 'Faculty'] } },
-  { path: '/exam/:examId/make-question-paper', name: 'MakeQuestionPaper', component: MakeQuestionPaperPage, meta: { requiresAuth: true, role: ['Admin', 'Faculty'] } },
-  { path: '/add-applicants', name: 'AddApplicants', component: AddApplicantsPage, meta: { requiresAuth: true, role: ['Admin', 'Faculty'] } },
-  { path: '/view-answers/:attemptId', name: 'ViewAnswers', component: ViewAnswers, props: true, meta: { requiresAuth: true, role: ['Admin', 'Faculty'] } },
-
-  // Admin specific
-  { path: '/responses/:examId', name: 'ViewResponsesAdmin', component: ViewResponsesAdmin, props: true, meta: { requiresAuth: true, role: 'Admin' } },
-
-  // Faculty specific
-  { path: '/faculty/view-responses/:examId', name: 'ViewResponses', component: ViewResponsesFaculty, props: true, meta: { requiresAuth: true, role: 'Faculty' } },
+  // ---------------- PUBLIC ----------------
   {
-  path: '/groups',
-  name: 'Groups',
-  component: () => import('../views/Groups.vue')
-},
-{ path: '/:pathMatch(.*)*', redirect: '/' }
+    path: '/',
+    name: 'Login',
+    component: Login
+  },
+
+  // ---------------- ADMIN ----------------
+  {
+    path: '/admin',
+    component: Admin,
+    name: 'Admin',
+    meta: { requiresAuth: true, role: 'Admin' },
+    redirect: '/admin/faculty',
+    children: [
+      {path: 'faculty',name: 'AdminFaculty',component: () => import('../views/admin/AdminFaculty.vue')},
+      {path: 'schools',name: 'AdminSchools',component: () => import('../views/admin/AdminSchools.vue')},
+      {path: 'groups', name: 'AdminGroups',component: () => import('../views/Groups.vue')},
+      {path: 'applicants',name: 'AdminApplicants',component: () => import('../views/admin/AdminApplicants.vue')},
+      {path: "applicants/add",name: "AddApplicant",component: () => import("@/views/AddApplicantsPage.vue")},
+      {path: 'exams',name: 'AdminExams',component: () => import('../views/admin/AdminExams.vue')},
+      {path: 'admins',name: 'AdminAdmins',component: () => import('../views/admin/AdminAdmins.vue')},
+      {path: 'logs',name: 'AdminLogs',component: () => import('../views/admin/AdminLogs.vue')},
+      {path: 'upload-students',name: 'AdminUploadStudents',component: UploadStudents,meta: { requiresAuth: true, role: 'Admin' }}
+    ]
+  },
+
+  // ---------------- FACULTY ----------------
+  {path: '/faculty',name: 'Faculty',component: Faculty,meta: { requiresAuth: true, role: 'Faculty' }},
+  {path: '/faculty/groups', name: 'FacultyGroups',component: () => import('../views/Groups.vue'),meta: { requiresAuth: true, role: 'Faculty' }},
+
+  // ---------------- STUDENT ----------------
+  {path: '/student',name: 'Student',component: Student,meta: { requiresAuth: true, role: 'Student' }},
+
+  // ---------------- SHARED (ADMIN + FACULTY) ----------------
+  {path: '/exam/:examId/upload-question-bank',name: 'UploadQuestionBank',component: UploadQuestionBank,meta: { requiresAuth: true, role: ['Admin', 'Faculty'] }},
+  {path: '/create-exam',name: 'CreateExam',component: CreateExamForm,meta: { requiresAuth: true, role: ['Admin', 'Faculty'] }},
+  {path: '/upload-students',name: 'UploadStudents',component: UploadStudents,meta: { requiresAuth: true, role: ['Admin', 'Faculty'] }},
+  {path: '/exam/:examId/add-applicants-exam',name: 'AddApplicantsExam',component: AddApplicants_exam,meta: { requiresAuth: true, role: ['Admin', 'Faculty'] }},
+  {path: '/exam/:examId/add-question',name: 'AddQuestion',component: AddQuestion,meta: { requiresAuth: true, role: ['Admin', 'Faculty'] }},
+  {path: '/exam/:examId/make-question-paper',name: 'MakeQuestionPaper',component: MakeQuestionPaperPage,meta: { requiresAuth: true, role: ['Admin', 'Faculty'] }},
+  {path: '/add-applicants',name: 'AddApplicants',component: AddApplicantsPage,meta: { requiresAuth: true, role: ['Admin', 'Faculty'] }},
+  {path: '/view-answers/:attemptId',name: 'ViewAnswers',component: ViewAnswers,props: true,meta: { requiresAuth: true, role: ['Admin', 'Faculty'] }},
+
+  // ---------------- RESPONSES ----------------
+  {path: '/responses/:examId',name: 'ViewResponsesAdmin',component: ViewResponsesAdmin,props: true,meta: { requiresAuth: true, role: 'Admin' }},
+  {path: '/faculty/view-responses/:examId',name: 'ViewResponsesFaculty',component: ViewResponsesFaculty,props: true,meta: { requiresAuth: true, role: 'Faculty' }},
+  // ---------------- FALLBACK ----------------
+  {path: '/:pathMatch(.*)*',redirect: '/'}
 ]
 
-// ✅ Create router
+// ---------------- ROUTER ----------------
 const router = createRouter({
   history: createWebHistory(),
   routes
 })
 
-// ✅ Enhanced Navigation Guard
+// ---------------- AUTH GUARD ----------------
 router.beforeEach((to, from, next) => {
-  const token = localStorage.getItem("token")
-  const activeRole = localStorage.getItem("active_role") // NEW SYSTEM
-  const roles = JSON.parse(localStorage.getItem("roles") || "[]")
+  const token = localStorage.getItem('token')
+  const activeRole = localStorage.getItem('active_role')
+  const roles = JSON.parse(localStorage.getItem('roles') || '[]')
 
-  // Get required role for route
-  const routeMeta = to.matched.find(record => record.meta && record.meta.role)
+  const routeMeta = to.matched.find(r => r.meta && r.meta.role)
   const requiredRole = routeMeta ? routeMeta.meta.role : null
 
-  console.log(
-    `🔒 Navigating to: ${to.path} | Required: ${requiredRole} | Active: ${activeRole} | Roles: ${roles}`
-  )
+  // Public route
+  if (!requiredRole) return next()
 
-  // --- PUBLIC ROUTE (login) ---
-  if (!requiredRole) {
-    return next()
-  }
-
-  // --- AUTH REQUIRED ---
+  // Auth required
   if (!token || !activeRole) {
-    return next("/")
+    return next('/')
   }
 
-  // Convert requiredRole to array for easy checking
-  const requiredList = Array.isArray(requiredRole)
+  const requiredRoles = Array.isArray(requiredRole)
     ? requiredRole.map(r => r.toLowerCase())
     : [requiredRole.toLowerCase()]
 
-  // Check if user's roles include ANY required role
-  const hasRequiredRole = roles
+  const hasAccess = roles
     .map(r => r.toLowerCase())
-    .some(r => requiredList.includes(r))
+    .some(r => requiredRoles.includes(r))
 
-  if (!hasRequiredRole) {
-    alert("Access denied!")
+  if (!hasAccess) {
+    alert('Access denied!')
     return next(`/${activeRole.toLowerCase()}`)
   }
 
-  // All good
-  return next()
+  next()
 })
-
 
 export default router
