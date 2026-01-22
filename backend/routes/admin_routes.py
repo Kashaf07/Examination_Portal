@@ -1094,5 +1094,73 @@ def create_admin_routes(mysql):
             print("Error deleting exam:", e)
             mysql.connection.rollback()
             return jsonify({"success": False, "error": f"Unable to delete exam: {str(e)}"}), 500
+        
+    @admin_bp.route('/designations', methods=['GET'])
+    def get_designations():
+        cursor = mysql.connection.cursor()
+        cursor.execute("SELECT Designation_Id, Designation_Name FROM mst_designation ORDER BY Designation_Id ASC")
+        rows = cursor.fetchall()
+        cursor.close()
+
+        data = [
+            {"id": row[0], "name": row[1]}
+        for row in rows]
+
+        return jsonify({"status": "success", "data": data})
+    
+    # ADD DESIGNATION
+    @admin_bp.route('/designations', methods=['POST'])
+    def add_designation():
+        data = request.json
+        name = data.get("name")
+
+        cursor = mysql.connection.cursor()
+
+        # 🔍 Check if designation already exists
+        cursor.execute("SELECT COUNT(*) FROM mst_designation WHERE Designation_Name = %s", (name,))
+        exists = cursor.fetchone()[0]
+
+        if exists > 0:
+            cursor.close()
+            return jsonify({
+                "status": "error",
+                "message": "Designation already exists"
+            }), 400
+
+        # ➕ Insert new designation
+        cursor.execute(
+            "INSERT INTO mst_designation (Designation_Name) VALUES (%s)",
+            (name,)
+        )
+        mysql.connection.commit()
+        cursor.close()
+
+        return jsonify({"status": "success","message": "Designation added"})
+
+    @admin_bp.route('/designations/<int:id>', methods=['PUT'])
+    def update_designation(id):
+        data = request.json
+        name = data.get("name")
+
+        cursor = mysql.connection.cursor()
+        cursor.execute(
+            "UPDATE mst_designation SET Designation_Name = %s WHERE Designation_Id = %s",
+            (name, id)
+        )
+        mysql.connection.commit()
+        cursor.close()
+
+        return jsonify({"status": "success", "message": "Designation updated"})
+    
+    @admin_bp.route('/designations/<int:id>', methods=['DELETE'])
+    def delete_designation(id):
+        cursor = mysql.connection.cursor()
+        cursor.execute("DELETE FROM mst_designation WHERE Designation_Id = %s", (id,))
+        mysql.connection.commit()
+        cursor.close()
+
+        return jsonify({"status": "success", "message": "Designation deleted"})
+
+
 
     return admin_bp

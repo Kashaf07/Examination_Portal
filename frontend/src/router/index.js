@@ -22,6 +22,7 @@ const routes = [
   children: [
     { path: "faculty", name: "AdminFaculty", component: () => import("../views/admin/AdminFaculty.vue"),},
     { path: "schools", name: "AdminSchools", component: () => import("../views/admin/AdminSchools.vue"),},
+    { path: "designations", name: "AdminDesignations", component: () => import("../views/admin/DesignationManagement.vue") },
     { path: "applicants", name: "AdminApplicants", component: () => import("../views/admin/AdminApplicants.vue"),},
     { path: "exams", name: "AdminExams", component: () => import("../views/admin/AdminExams.vue"),},
     { path: "admins", name: "AdminAdmins", component: () => import("../views/admin/AdminAdmins.vue"),},

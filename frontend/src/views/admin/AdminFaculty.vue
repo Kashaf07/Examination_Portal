@@ -114,12 +114,22 @@
 
             <div>
               <label class="font-semibold text-gray-700 mb-2 block">Designation</label>
-              <input
+              <select
                 v-model="facultyForm.Designation"
                 required
                 class="w-full px-4 py-3 rounded-xl border bg-purple-50 focus:bg-white focus:ring-2"
-              />
+              >
+                <option value="">Select Designation</option>
+                <option
+                  v-for="d in designationsList"
+                  :key="d.id"
+                  :value="d.name"
+                >
+                  {{ d.name }}
+                </option>
+              </select>
             </div>
+
 
             <div v-if="!isEdit">
               <label class="font-semibold text-gray-700 mb-2 block">Password</label>
@@ -168,6 +178,7 @@ const API = "http://localhost:5000/api";
 // Data
 const facultyList = ref([]);
 const schoolsList = ref([]);
+const designationsList = ref([]);
 
 // Modal
 const showModal = ref(false);
@@ -228,6 +239,13 @@ const fetchSchools = async () => {
   schoolsList.value = res.data;
 };
 
+// Fetch Designations
+const fetchDesignations = async () => {
+  const res = await axios.get(`${API}/admin/designations`);
+  designationsList.value = res.data.data;
+};
+
+
 // Get School Name
 const getSchoolName = (id) => {
   const s = schoolsList.value.find((x) => x.School_Id === id);
@@ -286,5 +304,6 @@ const deleteFaculty = async (id) => {
 onMounted(() => {
   fetchFaculty();
   fetchSchools();
+  fetchDesignations();
 });
 </script>
