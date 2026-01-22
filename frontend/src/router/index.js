@@ -20,23 +20,13 @@ import ViewAnswers from '../views/ViewAnswers.vue'
 
 // ---------------- ROUTES ----------------
 const routes = [
-  // ---------------- PUBLIC ----------------
-  {
-    path: '/',
-    name: 'Login',
-    component: Login
-  },
-
-  // ---------------- ADMIN ----------------
-  {
-    path: '/admin',
-    component: Admin,
-    name: 'Admin',
-    meta: { requiresAuth: true, role: 'Admin' },
-    redirect: '/admin/faculty',
+  { path: '/', component: Login, name: 'Login' },
+  { path: "/admin", component: Admin, name: "Admin", meta: { requiresAuth: true, role: "Admin" }, redirect: "/admin/faculty",
     children: [
       {path: 'faculty',name: 'AdminFaculty',component: () => import('../views/admin/AdminFaculty.vue')},
       {path: 'schools',name: 'AdminSchools',component: () => import('../views/admin/AdminSchools.vue')},
+      { path: "designations", name: "AdminDesignations", component: () => import("../views/admin/DesignationManagement.vue"),},
+      { path: "role-assignment", name: "AdminRoleAssignment", component: () => import("../views/admin/AdminRoleAssignment.vue"),},
       {path: 'groups', name: 'AdminGroups',component: () => import('../views/Groups.vue')},
       {path: 'applicants',name: 'AdminApplicants',component: () => import('../views/admin/AdminApplicants.vue')},
       {path: "applicants/add",name: "AddApplicant",component: () => import("@/views/AddApplicantsPage.vue")},

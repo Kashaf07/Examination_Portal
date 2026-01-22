@@ -39,7 +39,7 @@
                 <td class="py-4 px-6">{{ faculty.F_Name }}</td>
                 <td class="py-4 px-6">{{ faculty.F_Email }}</td>
                 <td class="py-4 px-6">{{ getSchoolName(faculty.School_Id) }}</td>
-                <td class="py-4 px-6">{{ faculty.Designation }}</td>
+                <td class="py-4 px-6">{{ faculty.Designation_Name }}</td>
                 <td class="py-4 px-6 space-x-2">
                   <button
                     @click="openEditModal(faculty)"
@@ -114,12 +114,26 @@
 
             <div>
               <label class="font-semibold text-gray-700 mb-2 block">Designation</label>
-              <input
-                v-model="facultyForm.Designation"
+              <!-- DEBUG: Show if designationsList is loading correctly -->
+              <!--<p class="text-black text-sm mb-1">Loaded: {{ designationsList }}</p>-->
+
+              <select
+                v-model="facultyForm.Designation_Id"
+                @change="autoAssignRole"
                 required
                 class="w-full px-4 py-3 rounded-xl border bg-purple-50 focus:bg-white focus:ring-2"
-              />
+              >
+                <option value="">Select Designation</option>
+                <option
+                  v-for="d in designationsList"
+                  :key="d.id"
+                  :value="d.id"
+                >
+                  {{ d.name }}
+                </option>
+              </select>
             </div>
+
 
             <div v-if="!isEdit">
               <label class="font-semibold text-gray-700 mb-2 block">Password</label>
@@ -168,10 +182,20 @@ const API = "http://localhost:5000/api";
 // Data
 const facultyList = ref([]);
 const schoolsList = ref([]);
+const designationsList = ref([]);
 
 // Modal
 const showModal = ref(false);
 const isEdit = ref(false);
+
+// Auto Assign Role
+const autoAssignRole = () => {
+  const selected = designationsList.value.find(
+    d => d.id === facultyForm.value.Designation_Id
+  );
+
+  facultyForm.value.Role_Id = selected?.Role_Id || null;
+};
 
 // Form
 const facultyForm = ref({
@@ -179,7 +203,7 @@ const facultyForm = ref({
   F_Name: "",
   F_Email: "",
   School_Id: "",
-  Designation: "",
+  Designation_Id: "",
   Password: "",
 });
 
@@ -192,7 +216,8 @@ const openAddModal = () => {
     F_Name: "",
     F_Email: "",
     School_Id: "",
-    Designation: "",
+    Designation_Id: "",
+    Role_Id: null,   
     Password: "",
   };
 };
@@ -206,7 +231,8 @@ const openEditModal = (faculty) => {
     F_Name: faculty.F_Name,
     F_Email: faculty.F_Email,
     School_Id: faculty.School_Id,
-    Designation: faculty.Designation,
+    Designation_Id: faculty.Designation_Id,
+    Role_Id: faculty.Role_Id,
     Password: "" // ONLY for add, ignored for update
   };
 };
@@ -227,6 +253,13 @@ const fetchSchools = async () => {
   const res = await axios.get(`${API}/admin/schools`);
   schoolsList.value = res.data;
 };
+
+// Fetch Designations
+const fetchDesignations = async () => {
+  const res = await axios.get(`${API}/admin/designations`);
+  designationsList.value = res.data.data;
+};
+
 
 // Get School Name
 const getSchoolName = (id) => {
@@ -286,5 +319,6 @@ const deleteFaculty = async (id) => {
 onMounted(() => {
   fetchFaculty();
   fetchSchools();
+  fetchDesignations();
 });
 </script>
