@@ -22,16 +22,19 @@ from routes.faculty_routes import create_faculty_routes
 from routes.ViewResponses import create_view_responses_bp
 from routes.ViewAnswers import create_view_answers_bp
 from routes.groups_routes import group_bp
+from flask_cors import CORS
+
 
 
 app = Flask(__name__)
 CORS(
     app,
-    resources={r"/api/*": {"origins": "*"}},
+    resources={r"/*": {"origins": "*"}},
     supports_credentials=True,
     allow_headers=["Content-Type", "Authorization"],
     methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"]
 )
+
 
 # Initialize MySQL
 mysql = init_mysql(app)
