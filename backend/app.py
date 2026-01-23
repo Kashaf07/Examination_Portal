@@ -21,6 +21,7 @@ from routes.AddStudents import create_add_students_bp
 from routes.faculty_routes import create_faculty_routes
 from routes.ViewResponses import create_view_responses_bp
 from routes.ViewAnswers import create_view_answers_bp
+from routes.faculty_groups import create_faculty_groups_routes
 from routes.groups_routes import group_bp
 from flask_cors import CORS
 
@@ -58,7 +59,7 @@ app.register_blueprint(create_add_students_bp(mysql), url_prefix="/api")
 
 app.register_blueprint(create_faculty_routes(mysql), url_prefix='/api/faculty')  
 app.register_blueprint(create_view_responses_bp(mysql), url_prefix='/responses')
-
+app.register_blueprint(create_faculty_groups_routes(mysql), url_prefix="/api")
 app.register_blueprint(exam_notify_bp)
 
 exam_paper_bp = create_exam_paper_routes(mysql)
