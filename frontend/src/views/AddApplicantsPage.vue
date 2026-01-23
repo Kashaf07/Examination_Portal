@@ -1,120 +1,112 @@
 <template>
-  <div class="p-6 max-w-2xl mx-auto bg-white rounded-xl shadow">
+  <div :class="['p mx-auto', activeRole === 'Faculty' ? 'bg-transparent shadow-none max-w-full' : 'bg-white/80 backdrop-blur-lg shadow-xl border border-white/40 rounded-2xl p-10 max-w-5xl mx-auto mb-10 transition-all']">
 
-    <h2 class="text-2xl font-bold mb-6 text-blue-600">
-      Add Applicant
-    </h2>
+    <h3 class="text-2xl font-bold mb-6 text-gray-800">
+      Add New Applicant
+    </h3>
 
     <form @submit.prevent="submitApplicant" class="space-y-4">
 
-      <!-- Full Name -->
-      <div>
-        <label class="block font-semibold mb-1">Full Name</label>
-        <input
-          v-model="applicant.Full_Name"
-          required
-          class="w-full border px-3 py-2 rounded"
-        />
+      <!-- Grid Wrapper -->
+      <div class="grid grid-cols-2 gap-3">
+
+        <!-- Full Name -->
+        <div class="flex flex-col gap-1">
+          <label class="font-semibold text-gray-700 text-sm">Full Name</label>
+          <input v-model="applicant.Full_Name"
+                required 
+                type="text"
+                placeholder="Enter full name"
+                class="input-field"/>
+        </div>
+
+        <!-- Email -->
+        <div class="flex flex-col gap-1">
+          <label class="font-semibold text-gray-700 text-sm">Email</label>
+          <input v-model="applicant.Email"
+                type="email"
+                required
+                placeholder="example@mail.com"
+                class="input-field"/>
+        </div>
+
+        <!-- Password -->
+        <div class="flex flex-col gap-1">
+          <label class="font-semibold text-gray-700 text-sm">Password</label>
+          <input v-model="applicant.Password"
+                type="password"
+                required
+                placeholder="Create password"
+                class="input-field"/>
+        </div>
+
+        <!-- Phone -->
+        <div class="flex flex-col gap-1">
+          <label class="font-semibold text-gray-700 text-sm">Phone</label>
+          <input v-model="applicant.Phone"
+                type="text"
+                placeholder="9876543210"
+                class="input-field"/>
+        </div>
+
+        <!-- DOB -->
+        <div class="flex flex-col gap-1">
+          <label class="font-semibold text-gray-700 text-sm">DOB</label>
+          <input v-model="applicant.DOB"
+                type="date"
+                class="input-field"/>
+        </div>
+
+        <!-- Gender -->
+        <div class="flex flex-col gap-1">
+          <label class="font-semibold text-gray-700 text-sm">Gender</label>
+          <select v-model="applicant.Gender"
+                  class="input-field">
+            <option value="">Select</option>
+            <option>Male</option>
+            <option>Female</option>
+            <option>Other</option>
+          </select>
+        </div>
+
       </div>
 
-      <!-- Email -->
-      <div>
-        <label class="block font-semibold mb-1">Email</label>
-        <input
-          v-model="applicant.Email"
-          type="email"
-          required
-          class="w-full border px-3 py-2 rounded"
-        />
-      </div>
-
-      <!-- Password -->
-      <div>
-        <label class="block font-semibold mb-1">Password</label>
-        <input
-          v-model="applicant.Password"
-          type="password"
-          required
-          class="w-full border px-3 py-2 rounded"
-        />
-      </div>
-
-      <!-- Phone -->
-      <div>
-        <label class="block font-semibold mb-1">Phone</label>
-        <input
-          v-model="applicant.Phone"
-          class="w-full border px-3 py-2 rounded"
-        />
-      </div>
-
-      <!-- DOB -->
-      <div>
-        <label class="block font-semibold mb-1">DOB</label>
-        <input
-          v-model="applicant.DOB"
-          type="date"
-          class="w-full border px-3 py-2 rounded"
-        />
-      </div>
-
-      <!-- Gender -->
-      <div>
-        <label class="block font-semibold mb-1">Gender</label>
-        <select
-          v-model="applicant.Gender"
-          class="w-full border px-3 py-2 rounded"
-        >
-          <option value="">Select</option>
-          <option>Male</option>
-          <option>Female</option>
-          <option>Other</option>
-        </select>
-      </div>
-
+      <div class="grid grid-cols-2 gap-3">
       <!-- Address -->
-      <div>
-        <label class="block font-semibold mb-1">Address</label>
-        <textarea
-          v-model="applicant.Address"
-          rows="3"
-          class="w-full border px-3 py-2 rounded"
-        ></textarea>
+      <div class="flex flex-col gap-1">
+        <label class="font-semibold text-gray-700 text-sm">Address</label>
+        <textarea v-model="applicant.Address"
+                  rows="2"
+                  placeholder="Enter address"
+                  class="input-field"></textarea>
       </div>
 
-      <!-- Group Dropdown -->
-      <div>
-        <label class="block font-semibold mb-1">Group</label>
-        <select
-          v-model="applicant.group_id"
-          required
-          class="w-full border px-3 py-2 rounded"
-        >
+      <!-- Group -->
+      <div class="flex flex-col gap-1">
+        <label class="font-semibold text-gray-700 text-sm">Group</label>
+        <select v-model="applicant.group_id"
+                required
+                class="input-field">
           <option value="">Select Group</option>
-          <option
-            v-for="g in groups"
-            :key="g.Group_Id"
-            :value="g.Group_Id"
-          >
+          <option v-for="g in groups"
+                  :key="g.Group_Id"
+                  :value="g.Group_Id">
             {{ g.Group_Name }}
           </option>
         </select>
       </div>
+      </div>
 
-      <!-- Buttons -->
-      <div class="flex justify-end gap-4 pt-4">
-        <button
-          type="button"
-          @click="goBack"
-          class="px-4 py-2 rounded bg-gray-200 hover:bg-gray-300"
-        >
+      <!-- Submit/Cancel Buttons -->
+      <div class="flex justify-end gap-3 pt-2">
+        <button type="button"
+                @click="goBack"
+                class="cancel-btn">
           Cancel
         </button>
 
-        <button
-          type="submit"
-          class="px-6 py-2 rounded bg-blue-600 text-white hover:bg-blue-700"
-        >
+        <button type="submit"
+                class="submit-btn">
           Save Applicant
         </button>
       </div>
@@ -198,8 +190,62 @@ const submitApplicant = async () => {
 // CANCEL BUTTON
 // --------------------
 const goBack = () => {
-  router.push("/admin/applicants")
+  if (activeRole === "Admin") {
+    router.push("/admin/applicants")
+  } else {
+    // Faculty mode: close this panel
+    emit("closeAddApplicant")
+  }
 }
+
 
 onMounted(loadGroups)
 </script>
+
+<style scoped>
+
+.input-field {
+  width: 100%;
+  border: 1px solid #d1d5db;
+  padding: 10px 14px;
+  border-radius: 12px;
+  background: white;
+  transition: 0.2s ease;
+  outline: none;
+}
+
+.input-field:focus {
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgb(59 130 246 / 25%);
+}
+
+.cancel-btn {
+  background: #e5e7eb;
+  padding: 0.6rem 1.3rem;
+  border-radius: 12px;
+  font-weight: 600;
+  color: #374151;
+  transition: 0.2s ease;
+}
+
+.cancel-btn:hover {
+  background: #d1d5db;
+}
+
+.submit-btn {
+  background: linear-gradient(to right, #2563eb, #4f46e5);
+  color: white;
+  padding: 0.6rem 1.5rem;
+  border-radius: 12px;
+  font-weight: 600;
+  box-shadow: 0 2px 10px rgba(79, 70, 229, 0.2);
+  transition: 0.2s ease;
+}
+
+.submit-btn:hover {
+  background: linear-gradient(to right, #1d4ed8, #4338ca);
+  transform: scale(1.03);
+  box-shadow: 0 4px 16px rgba(79, 70, 229, 0.3);
+}
+
+</style>
