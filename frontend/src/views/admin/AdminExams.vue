@@ -279,10 +279,22 @@ const createExam = async () => {
 
 // Helpers
 const isExamEnded = (exam) => {
-  const start = new Date(`${exam.Exam_Date}T${exam.Exam_Time}`);
-  const end = new Date(start.getTime() + exam.Duration_Minutes * 60000);
-  return end <= new Date();
+  // Split date
+  const [year, month, day] = exam.Exam_Date.split("-").map(Number);
+
+  // Split time safely (handles HH:mm or HH:mm:ss)
+  const [hours, minutes] = exam.Exam_Time.split(":").map(Number);
+
+  // Create LOCAL datetime (not UTC)
+  const start = new Date(year, month - 1, day, hours, minutes);
+
+  const end = new Date(
+    start.getTime() + Number(exam.Duration_Minutes) * 60000
+  );
+
+  return end < new Date();
 };
+
 
 const upcomingExams = computed(() =>
   examsList.value.filter((exam) => !isExamEnded(exam))
@@ -309,7 +321,7 @@ const deleteExam = async (id) => {
 
 // Navigation buttons
 const goAddStudents = (id) =>
-  router.push({ name: "AddApplicants_exam", params: { examId: id } });
+  router.push({ name: "AddApplicantsExam", params: { examId: id } });
 
 const goAddQuestions = (id) =>
   router.push({ name: "AddQuestion", params: { examId: id } });

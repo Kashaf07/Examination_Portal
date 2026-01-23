@@ -13,7 +13,7 @@
           <table class="w-full">
             <thead class="bg-gradient-to-r from-blue-50 to-blue-100">
               <tr>
-                <th class="py-4 px-6 font-semibold text-blue-900">#</th>
+                <th class="py-4 px-6 font-semibold text-blue-900">ID</th>
                 <th class="py-4 px-6 font-semibold text-blue-900">Designation</th>
                 <th class="py-4 px-6 font-semibold text-blue-900">Assigned Role</th>
                 <th class="py-4 px-6 font-semibold text-blue-900">Access Level</th>
