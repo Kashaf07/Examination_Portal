@@ -1,5 +1,6 @@
 <template>
   <div class="min-h-screen p-10 bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50">
+
     <!-- Heading -->
     <div class="text-center mb-6">
       <h2 class="text-4xl font-bold text-blue-800">🧑‍🎓 Add Applicants to Exam</h2>
@@ -10,112 +11,102 @@
 
     <div class="max-w-5xl mx-auto bg-white p-10 rounded-2xl shadow-xl">
 
-      <!-- ================= GROUP BASED ASSIGNMENT ================= -->
+      <!-- ================= GROUP ASSIGNMENT ================= -->
       <h3 class="text-xl font-semibold mb-4 text-purple-700">
         Assign by Group
       </h3>
 
-      <select
-        v-model="selectedGroupId"
-        class="w-full border px-4 py-2 rounded mb-4"
-      >
-        <option disabled value="">-- Select Group --</option>
-        <option v-for="g in groups" :key="g.Group_Id" :value="g.Group_Id">
-          {{ g.Group_Name }}
-        </option>
-      </select>
+      <div class="flex gap-4 mb-2">
+        <select v-model="selectedGroupId" class="flex-1 border px-4 py-2 rounded">
+          <option value="">-- Select Group --</option>
+          <option v-for="g in groups" :key="g.Group_Id" :value="g.Group_Id">
+            {{ g.Group_Name }}
+          </option>
+        </select>
 
-      <ul v-if="groupApplicants.length" class="mb-4">
-        <li
-          v-for="ga in groupApplicants"
-          :key="ga.Applicant_Id"
-          class="py-1 border-b text-sm"
+        <button
+          @click="addGroupApplicants"
+          class="bg-purple-600 hover:bg-purple-700 text-white px-6 py-2 rounded"
         >
-          {{ ga.Full_Name }} ({{ ga.Email }})
-        </li>
-      </ul>
+          Add Group
+        </button>
+      </div>
 
-      <button
-        v-if="selectedGroupId"
-        @click="confirmGroupAssign"
-        class="bg-purple-600 hover:bg-purple-700 text-white px-6 py-2 rounded mb-8"
-      >
-        Confirm Group Assignment
-      </button>
+      <p v-if="infoMessage" class="text-sm text-orange-600 mb-6">
+        {{ infoMessage }}
+      </p>
 
       <hr class="my-8" />
 
-      <!-- ================= INDIVIDUAL APPLICANTS (OLD LOGIC) ================= -->
-      <h3 class="text-xl font-semibold mb-4">All Applicants</h3>
+      <!-- ================= APPLICANTS ================= -->
+      <h3 class="text-xl font-semibold mb-4">Applicants</h3>
 
-      <div v-if="loadingApplicants" class="text-gray-600 mb-4">
-        Loading applicants...
-      </div>
-
-      <div v-if="error" class="text-red-600 mb-4">
-        {{ error }}
-      </div>
-
-      <ul v-if="!loadingApplicants">
+      <ul v-if="assignedApplicants.length">
         <li
-          v-for="applicant in applicants"
-          :key="applicant.Applicant_Id"
+          v-for="app in assignedApplicants"
+          :key="app.Applicant_Id"
           class="flex justify-between items-center py-2 border-b"
         >
-          <span>{{ applicant.Full_Name }} ({{ applicant.Email }})</span>
+          <span>
+            {{ app.Full_Name }} ({{ app.Email }})
+          </span>
 
-          <div class="space-x-2">
-            <span
-              v-if="isAlreadyAssigned(applicant.Applicant_Id)"
-              class="text-green-600 font-semibold text-sm"
-            >
-              ✅ Already Assigned
-            </span>
+          <!-- Already Assigned -->
+          <span
+            v-if="app.is_assigned === 1"
+            class="text-green-600 font-semibold text-sm"
+          >
+            ✔ Assigned
+          </span>
 
-            <button
-              v-else-if="!selectedApplicants.includes(applicant.Applicant_Id)"
-              @click="toggleAdd(applicant.Applicant_Id)"
-              class="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded"
-            >
-              Add
-            </button>
+          <!-- Newly Added (before confirm) -->
+          <button
+            v-else-if="!isConfirmed"
+            @click="removeApplicant(app.Applicant_Id)"
+            class="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded"
+          >
+            Remove
+          </button>
 
-            <button
-              v-else
-              @click="toggleAdd(applicant.Applicant_Id)"
-              class="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded"
-            >
-              Remove
-            </button>
-          </div>
+          <!-- After Confirm -->
+          <span
+            v-else
+            class="text-green-600 font-semibold text-sm"
+          >
+            ✔ Assigned
+          </span>
         </li>
       </ul>
 
-      <!-- Confirm Individual -->
+      <p v-else class="text-gray-500 text-sm mb-6">
+        No applicants loaded.
+      </p>
+
+      <!-- ================= CONFIRM ================= -->
       <div class="mt-6 text-center">
         <p class="text-sm mb-2 text-gray-700">
-          Selected: {{ selectedApplicants.length }} applicants
+          Selected (new): {{ selectedApplicants.length }} applicants
         </p>
 
         <button
           @click="confirmAdd"
-          :disabled="selectedApplicants.length === 0"
+          :disabled="selectedApplicants.length === 0 || isConfirmed"
           class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded disabled:bg-gray-400"
         >
-          Confirm Individual Assignment
+          Confirm Assignment
         </button>
       </div>
 
-      <!-- Messages -->
+      <!-- SUCCESS MESSAGE -->
       <p v-if="message" class="mt-4 text-center text-green-600 font-semibold">
         {{ message }}
       </p>
-      <p v-if="error && !message" class="mt-4 text-center text-red-600 font-semibold">
-        {{ error }}
-      </p>
 
-      <!-- Send Email -->
-      <div v-if="assignedApplicants.length > 0" class="mt-4 text-center">
+      <!-- ================= EMAIL (UNCHANGED) ================= -->
+      <div
+        v-if="assignedApplicants.length > 0 && isConfirmed"
+        class="mt-6 text-center"
+      >
         <button
           v-if="!sendingEmails"
           @click="sendEmails"
@@ -124,12 +115,13 @@
           📧 Send Email to Assigned Applicants
         </button>
       </div>
+
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted, watch } from 'vue'
+import { ref, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 
 const route = useRoute()
@@ -138,22 +130,20 @@ const examId = route.params.examId
 const role = localStorage.getItem("active_role")
 const email = localStorage.getItem("email")
 
-const applicants = ref([])
-const selectedApplicants = ref([])
-const assignedApplicants = ref([])
-
 const groups = ref([])
 const selectedGroupId = ref('')
-const groupApplicants = ref([])
+
+const assignedApplicants = ref([])   // ALL applicants shown
+const selectedApplicants = ref([])   // ONLY newly added ones
 
 const examName = ref('')
 const examDate = ref('')
 const examTime = ref('')
 
 const message = ref('')
-const error = ref('')
-const loadingApplicants = ref(true)
+const infoMessage = ref('')
 const sendingEmails = ref(false)
+const isConfirmed = ref(false)
 
 /* ---------------- EXAM ---------------- */
 const fetchExamDetails = async () => {
@@ -168,83 +158,117 @@ const fetchExamDetails = async () => {
 
 /* ---------------- GROUPS ---------------- */
 const fetchGroups = async () => {
-  const res = await fetch('http://localhost:5000/api/groups', {
-    headers: { 'x-role': role, 'x-email': email }
-  })
+  const res = await fetch(
+    `http://localhost:5000/api/groups?role=${role}&email=${email}`
+  )
   const data = await res.json()
   if (data.success) groups.value = data.groups
 }
 
-const fetchGroupApplicants = async (groupId) => {
-  const res = await fetch(`http://localhost:5000/api/groups/${groupId}/applicants`)
+/* ---------------- ADD GROUP APPLICANTS ---------------- */
+const addGroupApplicants = async () => {
+  infoMessage.value = ''
+
+  if (!selectedGroupId.value) {
+    infoMessage.value = 'Please select a group first.'
+    return
+  }
+
+  const res = await fetch(
+    `http://localhost:5000/api/groups/${selectedGroupId.value}/applicants?exam_id=${examId}`
+  )
   const data = await res.json()
-  if (data.success) groupApplicants.value = data.applicants
+
+  if (!data.success || !Array.isArray(data.applicants)) {
+    infoMessage.value = 'Failed to load applicants.'
+    return
+  }
+
+  let newCount = 0
+
+  data.applicants.forEach(app => {
+    // Avoid duplicates in UI
+    if (assignedApplicants.value.some(a => a.Applicant_Id === app.Applicant_Id)) return
+
+    assignedApplicants.value.push(app)
+
+    // Track only new ones for confirm
+    if (app.is_assigned === 0) {
+      selectedApplicants.value.push(app.Applicant_Id)
+      newCount++
+    }
+  })
+
+  if (newCount === 0) {
+    infoMessage.value = 'All applicants in this group are already assigned.'
+  }
 }
 
-/* ---------------- APPLICANTS ---------------- */
-const fetchAssignedApplicants = async () => {
-  const res = await fetch(`http://localhost:5000/api/get_assigned_applicants/${examId}`)
-  const data = await res.json()
-  if (data.success) assignedApplicants.value = data.assignedApplicants
+/* ---------------- REMOVE (ONLY NEW) ---------------- */
+const removeApplicant = (id) => {
+  if (isConfirmed.value) return
+
+  selectedApplicants.value =
+    selectedApplicants.value.filter(a => a !== id)
+
+  assignedApplicants.value =
+    assignedApplicants.value.filter(
+      a => a.Applicant_Id !== id || a.is_assigned === 1
+    )
 }
 
-const fetchApplicants = async () => {
-  loadingApplicants.value = true
-  const res = await fetch('http://localhost:5000/api/applicants')
-  const data = await res.json()
-  if (data.success) applicants.value = data.applicants
-  loadingApplicants.value = false
-}
-
-/* ---------------- ACTIONS ---------------- */
-const toggleAdd = (id) => {
-  selectedApplicants.value.includes(id)
-    ? selectedApplicants.value = selectedApplicants.value.filter(i => i !== id)
-    : selectedApplicants.value.push(id)
-}
-
-const isAlreadyAssigned = (id) =>
-  assignedApplicants.value.some(a => a.Applicant_Id === id)
-
+/* ---------------- CONFIRM ---------------- */
 const confirmAdd = async () => {
+  if (selectedApplicants.value.length === 0) return
+
   const res = await fetch('http://localhost:5000/api/assign_applicants', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ exam_id: examId, applicant_ids: selectedApplicants.value })
+    body: JSON.stringify({
+      exam_id: examId,
+      applicant_ids: selectedApplicants.value
+    })
   })
+
   const data = await res.json()
-  if (data.success) message.value = 'Applicants assigned successfully'
+
+  if (data.success) {
+    message.value = 'Applicants assigned successfully'
+    isConfirmed.value = true
+
+    // Mark newly added as assigned
+    assignedApplicants.value.forEach(app => {
+      if (selectedApplicants.value.includes(app.Applicant_Id)) {
+        app.is_assigned = 1
+      }
+    })
+
+    selectedApplicants.value = []
+  }
 }
 
-const confirmGroupAssign = async () => {
-  const res = await fetch('http://localhost:5000/api/exam/assign-group', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ exam_id: examId, group_id: selectedGroupId.value })
-  })
-  const data = await res.json()
-  if (data.success) message.value = `Group assigned (${data.assigned_count} applicants)`
-}
-
+/* ---------------- EMAIL (UNCHANGED) ---------------- */
 const sendEmails = async () => {
   sendingEmails.value = true
   await fetch('http://localhost:5000/api/send_exam_emails', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
-      exam: { Exam_Id: examId, Exam_Name: examName.value, Exam_Date: examDate.value, Exam_Time: examTime.value },
+      exam: {
+        Exam_Id: examId,
+        Exam_Name: examName.value,
+        Exam_Date: examDate.value,
+        Exam_Time: examTime.value
+      },
       applicants: assignedApplicants.value
     })
   })
   sendingEmails.value = false
 }
 
-watch(selectedGroupId, val => val && fetchGroupApplicants(val))
-
+/* ---------------- INIT ---------------- */
 onMounted(async () => {
   await fetchExamDetails()
   await fetchGroups()
-  await fetchAssignedApplicants()
-  await fetchApplicants()
 })
 </script>
