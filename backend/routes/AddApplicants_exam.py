@@ -2,75 +2,111 @@ from flask import Blueprint, jsonify, request
 import MySQLdb.cursors
 
 def create_add_applicants_exam_bp(mysql):
-    add_applicants_exam_bp = Blueprint('add_applicants_exam', __name__)
+    bp = Blueprint('add_applicants_exam', __name__)
 
-    # Route 1: Get all applicants
-    @add_applicants_exam_bp.route('/applicants', methods=['GET'])
-    def get_applicants():
-        try:
-            cursor = mysql.connection.cursor()
-            cursor.execute("SELECT * FROM applicants")
-            rows = cursor.fetchall()
+    # ==================================================
+    # ❌ REMOVED / COMMENTED OUT GROUP LIST ROUTE
+    # Groups are handled ONLY in groups_routes.py
+    # ==================================================
+    #
+    # @bp.route('/groups', methods=['GET'])
+    # def get_groups():
+    #     pass
+    #
 
-            column_names = [i[0] for i in cursor.description]
-            applicants = [dict(zip(column_names, row)) for row in rows]
-
-            return jsonify({'success': True, 'applicants': applicants})
-        except Exception as e:
-            print("❌ Error loading applicants:", str(e))
-            return jsonify({'success': False, 'message': 'Error loading applicants'})
-
-    # Route 2: Get already assigned applicants for a specific exam
-    @add_applicants_exam_bp.route('/get_assigned_applicants/<int:exam_id>', methods=['GET'])
-    def get_assigned_applicants(exam_id):
+    # ==================================================
+    # ✅ GET APPLICANTS OF A GROUP
+    # ==================================================
+    @bp.route('/groups/<int:group_id>/applicants', methods=['GET'])
+    def get_group_applicants(group_id):
         try:
             cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
-            query = """
-                SELECT a.Applicant_Id, a.Full_Name, a.Email
-                FROM applicant_exam_assign ae
-                JOIN applicants a ON ae.Applicant_Id = a.Applicant_Id
-                WHERE ae.Exam_Id = %s
-            """
-            cursor.execute(query, (exam_id,))
-            assigned_applicants = cursor.fetchall()
 
-            return jsonify({'success': True, 'assignedApplicants': assigned_applicants})
+            cursor.execute("""
+                SELECT 
+                    Applicant_Id,
+                    Full_Name,
+                    Email
+                FROM applicants
+                WHERE group_id = %s
+            """, (group_id,))
+
+            applicants = cursor.fetchall()
+            cursor.close()
+
+            return jsonify({
+                "success": True,
+                "applicants": applicants
+            })
+
         except Exception as e:
-            print("❌ Error loading assigned applicants:", str(e))
-            return jsonify({'success': False, 'message': 'Error loading assigned applicants'})
+            print("❌ Error fetching group applicants:", e)
+            return jsonify({
+                "success": False,
+                "message": "Failed to load applicants"
+            }), 500
 
-    # Route 3: Assign new applicants to an exam
-    @add_applicants_exam_bp.route('/assign_applicants', methods=['POST'])
-    def assign_applicants():
+    # ==================================================
+    # ✅ ASSIGN ENTIRE GROUP TO EXAM
+    # ==================================================
+    @bp.route('/exam/assign-group', methods=['POST'])
+    def assign_group_to_exam():
         try:
             data = request.get_json()
-            exam_id = data.get('exam_id')
-            applicant_ids = data.get('applicant_ids', [])
+            exam_id = data.get("exam_id")
+            group_id = data.get("group_id")
 
-            if not exam_id or not applicant_ids:
-                return jsonify({'success': False, 'message': 'Missing exam_id or applicant_ids'}), 400
+            if not exam_id or not group_id:
+                return jsonify({
+                    "success": False,
+                    "message": "Missing exam_id or group_id"
+                }), 400
 
             cursor = mysql.connection.cursor()
 
-            # Fetch already assigned applicant IDs
-            cursor.execute("SELECT Applicant_Id FROM applicant_exam_assign WHERE Exam_Id = %s", (exam_id,))
-            already_assigned = set(row[0] for row in cursor.fetchall())
+            # Get applicants of the group
+            cursor.execute("""
+                SELECT Applicant_Id
+                FROM applicants
+                WHERE group_id = %s
+            """, (group_id,))
+            applicant_ids = [row[0] for row in cursor.fetchall()]
 
-            # Filter out already assigned applicants
-            new_ids = [aid for aid in applicant_ids if aid not in already_assigned]
+            if not applicant_ids:
+                return jsonify({
+                    "success": False,
+                    "message": "Group has no applicants"
+                }), 400
 
-            # Insert only new ones
+            # Already assigned applicants
+            cursor.execute("""
+                SELECT Applicant_Id
+                FROM applicant_exam_assign
+                WHERE Exam_Id = %s
+            """, (exam_id,))
+            assigned = set(row[0] for row in cursor.fetchall())
+
+            new_ids = [aid for aid in applicant_ids if aid not in assigned]
+
             for aid in new_ids:
-                cursor.execute(
-                    "INSERT INTO applicant_exam_assign (Applicant_Id, Exam_Id) VALUES (%s, %s)",
-                    (aid, exam_id)
-                )
+                cursor.execute("""
+                    INSERT INTO applicant_exam_assign (Applicant_Id, Exam_Id)
+                    VALUES (%s, %s)
+                """, (aid, exam_id))
 
             mysql.connection.commit()
+            cursor.close()
 
-            return jsonify({'success': True, 'assigned_count': len(new_ids)})
+            return jsonify({
+                "success": True,
+                "assigned_count": len(new_ids)
+            })
+
         except Exception as e:
-            print("❌ Error assigning applicants:", str(e))
-            return jsonify({'success': False, 'message': 'Error assigning applicants'})
+            print("❌ Error assigning group:", e)
+            return jsonify({
+                "success": False,
+                "message": "Failed to assign exam"
+            }), 500
 
-    return add_applicants_exam_bp
+    return bp

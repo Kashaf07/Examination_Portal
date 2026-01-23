@@ -8,12 +8,53 @@
       </p>
     </div>
 
-    <!-- Card -->
-    <div class="max-w-4xl mx-auto bg-white p-10 rounded-2xl shadow-xl">
-      <!-- All Applicants -->
+    <div class="max-w-5xl mx-auto bg-white p-10 rounded-2xl shadow-xl">
+
+      <!-- ================= GROUP BASED ASSIGNMENT ================= -->
+      <h3 class="text-xl font-semibold mb-4 text-purple-700">
+        Assign by Group
+      </h3>
+
+      <select
+        v-model="selectedGroupId"
+        class="w-full border px-4 py-2 rounded mb-4"
+      >
+        <option disabled value="">-- Select Group --</option>
+        <option v-for="g in groups" :key="g.Group_Id" :value="g.Group_Id">
+          {{ g.Group_Name }}
+        </option>
+      </select>
+
+      <ul v-if="groupApplicants.length" class="mb-4">
+        <li
+          v-for="ga in groupApplicants"
+          :key="ga.Applicant_Id"
+          class="py-1 border-b text-sm"
+        >
+          {{ ga.Full_Name }} ({{ ga.Email }})
+        </li>
+      </ul>
+
+      <button
+        v-if="selectedGroupId"
+        @click="confirmGroupAssign"
+        class="bg-purple-600 hover:bg-purple-700 text-white px-6 py-2 rounded mb-8"
+      >
+        Confirm Group Assignment
+      </button>
+
+      <hr class="my-8" />
+
+      <!-- ================= INDIVIDUAL APPLICANTS (OLD LOGIC) ================= -->
       <h3 class="text-xl font-semibold mb-4">All Applicants</h3>
-      <div v-if="loadingApplicants" class="text-gray-600 mb-4">Loading applicants...</div>
-      <div v-if="error" class="text-red-600 mb-4">{{ error }}</div>
+
+      <div v-if="loadingApplicants" class="text-gray-600 mb-4">
+        Loading applicants...
+      </div>
+
+      <div v-if="error" class="text-red-600 mb-4">
+        {{ error }}
+      </div>
 
       <ul v-if="!loadingApplicants">
         <li
@@ -22,6 +63,7 @@
           class="flex justify-between items-center py-2 border-b"
         >
           <span>{{ applicant.Full_Name }} ({{ applicant.Email }})</span>
+
           <div class="space-x-2">
             <span
               v-if="isAlreadyAssigned(applicant.Applicant_Id)"
@@ -29,6 +71,7 @@
             >
               ✅ Already Assigned
             </span>
+
             <button
               v-else-if="!selectedApplicants.includes(applicant.Applicant_Id)"
               @click="toggleAdd(applicant.Applicant_Id)"
@@ -36,6 +79,7 @@
             >
               Add
             </button>
+
             <button
               v-else
               @click="toggleAdd(applicant.Applicant_Id)"
@@ -47,23 +91,30 @@
         </li>
       </ul>
 
-      <!-- Confirm Button -->
+      <!-- Confirm Individual -->
       <div class="mt-6 text-center">
-        <p class="text-sm mb-2 text-gray-700">Selected: {{ selectedApplicants.length }} applicants</p>
+        <p class="text-sm mb-2 text-gray-700">
+          Selected: {{ selectedApplicants.length }} applicants
+        </p>
+
         <button
           @click="confirmAdd"
           :disabled="selectedApplicants.length === 0"
-          class="bg-purple-600 hover:bg-purple-700 text-white px-6 py-2 rounded disabled:bg-gray-400"
+          class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded disabled:bg-gray-400"
         >
-          Confirm
+          Confirm Individual Assignment
         </button>
       </div>
 
-      <!-- Success & Error Messages -->
-      <p v-if="message" class="mt-4 text-center text-green-600 font-semibold">{{ message }}</p>
-      <p v-if="error && !message" class="mt-4 text-center text-red-600 font-semibold">{{ error }}</p>
+      <!-- Messages -->
+      <p v-if="message" class="mt-4 text-center text-green-600 font-semibold">
+        {{ message }}
+      </p>
+      <p v-if="error && !message" class="mt-4 text-center text-red-600 font-semibold">
+        {{ error }}
+      </p>
 
-      <!-- Send Email Button or Loading Spinner -->
+      <!-- Send Email -->
       <div v-if="assignedApplicants.length > 0" class="mt-4 text-center">
         <button
           v-if="!sendingEmails"
@@ -72,171 +123,127 @@
         >
           📧 Send Email to Assigned Applicants
         </button>
-
-        <div v-else class="text-gray-600 text-sm flex justify-center items-center gap-2 mt-2">
-          <svg class="animate-spin h-5 w-5 text-green-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-            <path class="opacity-75" fill="currentColor"
-              d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
-          </svg>
-          Sending emails...
-        </div>
       </div>
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, watch } from 'vue'
 import { useRoute } from 'vue-router'
 
 const route = useRoute()
 const examId = route.params.examId
 
+const role = localStorage.getItem("active_role")
+const email = localStorage.getItem("email")
+
 const applicants = ref([])
 const selectedApplicants = ref([])
 const assignedApplicants = ref([])
+
+const groups = ref([])
+const selectedGroupId = ref('')
+const groupApplicants = ref([])
+
 const examName = ref('')
 const examDate = ref('')
 const examTime = ref('')
+
 const message = ref('')
 const error = ref('')
 const loadingApplicants = ref(true)
 const sendingEmails = ref(false)
 
+/* ---------------- EXAM ---------------- */
 const fetchExamDetails = async () => {
-  try {
-    const res = await fetch(`http://localhost:5000/api/exam/get_exam_by_id/${examId}`)
-    const data = await res.json()
-    if (res.ok && data.exam) {
-      examName.value = data.exam.Exam_Name
-      examDate.value = data.exam.Exam_Date
-      examTime.value = data.exam.Exam_Time
-    } else {
-      error.value = 'Failed to fetch exam details'
-    }
-  } catch (err) {
-    console.error('Failed to fetch exam details', err)
-    error.value = 'Error loading exam details'
+  const res = await fetch(`http://localhost:5000/api/exam/get_exam_by_id/${examId}`)
+  const data = await res.json()
+  if (data.exam) {
+    examName.value = data.exam.Exam_Name
+    examDate.value = data.exam.Exam_Date
+    examTime.value = data.exam.Exam_Time
   }
 }
 
+/* ---------------- GROUPS ---------------- */
+const fetchGroups = async () => {
+  const res = await fetch('http://localhost:5000/api/groups', {
+    headers: { 'x-role': role, 'x-email': email }
+  })
+  const data = await res.json()
+  if (data.success) groups.value = data.groups
+}
+
+const fetchGroupApplicants = async (groupId) => {
+  const res = await fetch(`http://localhost:5000/api/groups/${groupId}/applicants`)
+  const data = await res.json()
+  if (data.success) groupApplicants.value = data.applicants
+}
+
+/* ---------------- APPLICANTS ---------------- */
 const fetchAssignedApplicants = async () => {
-  try {
-    const res = await fetch(`http://localhost:5000/api/get_assigned_applicants/${examId}`)
-    const data = await res.json()
-    if (res.ok && data.success) {
-      assignedApplicants.value = data.assignedApplicants
-    } else {
-      error.value = data.message || 'Failed to load assigned applicants'
-    }
-  } catch (err) {
-    console.error('Error fetching assigned applicants:', err)
-    error.value = 'Error loading assigned applicants'
-  }
+  const res = await fetch(`http://localhost:5000/api/get_assigned_applicants/${examId}`)
+  const data = await res.json()
+  if (data.success) assignedApplicants.value = data.assignedApplicants
 }
 
 const fetchApplicants = async () => {
   loadingApplicants.value = true
-  try {
-    const res = await fetch('http://localhost:5000/api/applicants')
-    const data = await res.json()
-    if (res.ok && data.success) {
-      applicants.value = data.applicants
-    } else {
-      error.value = data.message || 'Failed to load applicants'
-    }
-  } catch (err) {
-    console.error('Error fetching applicants:', err)
-    error.value = 'Error loading applicants'
-  } finally {
-    loadingApplicants.value = false
-  }
+  const res = await fetch('http://localhost:5000/api/applicants')
+  const data = await res.json()
+  if (data.success) applicants.value = data.applicants
+  loadingApplicants.value = false
 }
 
+/* ---------------- ACTIONS ---------------- */
 const toggleAdd = (id) => {
-  if (selectedApplicants.value.includes(id)) {
-    selectedApplicants.value = selectedApplicants.value.filter(i => i !== id)
-  } else {
-    selectedApplicants.value.push(id)
-  }
+  selectedApplicants.value.includes(id)
+    ? selectedApplicants.value = selectedApplicants.value.filter(i => i !== id)
+    : selectedApplicants.value.push(id)
 }
 
-const isAlreadyAssigned = (id) => {
-  return assignedApplicants.value.some(a => a.Applicant_Id === id)
-}
+const isAlreadyAssigned = (id) =>
+  assignedApplicants.value.some(a => a.Applicant_Id === id)
 
 const confirmAdd = async () => {
-  try {
-    const newApplicants = selectedApplicants.value.filter(id =>
-      !assignedApplicants.value.some(a => a.Applicant_Id === id)
-    )
+  const res = await fetch('http://localhost:5000/api/assign_applicants', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ exam_id: examId, applicant_ids: selectedApplicants.value })
+  })
+  const data = await res.json()
+  if (data.success) message.value = 'Applicants assigned successfully'
+}
 
-    if (newApplicants.length === 0) {
-      message.value = 'No new applicants to assign.'
-      return
-    }
-
-    const response = await fetch('http://localhost:5000/api/assign_applicants', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        exam_id: examId,
-        applicant_ids: newApplicants
-      })
-    })
-    const result = await response.json()
-    if (response.ok) {
-      message.value = `${newApplicants.length} applicants assigned successfully.`
-      const newlyAssigned = applicants.value.filter(app =>
-        newApplicants.includes(app.Applicant_Id)
-      )
-      assignedApplicants.value.push(...newlyAssigned)
-      selectedApplicants.value = []
-    } else {
-      error.value = result.error || 'Failed to assign applicants'
-    }
-  } catch (err) {
-    console.error('Error assigning applicants:', err)
-    error.value = 'Failed to assign applicants'
-  }
+const confirmGroupAssign = async () => {
+  const res = await fetch('http://localhost:5000/api/exam/assign-group', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ exam_id: examId, group_id: selectedGroupId.value })
+  })
+  const data = await res.json()
+  if (data.success) message.value = `Group assigned (${data.assigned_count} applicants)`
 }
 
 const sendEmails = async () => {
   sendingEmails.value = true
-  message.value = ''
-  error.value = ''
-
-  try {
-    const response = await fetch('http://localhost:5000/api/send_exam_emails', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        exam: {
-          Exam_Id: examId,
-          Exam_Name: examName.value,
-          Exam_Date: examDate.value,
-          Exam_Time: examTime.value
-        },
-        applicants: assignedApplicants.value
-      })
+  await fetch('http://localhost:5000/api/send_exam_emails', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      exam: { Exam_Id: examId, Exam_Name: examName.value, Exam_Date: examDate.value, Exam_Time: examTime.value },
+      applicants: assignedApplicants.value
     })
-    const data = await response.json()
-    if (data.success) {
-      message.value = '✅ Emails sent successfully!'
-    } else {
-      error.value = data.message || '❌ Failed to send emails'
-    }
-  } catch (err) {
-    console.error('Email sending error:', err)
-    error.value = '❌ Failed to send emails'
-  } finally {
-    sendingEmails.value = false
-  }
+  })
+  sendingEmails.value = false
 }
+
+watch(selectedGroupId, val => val && fetchGroupApplicants(val))
 
 onMounted(async () => {
   await fetchExamDetails()
+  await fetchGroups()
   await fetchAssignedApplicants()
   await fetchApplicants()
 })

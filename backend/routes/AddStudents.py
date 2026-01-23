@@ -3,7 +3,6 @@ import pandas as pd
 from datetime import datetime
 import os
 from werkzeug.utils import secure_filename
-from werkzeug.security import generate_password_hash
 
 
 def create_add_students_bp(mysql):
@@ -28,26 +27,32 @@ def create_add_students_bp(mysql):
             if field not in data:
                 return jsonify(success=False, message=f'{field} is required'), 400
 
-        hashed_password = generate_password_hash(data['Password'])
-
         cursor = mysql.connection.cursor()
-        cursor.execute("""
-            INSERT INTO applicants
-            (Full_Name, Email, Password, Phone, DOB, Gender, Address, group_id)
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
-        """, (
-            data['Full_Name'],
-            data['Email'],
-            hashed_password,
-            data.get('Phone'),
-            data.get('DOB'),
-            data.get('Gender'),
-            data.get('Address'),
-            data['group_id']
-        ))
 
-        mysql.connection.commit()
-        cursor.close()
+        try:
+            cursor.execute("""
+                INSERT INTO applicants
+                (Full_Name, Email, Password, Phone, DOB, Gender, Address, group_id)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+            """, (
+                data['Full_Name'],
+                data['Email'],
+                data['Password'],          # ✅ PLAIN PASSWORD
+                data.get('Phone'),
+                data.get('DOB'),
+                data.get('Gender'),
+                data.get('Address'),
+                data['group_id']
+            ))
+
+            mysql.connection.commit()
+
+        except Exception as e:
+            mysql.connection.rollback()
+            return jsonify(success=False, message=str(e)), 500
+
+        finally:
+            cursor.close()
 
         return jsonify(success=True, message='Applicant added successfully'), 201
 
@@ -73,7 +78,6 @@ def create_add_students_bp(mysql):
         path = os.path.join(upload_dir, filename)
         file.save(path)
 
-        # Read file
         try:
             df = pd.read_excel(path) if filename.endswith('.xlsx') else pd.read_csv(path)
         except Exception as e:
@@ -100,8 +104,6 @@ def create_add_students_bp(mysql):
                 if pd.notnull(row['DOB']):
                     dob_mysql = pd.to_datetime(row['DOB']).strftime('%Y-%m-%d')
 
-                hashed_password = generate_password_hash(str(row['Password']))
-
                 cursor.execute("""
                     INSERT INTO applicants
                     (Full_Name, Email, Password, Phone, DOB, Gender, Address, group_id)
@@ -109,7 +111,7 @@ def create_add_students_bp(mysql):
                 """, (
                     row['Full_Name'],
                     row['Email'],
-                    hashed_password,
+                    str(row['Password']),   # ✅ PLAIN PASSWORD
                     row['Phone'],
                     dob_mysql,
                     row['Gender'],
@@ -121,7 +123,7 @@ def create_add_students_bp(mysql):
 
             except Exception as e:
                 failed_rows.append({
-                    'row': index + 2,  # Excel row number
+                    'row': index + 2,
                     'error': str(e)
                 })
 

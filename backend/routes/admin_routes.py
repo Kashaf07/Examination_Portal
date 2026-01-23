@@ -112,50 +112,68 @@ def create_admin_routes(mysql):
     # Faculty Routes
     @admin_bp.route('/faculty', methods=['GET'])
     def get_faculty():
-        try:
-            cursor = mysql.connection.cursor()
-            cursor.execute("""
-                SELECT Faculty_Id, F_Name, F_Email, School_Id, Designation, Password 
-                FROM mst_faculty 
-                ORDER BY Faculty_Id
-            """)
-            faculty = cursor.fetchall()
-            columns = [desc[0] for desc in cursor.description]
-            result = [dict(zip(columns, row)) for row in faculty]
-            cursor.close()
-            return jsonify(result), 200
-        except Exception as e:
-            print("Error fetching faculty:", e)
-            return jsonify({"error": "Unable to fetch faculty"}), 500
+        cursor = mysql.connection.cursor()
+        cursor.execute("""
+            SELECT 
+                f.Faculty_Id,
+                f.F_Name,
+                f.F_Email,
+                f.School_Id,
+                f.Designation_Id,
+                d.Designation_Name,
+                f.Role_Id
+            FROM mst_faculty f
+            LEFT JOIN mst_designation d ON f.Designation_Id = d.Designation_Id
+            ORDER BY f.Faculty_Id
+        """)
+        rows = cursor.fetchall()
+        columns = [desc[0] for desc in cursor.description]
+        result = [dict(zip(columns, row)) for row in rows]
+        cursor.close()
+        return jsonify(result), 200
+
 
     @admin_bp.route('/faculty', methods=['POST'])
     def add_faculty():
         try:
             data = request.get_json()
             cursor = mysql.connection.cursor()
-            
-            # --- START CHANGE: Check for duplicate email ---
+
+            # 1️⃣ Duplicate Email Check
             cursor.execute("SELECT COUNT(*) FROM mst_faculty WHERE F_Email = %s", (data['F_Email'],))
             if cursor.fetchone()[0] > 0:
                 cursor.close()
                 return jsonify({"error": "A faculty member with this email already exists."}), 400
-            # --- END CHANGE ---
-            
+
+            # 2️⃣ Auto-map Role_Id from Designation_Id
+            cursor.execute("SELECT Role_Id FROM mst_designation WHERE Designation_Id = %s", 
+                        (data['Designation_Id'],))
+            role_row = cursor.fetchone()
+
+            if not role_row:
+                cursor.close()
+                return jsonify({"error": "Invalid Designation_Id"}), 400
+
+            role_id = role_row[0]
+
+            # 3️⃣ Insert Faculty using new structure
             cursor.execute("""
-                INSERT INTO mst_faculty (F_Name, F_Email, School_Id, Designation, Password)
-                VALUES (%s, %s, %s, %s, %s)
-            """, (data['F_Name'], data['F_Email'], data['School_Id'], data['Designation'], data['Password']))
-            
+                INSERT INTO mst_faculty 
+                (F_Name, F_Email, School_Id, Designation_Id, Role_Id, Password)
+                VALUES (%s, %s, %s, %s, %s, %s)
+            """, ( data['F_Name'], data['F_Email'], data['School_Id'], data['Designation_Id'], role_id, data['Password']))
+
             mysql.connection.commit()
             faculty_id = cursor.lastrowid
             cursor.close()
-            return jsonify({"message": "Faculty added successfully", "Faculty_Id": faculty_id}), 201
+
+            return jsonify({
+                "message": "Faculty added successfully",
+                "Faculty_Id": faculty_id
+            }), 201
+
         except Exception as e:
             print("Error adding faculty:", e)
-            # --- START CHANGE: Catch DB-level duplicate error ---
-            if 'Duplicate entry' in str(e) and 'F_Email' in str(e):
-                return jsonify({"error": "A faculty member with this email already exists."}), 400
-            # --- END CHANGE ---
             return jsonify({"error": "Unable to add faculty"}), 500
 
     @admin_bp.route('/faculty/<int:faculty_id>', methods=['PUT'])
@@ -163,19 +181,31 @@ def create_admin_routes(mysql):
         try:
             data = request.get_json()
             cursor = mysql.connection.cursor()
-            
-            cursor.execute("""
-                UPDATE mst_faculty 
-                SET F_Name = %s, F_Email = %s, School_Id = %s, Designation = %s
-                WHERE Faculty_Id = %s
-            """, (data['F_Name'], data['F_Email'], data['School_Id'], data['Designation'], faculty_id))
-            
+
+            # 1️⃣ Get Role_Id automatically
+            cursor.execute("SELECT Role_Id FROM mst_designation WHERE Designation_Id = %s",
+                        (data['Designation_Id'],))
+            role_row = cursor.fetchone()
+
+            if not role_row:
+                cursor.close()
+                return jsonify({"error": "Invalid Designation_Id"}), 400
+
+            role_id = role_row[0]
+
+            # 2️⃣ Update record
+            cursor.execute(""" UPDATE mst_faculty SET F_Name = %s, F_Email = %s, School_Id = %s, 
+                           Designation_Id = %s, Role_Id = %s WHERE Faculty_Id = %s """, 
+                           ( data['F_Name'], data['F_Email'], data['School_Id'], data['Designation_Id'], role_id, faculty_id ))
+
             mysql.connection.commit()
             cursor.close()
             return jsonify({"message": "Faculty updated successfully"}), 200
+
         except Exception as e:
             print("Error updating faculty:", e)
             return jsonify({"error": "Unable to update faculty"}), 500
+
 
     @admin_bp.route('/faculty/<int:faculty_id>', methods=['DELETE'])
     def delete_faculty(faculty_id):
@@ -1094,5 +1124,133 @@ def create_admin_routes(mysql):
             print("Error deleting exam:", e)
             mysql.connection.rollback()
             return jsonify({"success": False, "error": f"Unable to delete exam: {str(e)}"}), 500
+        
+    @admin_bp.route('/designations', methods=['GET'])
+    def get_designations():
+        cursor = mysql.connection.cursor()
+        cursor.execute("SELECT Designation_Id, Designation_Name FROM mst_designation ORDER BY Designation_Id ASC")
+        rows = cursor.fetchall()
+        cursor.close()
+
+        data = [
+            {"id": row[0], "name": row[1]}
+        for row in rows]
+
+        return jsonify({"status": "success", "data": data})
+    
+    # ADD DESIGNATION
+    @admin_bp.route('/designations', methods=['POST'])
+    def add_designation():
+        data = request.json
+        name = data.get("name")
+
+        cursor = mysql.connection.cursor()
+
+        # 🔍 Check if designation already exists
+        cursor.execute("SELECT COUNT(*) FROM mst_designation WHERE Designation_Name = %s", (name,))
+        exists = cursor.fetchone()[0]
+
+        if exists > 0:
+            cursor.close()
+            return jsonify({
+                "status": "error",
+                "message": "Designation already exists"
+            }), 400
+
+        # ➕ Insert new designation
+        cursor.execute(
+            "INSERT INTO mst_designation (Designation_Name) VALUES (%s)",
+            (name,)
+        )
+        mysql.connection.commit()
+        cursor.close()
+
+        return jsonify({"status": "success","message": "Designation added"})
+
+    @admin_bp.route('/designations/<int:id>', methods=['PUT'])
+    def update_designation(id):
+        data = request.json
+        name = data.get("name")
+
+        cursor = mysql.connection.cursor()
+        cursor.execute(
+            "UPDATE mst_designation SET Designation_Name = %s WHERE Designation_Id = %s",
+            (name, id)
+        )
+        mysql.connection.commit()
+        cursor.close()
+
+        return jsonify({"status": "success", "message": "Designation updated"})
+    
+    @admin_bp.route('/designations/<int:id>', methods=['DELETE'])
+    def delete_designation(id):
+        cursor = mysql.connection.cursor()
+        cursor.execute("DELETE FROM mst_designation WHERE Designation_Id = %s", (id,))
+        mysql.connection.commit()
+        cursor.close()
+
+        return jsonify({"status": "success", "message": "Designation deleted"})
+    
+    # GET-DESIGNATION-ROLE
+    @admin_bp.route('/designation-roles', methods=['GET'])
+    def get_designation_roles():
+        cursor = mysql.connection.cursor()
+        cursor.execute("""
+            SELECT d.Designation_Id, d.Designation_Name, 
+                r.Role_Id, r.Role_Name, r.Access_Level
+            FROM mst_designation d
+            LEFT JOIN mst_roles r ON d.Role_Id = r.Role_Id
+            ORDER BY d.Designation_Id
+        """)
+        rows = cursor.fetchall()
+        cursor.close()
+
+        data = [
+            {
+                "Designation_Id": r[0],
+                "Designation_Name": r[1],
+                "Role_Id": r[2],
+                "Role_Name": r[3],
+                "Access_Level": r[4]
+            }
+            for r in rows
+        ]
+
+        return jsonify({"status": "success", "data": data})
+
+    # UPDATE-DESIGNATION-ROLE
+    @admin_bp.route('/designation-roles/<int:designation_id>', methods=['PUT'])
+    def update_designation_role(designation_id):
+        data = request.json
+        role_id = data.get("role_id")
+
+        cursor = mysql.connection.cursor()
+        cursor.execute("""
+            UPDATE mst_designation 
+            SET Role_Id = %s 
+            WHERE Designation_Id = %s
+        """, (role_id, designation_id))
+
+        mysql.connection.commit()
+        cursor.close()
+
+        return jsonify({"status": "success", "message": "Role updated successfully"})
+
+    # GET-ROLES
+    @admin_bp.route('/roles', methods=['GET'])
+    def get_roles():
+        cursor = mysql.connection.cursor()
+        cursor.execute("SELECT Role_Id, Role_Name, Access_Level FROM mst_roles ORDER BY Access_Level")
+        rows = cursor.fetchall()
+        cursor.close()
+
+        return jsonify({
+            "status": "success",
+            "data": [
+                {"Role_Id": r[0], "Role_Name": r[1], "Access_Level": r[2]}
+                for r in rows
+            ]
+        })
+
 
     return admin_bp

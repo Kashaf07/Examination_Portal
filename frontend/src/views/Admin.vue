@@ -278,36 +278,12 @@ const activeTab = ref(null);
 
 // Tab configuration with PNG icons from public folder
 const tabs = [
-  { 
-    id: "faculty", 
-    name: "Faculty", 
-    icon: "faculty"  // Will load /faculty.png
-  },
-  { 
-    id: "schools", 
-    name: "Schools", 
-    icon: "schools"  // Will load /schools.png
-  },
-  { 
-    id: "applicants", 
-    name: "Applicants", 
-    icon: "applicants"  // Will load /applicants.png
-  },
-  { 
-    id: "exams", 
-    name: "Exams", 
-    icon: "exams"  // Will load /exams.png
-  },
-  { 
-    id: "admins", 
-    name: "Admins", 
-    icon: "admins"  // Will load /admins.png
-  },
-  { 
-    id: "logs", 
-    name: "Login Logs", 
-    icon: "logs"  // Will load /logs.png
-  }
+  { id: "faculty", name: "Faculty", icon: "faculty"  // Will load /faculty.png },
+  { id: "schools", name: "Schools", icon: "schools"  // Will load /schools.png },
+  { id: "applicants", name: "Applicants", icon: "applicants"  // Will load /applicants.png },
+  { id: "exams", name: "Exams", icon: "exams"  // Will load /exams.png },
+  { id: "admins", name: "Admins", icon: "admins"  // Will load /admins.png },
+  { id: "logs", name: "Login Logs", icon: "logs"  // Will load /logs.png }
 ];
 
 // Current tab name for header

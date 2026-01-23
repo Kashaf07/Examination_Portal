@@ -383,13 +383,13 @@ const submitApplicant = async () => {
 
 const navigateTo = (action, examId) => {
   const routeMap = {
-    AddApplicants_exam: 'AddApplicantsexam',
+    AddApplicants_exam: 'AddApplicantsExam',
     AddApplicants: 'AddApplicants',
     AddQuestion: 'AddQuestion',
     MakeQuestionPaper: 'MakeQuestionPaper',
     UploadStudents: 'UploadStudents',
     ViewResponses: 'ViewResponses',
-    Groups: 'Groups'
+    Groups: 'FacultyGroups'
   }
   examId
     ? router.push({ name: routeMap[action], params: { examId } })
