@@ -1,5 +1,6 @@
 <template>
-  <div class="p-6">
+  <div class="container-wrapper">
+    <div class="p-6">
     <div class="flex justify-between items-center mb-6">
       <h1 class="text-3xl font-bold mb-6">Welcome, {{ name }}</h1>
       <button 
@@ -25,19 +26,18 @@
       >
         {{ showForm ? 'Close' : 'Create Exam' }}
       </button>
-      <button
-      @click="navigateTo('Groups')"
+      <button 
+        @click="toggleGroups"
         class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
       >
-        Groups
+        {{ showGroups ? 'Close' : 'Groups' }}
       </button>
-      <button
-      @click="navigateTo('AddApplicants')"
-      class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+      <button 
+        @click="toggleApplicantForm"
+        class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
       >
-      Add Applicants
-    </button>
-
+        {{ showApplicantForm ? 'Close' : 'Add Applicants' }}
+      </button>
       <button
         @click="navigateTo('UploadStudents')"
         class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
@@ -47,26 +47,146 @@
     </div>
 
     <!-- Create Exam Form -->
-    <div v-if="showForm" class="bg-white shadow rounded p-4 max-w-3xl mb-8">
-      <h2 class="text-xl font-semibold mb-4">Create Exam</h2>
-      <form @submit.prevent="submitExam">
-        <div class="grid grid-cols-2 gap-4">
-          <input v-model="exam.exam_name" type="text" placeholder="Exam Name" required class="border p-2 rounded" />
-          <input v-model="exam.exam_date" type="date" placeholder="Exam Date" required class="border p-2 rounded" :min="todayDate" />
-          <input v-model="exam.exam_time" type="time" placeholder="Exam Time" required class="border p-2 rounded" />
-          <input v-model="exam.duration" type="number" placeholder="Duration (Minutes)" required class="border p-2 rounded" />
-          <input v-model="exam.total_questions" type="number" placeholder="Total Questions" required class="border p-2 rounded" />
-          <input v-model="exam.max_marks" type="number" placeholder="Max Marks" required class="border p-2 rounded" />
+    <div
+      v-if="showForm"
+      class="max-w-3xl mx-auto mb-8 bg-white/80 backdrop-blur-lg shadow-xl border border-white/40 rounded-2xl p-8 transition-all"
+    >
+      <h2 class="text-2xl font-bold mb-6 text-gray-800 flex items-center gap-2">
+        Create New Exam
+      </h2>
+
+      <form @submit.prevent="submitExam" class="space-y-6">
+
+        <!-- GRID -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+
+          <!-- Exam Name -->
+          <div class="flex flex-col gap-1">
+            <label class="font-semibold text-gray-700">Exam Name</label>
+            <div class="relative">
+              <input
+                v-model="exam.exam_name"
+                type="text"
+                placeholder="Enter exam name"
+                required
+                class="w-full border border-gray-300 px-4 py-2.5 rounded-xl focus:ring-2 focus:ring-blue-400 focus:border-blue-500 outline-none transition"
+              />
+            </div>
+          </div>
+
+          <!-- Exam Date -->
+          <div class="flex flex-col gap-1">
+            <label class="font-semibold text-gray-700">Exam Date</label>
+            <input
+              v-model="exam.exam_date"
+              type="date"
+              required
+              :min="todayDate"
+              class="w-full border border-gray-300 px-4 py-2.5 rounded-xl focus:ring-2 focus:ring-blue-400 focus:border-blue-500 outline-none transition"
+            />
+          </div>
+
+          <!-- Exam Time -->
+          <div class="flex flex-col gap-1">
+            <label class="font-semibold text-gray-700">Exam Time</label>
+            <input
+              v-model="exam.exam_time"
+              type="time"
+              required
+              class="w-full border border-gray-300 px-4 py-2.5 rounded-xl focus:ring-2 focus:ring-blue-400 focus:border-blue-500 outline-none transition"
+            />
+          </div>
+
+          <!-- Duration -->
+          <div class="flex flex-col gap-1">
+            <label class="font-semibold text-gray-700">Duration (Minutes)</label>
+            <input
+              v-model="exam.duration"
+              type="number"
+              min="1"
+              placeholder="e.g., 60"
+              required
+              class="w-full border border-gray-300 px-4 py-2.5 rounded-xl focus:ring-2 focus:ring-blue-400 focus:border-blue-500 outline-none transition"
+            />
+          </div>
+
+          <!-- Total Questions -->
+          <div class="flex flex-col gap-1">
+            <label class="font-semibold text-gray-700">Total Questions</label>
+            <input
+              v-model="exam.total_questions"
+              type="number"
+              min="1"
+              required
+              placeholder="e.g., 50"
+              class="w-full border border-gray-300 px-4 py-2.5 rounded-xl focus:ring-2 focus:ring-blue-400 focus:border-blue-500 outline-none transition"
+            />
+          </div>
+
+          <!-- Max Marks -->
+          <div class="flex flex-col gap-1">
+            <label class="font-semibold text-gray-700">Max Marks</label>
+            <input
+              v-model="exam.max_marks"
+              type="number"
+              min="1"
+              required
+              placeholder="e.g., 100"
+              class="w-full border border-gray-300 px-4 py-2.5 rounded-xl focus:ring-2 focus:ring-blue-400 focus:border-blue-500 outline-none transition"
+            />
+          </div>
+
         </div>
-        <button type="submit" class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 mt-4">
-          Submit Exam
-        </button>
-        <p v-if="examSubmitMessage" class="mt-2 text-sm text-red-600">{{ examSubmitMessage }}</p>
+
+        <!-- Error Message -->
+        <p
+          v-if="examSubmitMessage"
+          class="text-red-600 font-medium text-sm mt-1"
+        >
+          {{ examSubmitMessage }}
+        </p>
+
+        <!-- Footer Buttons -->
+        <div class="flex justify-end gap-4 pt-4">
+
+          <button
+            @click="toggleExamForm"
+            type="button"
+            class="bg-gray-300 text-gray-700 px-6 py-2 rounded-xl hover:bg-gray-400 transition font-semibold shadow-md hover:shadow-lg"
+          >
+            Cancel
+          </button>
+
+          <button
+            type="submit"
+            class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition font-semibold shadow-md hover:shadow-lg"
+          >
+            Create Exam
+          </button>
+
+        </div>
+
       </form>
     </div>
 
-    
 
+    <!-- Groups Panel -->
+    <div
+      v-if="showGroups"
+      class="max-w-8xl mx-auto rounded-xl shadow-xl p">
+      <FacultyGroups @closeGroup="showGroups = false" />
+    </div>
+
+
+    <!-- Add Applicants Panel -->
+    <div v-if="showApplicantForm" 
+     class="max-w-5xl mx-auto bg-white rounded-xl shadow-xl p-7">
+      <AddApplicantsPage @closeAddApplicant="showApplicantForm = false" />     
+    </div>
+
+    
+  <!-- Exam Tables Only Visible When on Dashboard -->
+  <div v-if="currentTab === 'Dashboard'">
     <!-- Exam Table (Upcoming/Created) -->
     <div v-if="createdExams.length" class="mt-8">
       <h2 class="text-2xl font-semibold mb-4">Created Exams</h2>
@@ -201,14 +321,21 @@
       No exams conducted yet.
     </div>
   </div>
+  </div>
+  </div>
 </template>
 
 <script setup>
 import { ref, onMounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import axios from '../utils/axiosInstance'
+import FacultyGroups from "../views/Groups.vue"
+import AddApplicantsPage from "../views/AddApplicantsPage.vue"
 
 const router = useRouter()
+const currentTab = ref("Dashboard")  // default section
+const showGroups = ref(false)
+
 
 // ---------------------
 // NEW STORAGE SYSTEM
@@ -293,6 +420,19 @@ const applicant = ref({
 const toggleExamForm = () => {
   showForm.value = !showForm.value
   examSubmitMessage.value = ''
+}
+
+const toggleGroups = () => {
+  showGroups.value = !showGroups.value
+}
+
+const toggleApplicantForm = () => {
+  showApplicantForm.value = !showApplicantForm.value
+}
+
+const closeApplicantForm = () => {
+  showApplicantForm.value = false
+  currentTab.value = "Dashboard"
 }
 
 const formatDate = (dateString) => {
@@ -415,7 +555,7 @@ const logout = async () => {
 <style scoped>
 .p-6 {
   padding: 1.5rem;
-  background: linear-gradient(to bottom right, #E3F2FD, #F3E5F5, #FCE4EC);
+  background: transparent !important;
   min-height: 100vh;
   font-family: 'Inter', sans-serif;
 }
@@ -518,4 +658,12 @@ td button:hover {
 .inline-block {
   font-weight: 600;
 }
+/* Full-page gradient */
+.container-wrapper {
+  min-height: 100vh;
+  padding: 1.5rem;
+  background: linear-gradient(to bottom right, #E3F2FD, #F3E5F5, #FCE4EC);
+  font-family: 'Inter', sans-serif;
+}
+
 </style>
