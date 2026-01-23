@@ -36,23 +36,53 @@ def create_send_email_routes(mysql):
                 receiver_email = db_applicant['Email']
                 password = db_applicant['Password']
 
+                # 🔗 LOGIN PAGE LINK (Update this when you deploy to production)
+                # For localhost: http://localhost:5173
+                # For production: https://yourdomain.com
+                login_link = "http://localhost:5173"  # 👈 Change this to your production URL later
+
+                # 📧 EMAIL BODY WITH LOGIN LINK
                 body = f"""Dear {full_name},
 
 You have been assigned the following exam:
+
+========================================
+EXAM DETAILS
+========================================
 
 Exam ID: {exam['Exam_Id']}
 Exam Name: {exam['Exam_Name']}
 Date: {exam['Exam_Date']}
 Time: {exam['Exam_Time']}
 
-Your login credentials:
+========================================
+YOUR LOGIN CREDENTIALS
+========================================
+
 Email: {receiver_email}
 Password: {password}
 
-Good luck!
+========================================
+LOGIN TO YOUR EXAM FROM THIS LINK
+========================================
+
+{login_link}
+
+IMPORTANT INSTRUCTIONS:
+1. Login using the credentials provided above
+2. Enter the Exam ID when prompted
+3. Read all instructions carefully before starting
+4. Do NOT refresh the page during the exam
+5. Do NOT switch tabs or windows during the exam
+6. Ensure stable internet connection
+
+========================================
+
+Good luck with your exam!
 
 Best regards,
 Examination Team
+Examination Portal
 """
 
                 msg = MIMEMultipart()

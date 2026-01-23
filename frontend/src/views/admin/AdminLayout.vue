@@ -32,12 +32,8 @@
           v-for="tab in tabs"
           :key="tab.id"
           @click="navigate(tab.id)"
-          :class="[
-            'px-6 py-3 rounded-full font-semibold shadow-lg transition-all duration-200 transform hover:scale-105',
-            currentTab === tab.id
-              ? 'bg-blue-600 text-white'
-              : 'bg-blue-500 hover:bg-blue-600 text-white'
-          ]"
+          class="px-6 py-3 rounded-full font-semibold shadow-lg bg-blue-500 hover:bg-blue-600 text-white transition-all duration-200 transform hover:scale-105"
+
         >
           {{ tab.name }}
         </button>
@@ -60,18 +56,18 @@ const router = useRouter();
 const route = useRoute();
 
 // Admin info
-const adminName = ref(localStorage.getItem("admin_name") || "Admin");
-const roles = JSON.parse(localStorage.getItem("roles") || "[]");
-const activeRole = ref(localStorage.getItem("active_role"));
-const canSwitch = roles.length > 1;
+const adminName = ref(localStorage.getItem("admin_name") ?? "Admin");
+const canSwitch = true;
+
 
 // Switch role
 const switchRole = () => {
-  const newRole = activeRole.value === "Faculty" ? "Admin" : "Faculty";
-  localStorage.setItem("active_role", newRole);
-  activeRole.value = newRole;
-  router.push(`/${newRole.toLowerCase()}`);
+  localStorage.setItem("active_role", "Faculty");
+  localStorage.setItem("role", "faculty");
+  router.replace("/faculty/dashboard");
 };
+
+
 
 // Tabs
 const tabs = [
