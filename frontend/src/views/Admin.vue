@@ -148,21 +148,21 @@
 
           <!-- Role Dropdown Menu (always positioned to the right) -->
           <div
-            v-if="showRoleMenu"
-            class="absolute bottom-0 left-full ml-2 bg-white rounded-xl shadow-2xl border border-gray-200 py-2 z-[60] min-w-[240px]"
-          >
-            <div class="px-4 py-2 text-sm font-bold text-gray-700 border-b border-gray-100">
-              Available Roles
-            </div>
+  v-if="showRoleMenu"
+  class="absolute bottom-0 left-full ml-2 bg-white rounded-xl shadow-2xl border border-gray-200 py-3 z-[60] min-w-[280px]"
+>
+  <div class="px-5 py-3 text-base text-gray-600 border-b border-gray-100">
+    Available Roles
+  </div>
 
-            <button
-              v-for="role in availableRoles"
-              :key="role.id"
-              @click.stop="selectRole(role.id)"
-              :class="[
-                'w-full px-4 py-3 text-left text-sm hover:bg-blue-50 transition-colors text-gray-700'
-              ]"
-            >
+  <button
+    v-for="role in availableRoles"
+    :key="role.id"
+    @click.stop="selectRole(role.id)"
+    :class="[
+      'w-full px-5 py-4 text-left text-base hover:bg-blue-50 transition-colors text-gray-700 font-semibold hover:text-blue-600'
+    ]"
+  >
               <div class="flex items-center justify-between">
                 <span>{{ role.name }}</span>
               </div>
@@ -202,37 +202,45 @@
       ]"
     >
       <!-- Main Content Area -->
-      <div class="p-8 pt-16 max-w-full overflow-x-hidden"> 
+      <div class="px-8 py-6 max-w-full overflow-x-hidden">
+
 
         <!-- Welcome/Home Screen (shown when activeTab is 'home' or null) -->
-        <div
+        <!-- In your Admin.vue file, find the welcome section and replace it with this: -->
+
+<!-- Welcome/Home Screen (shown when activeTab is 'home' or null) -->
+<div
   v-if="activeTab === null"
   class="flex items-center justify-center min-h-[80vh]"
 >
-
-          <div class="text-center">
-            <div class="mb-6">
-              <div class="w-32 h-32 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-full flex items-center justify-center mx-auto shadow-2xl">
-                <span class="text-6xl text-white font-bold">{{ adminInitial }}</span>
-              </div>
-            </div>
-            <h1 class="text-6xl font-bold text-gray-800 mb-4">
-              Welcome, {{ adminName }}!
-            </h1>
-            <p class="text-xl text-gray-600">
-              Select a menu item from the sidebar to get started
-            </p>
-          </div>
-        </div>
+  <div class="text-center">
+    <div class="mb-6">
+      <div class="w-24 h-24 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-full flex items-center justify-center mx-auto shadow-2xl">
+        <span class="text-4xl text-white font-bold">{{ adminInitial }}</span>
+      </div>
+    </div>
+    <h1 class="text-4xl font-bold text-gray-800 mb-4">
+      Welcome, {{ adminName }}!
+    </h1>
+    <p class="text-lg text-gray-600">
+      Select a menu item from the sidebar to get started
+    </p>
+  </div>
+</div>
 
         <!-- Content Area (shown when specific tab is selected) -->
         <div v-else>
-          <div class="mb-8">
-            <h1 class="text-4xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-purple-600">
-              {{ currentTabName }}
-            </h1>
-            <p class="text-gray-600 mt-2">Manage your {{ currentTabName.toLowerCase() }} efficiently</p>
-          </div>
+          <div class="mb-6 mt-2">
+  <h1
+    class="text-4xl font-bold text-blue-700 leading-tight"
+  >
+    {{ currentTabName }}
+  </h1>
+  <p class="text-sm text-gray-600 mt-1">
+    Manage your {{ currentTabName.toLowerCase() }} efficiently
+  </p>
+</div>
+
 
           <router-view @toast="handleToast"/>
         </div>
@@ -276,14 +284,17 @@ const showRoleMenu = ref(false);
 const activeTab = ref(null);
 
 
-// Tab configuration with PNG icons from public folder
+// Tab configuration with PNG icons from public folder - ADDED GROUPS TAB
 const tabs = [
-  { id: "faculty", name: "Faculty", icon: "faculty"  // Will load /faculty.png },
-  { id: "schools", name: "Schools", icon: "schools"  // Will load /schools.png },
-  { id: "applicants", name: "Applicants", icon: "applicants"  // Will load /applicants.png },
-  { id: "exams", name: "Exams", icon: "exams"  // Will load /exams.png },
-  { id: "admins", name: "Admins", icon: "admins"  // Will load /admins.png },
-  { id: "logs", name: "Login Logs", icon: "logs"  // Will load /logs.png }
+  { id: "faculty", name: "Faculty", icon: "faculty" },
+  { id: "schools", name: "Schools", icon: "schools" },
+  { id: "designations", name: "Designations", icon: "designations" },
+  { id: "role-assignment", name: "Role Assignment", icon: "role-assignment" },
+  { id: "groups", name: "Groups", icon: "groups" },
+  { id: "applicants", name: "Applicants", icon: "applicants" },
+  { id: "exams", name: "Exams", icon: "exams" },
+  { id: "admins", name: "Admins", icon: "admins" },
+  { id: "logs", name: "Login Logs", icon: "logs" }
 ];
 
 // Current tab name for header
@@ -372,10 +383,7 @@ watch(() => route.query, (newQuery) => {
 // Available roles for dropdown
 const availableRoles = ref([
   { id: 'faculty', name: 'Faculty' },
-  { id: 'dean', name: 'Dean' },
-  { id: 'Head', name: 'Head' },
-  { id: 'Program Chair', name: 'Program Chairr' },
-  { id: 'Teaching Assistant', name: 'Teaching Assistant' },
+
 ]);
 
 // Navigation
@@ -449,7 +457,7 @@ const logout = async () => {
 
   if (success) {
     localStorage.removeItem("admin_email");
-    localStorage.removeItem("name");  // Changed from "admin_name" to "name"
+    localStorage.removeItem("name");
     localStorage.removeItem("active_role");
     localStorage.removeItem("roles");
     window.location.href = "/";
@@ -460,13 +468,19 @@ const logout = async () => {
 </script>
 
 <style scoped>
-/* Prevent horizontal scroll */
+/* Prevent all scrolling */
 body, html {
   overflow-x: hidden;
+  overflow-y: hidden;
 }
 
 * {
   box-sizing: border-box;
+}
+
+/* Main container - prevent overflow */
+.min-h-screen {
+  overflow: hidden;
 }
 
 /* Icon container for consistent sizing */
