@@ -216,19 +216,6 @@ const adminInitial = computed(() => adminName.value.charAt(0).toUpperCase());
 const sidebarOpen = ref(true);
 const showRoleMenu = ref(false);
 
-const selectRole = (roleId) => {
-  if (roleId === 'faculty') {
-    localStorage.setItem("active_role", "Faculty");
-
-    // ✅ DO NOT TOUCH email here
-    // ❌ remove the admin_email overwrite
-
-    showRoleMenu.value = false;
-    router.push('/faculty');
-  }
-};
-
-
 const activeTab = ref(null);
 
 
@@ -331,11 +318,6 @@ watch(() => route.query, (newQuery) => {
 const availableRoles = ref([
   { id: 'faculty', name: 'Faculty' }
 ])
-
-// Toggle role menu
-const toggleRoleMenu = () => {
-  showRoleMenu.value = !showRoleMenu.value;
-};
 
 // Navigation
 const goToTab = (tab) => {
