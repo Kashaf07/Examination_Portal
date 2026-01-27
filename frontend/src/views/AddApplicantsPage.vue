@@ -1,5 +1,7 @@
 <template>
-  <div :class="['p mx-auto', activeRole === 'Faculty' ? 'bg-transparent shadow-none max-w-full' : 'bg-white/80 backdrop-blur-lg shadow-xl border border-white/40 rounded-2xl p-10 max-w-5xl mx-auto mb-10 transition-all']">
+  <div :class="[
+  'p mx-auto',
+  'bg-white/80 backdrop-blur-lg shadow-xl border border-white/40 rounded-2xl p-10 max-w-5xl mx-auto mb-10 transition-all']">
 
     <h3 class="text-2xl font-bold mb-6 text-gray-800">
       Add New Applicant

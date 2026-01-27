@@ -4,12 +4,11 @@
     <!-- Action Buttons -->
     <div class="flex gap-4 mb-6">
       <button
-        @click="goToAddApplicant"
+        @click="showAddApplicantPage = true"
         class="bg-blue-500 hover:bg-blue-600 text-white font-semibold px-6 py-3 rounded-full shadow-lg transition-all hover:scale-105"
       >
         Add Applicant
       </button>
-
       <button
         @click="navigateUpload"
         class="bg-purple-500 hover:bg-purple-600 text-white font-semibold px-6 py-3 rounded-full shadow-lg transition-all hover:scale-105"
@@ -17,6 +16,14 @@
         Upload Applicants
       </button>
     </div>
+
+    <!-- Add Applicant Page -->
+    <AddApplicantsPage
+      v-if="showAddApplicantPage"
+      @close="showAddApplicantPage = false"
+      @saved="handleApplicantSaved"
+    />
+
 
     <!-- Applicants Table -->
     <div class="bg-white rounded-2xl shadow-lg overflow-hidden border border-gray-200">
@@ -124,11 +131,17 @@ const applicantsList = ref([]);
 const selectedApplicants = ref([]);
 const showViewModal = ref(false);
 const selectedApplicant = ref(null);
+const showAddApplicantPage = ref(false);
 
 // ✅ FETCH
 const fetchApplicants = async () => {
   const res = await axios.get("/admin/applicants");
   applicantsList.value = res.data.applicants || res.data;
+};
+
+const handleApplicantSaved = () => {
+  fetchApplicants();
+  emit("toast", { message: "Applicant added", type: "success" });
 };
 
 // ✅ REDIRECT (FIXED)
