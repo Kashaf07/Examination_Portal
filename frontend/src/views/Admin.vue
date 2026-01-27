@@ -153,27 +153,24 @@
 
 
         <!-- Welcome/Home Screen (shown when activeTab is 'home' or null) -->
-        <!-- In your Admin.vue file, find the welcome section and replace it with this: -->
-
-<!-- Welcome/Home Screen (shown when activeTab is 'home' or null) -->
-<div
-  v-if="activeTab === null"
-  class="flex items-center justify-center min-h-[80vh]"
->
-  <div class="text-center">
-    <div class="mb-6">
-      <div class="w-24 h-24 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-full flex items-center justify-center mx-auto shadow-2xl">
-        <span class="text-4xl text-white font-bold">{{ adminInitial }}</span>
-      </div>
-    </div>
-    <h1 class="text-4xl font-bold text-gray-800 mb-4">
-      Welcome, {{ adminName }}!
-    </h1>
-    <p class="text-lg text-gray-600">
-      Select a menu item from the sidebar to get started
-    </p>
-  </div>
-</div>
+        <div
+          v-if="activeTab === null"
+          class="flex items-center justify-center min-h-[80vh]"
+        >
+          <div class="text-center">
+            <div class="mb-6">
+              <div class="w-24 h-24 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-full flex items-center justify-center mx-auto shadow-2xl">
+                <span class="text-4xl text-white font-bold">{{ adminInitial }}</span>
+              </div>
+            </div>
+            <h1 class="text-4xl font-bold text-gray-800 mb-4">
+              Welcome, {{ adminName }}!
+            </h1>
+            <p class="text-lg text-gray-600">
+              Select a menu item from the sidebar to get started
+            </p>
+          </div>
+        </div>
 
         <div v-else>
           <div class="mb-6 mt-2">
@@ -207,9 +204,11 @@ import { ref, computed, onMounted, watch } from "vue";
 import { useRouter, useRoute } from "vue-router";
 import NotificationToast from "@/components/admin/NotificationToast.vue";
 import { authApi } from "@/services/adminApi.js";
-
 const roles = JSON.parse(localStorage.getItem("roles") || "[]");
-const canSwitch = roles.length > 1;
+
+// Admin should always be allowed to switch
+const canSwitch = true;
+
 
 const router = useRouter();
 const route = useRoute();
@@ -219,6 +218,20 @@ const adminInitial = computed(() => adminName.value.charAt(0).toUpperCase());
 
 const sidebarOpen = ref(true);
 const showRoleMenu = ref(false);
+
+const selectRole = (roleId) => {
+  if (roleId === 'faculty') {
+    localStorage.setItem("active_role", "Faculty");
+
+    // ✅ DO NOT TOUCH email here
+    // ❌ remove the admin_email overwrite
+
+    showRoleMenu.value = false;
+    router.push('/faculty');
+  }
+};
+
+
 const activeTab = ref(null);
 
 
@@ -319,9 +332,13 @@ watch(() => route.query, (newQuery) => {
 
 // Available roles for dropdown
 const availableRoles = ref([
-  { id: 'faculty', name: 'Faculty' },
+  { id: 'faculty', name: 'Faculty' }
+])
 
-]);
+// Toggle role menu
+const toggleRoleMenu = () => {
+  showRoleMenu.value = !showRoleMenu.value;
+};
 
 // Navigation
 const goToTab = (tab) => {
@@ -329,15 +346,37 @@ const goToTab = (tab) => {
   router.push(`/admin/${tab}`);
 };
 
-onMounted(() => {
-  const last = route.path.split('/').pop();
-  activeTab.value = tabs.find(t => t.id === last) ? last : null;
-});
+const syncTabWithRoute = () => {
+  const path = route.path;
 
-watch(() => route.path, (newPath) => {
-  const last = newPath.split('/').pop();
-  activeTab.value = tabs.find(t => t.id === last) ? last : null;
-});
+  // Show dashboard ONLY for /admin
+  if (path === '/admin' || path === '/admin/') {
+    activeTab.value = null;
+    return;
+  }
+
+  // admin/{section}/...
+  const parts = path.split('/').filter(Boolean);
+  // e.g. ['admin', 'groups', 'students']
+
+  const section = parts[1];
+
+  // 🔥 IMPORTANT: handle nested groups routes
+  if (section === 'groups') {
+    activeTab.value = 'groups';
+    return;
+  }
+
+  if (tabs.find(t => t.id === section)) {
+    activeTab.value = section;
+  } else {
+    activeTab.value = null;
+  }
+};
+
+onMounted(syncTabWithRoute);
+watch(() => route.path, syncTabWithRoute);
+
 
 const toast = ref({ message: "", type: "" });
 const handleToast = ({ message, type }) => toast.value = { message, type };

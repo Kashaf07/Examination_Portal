@@ -551,6 +551,7 @@
       </div>
     </main>
   </div>
+  </div>
 </template>
 
 <script setup>
@@ -559,7 +560,6 @@ import { useRouter } from 'vue-router'
 import axios from '../utils/axiosInstance'
 import FacultyGroups from "../views/Groups.vue"
 import AddApplicantsPage from "../views/AddApplicantsPage.vue"
-import AddApplicantsPage from './AddApplicantsPage.vue'
 import UploadStudents from './UploadStudents.vue'
 import Groups from './Groups.vue'
 
