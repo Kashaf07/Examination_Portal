@@ -13,7 +13,7 @@
 
       <!-- Sidebar Header -->
       <div class="px-4 py-3 border-b border-white/40">
-        <div class="flex items-center justify-between">
+        <div class="flex items-center justify-between w-full">
 
           <!-- When Closed: Show Avatar and Hamburger -->
           <template v-if="!sidebarOpen">
@@ -40,45 +40,48 @@
           </template>
 
           <!-- When Open: Show Avatar + Name and Hamburger -->
-          <template v-else>
-            <div class="flex items-center gap-3 overflow-hidden">
-              <div class="w-9 h-9 bg-gradient-to-br from-blue-500 to-indigo-600 text-white flex items-center justify-center rounded-full font-bold shrink-0 shadow-md">
-                {{ facultyInitial }}
-              </div>
+<template v-else>
+  <div class="flex items-center gap-3 overflow-hidden">
+    <div class="w-9 h-9 bg-gradient-to-br from-blue-500 to-indigo-600 text-white flex items-center justify-center rounded-full font-bold shrink-0 shadow-md">
+      {{ facultyInitial }}
+    </div>
 
-              <div class="leading-tight truncate">
-                <p class="font-semibold text-gray-800 text-sm truncate">
-                  {{ facultyName }}
-                </p>
-                <p class="text-xs text-gray-600">
-                  Faculty Member
-                </p>
-              </div>
-            </div>
+    <div class="leading-tight truncate">
+      <p class="font-semibold text-gray-800 text-sm truncate">
+        {{ facultyName }}
+      </p>
+      <p class="text-xs text-gray-600">
+        Faculty Member
+      </p>
+    </div>
+  </div>
 
-            <button
-              @click="sidebarOpen = !sidebarOpen"
-              class="w-9 h-9 flex items-center justify-center rounded-lg border-0 text-white hover:bg-blue-700 transition bg-blue-600 shrink-0"
-            >
-              <svg
-                class="w-5 h-5"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-                stroke-width="2"
-              >
-                <line x1="4" y1="6" x2="20" y2="6" stroke-linecap="round"/>
-                <line x1="4" y1="12" x2="20" y2="12" stroke-linecap="round"/>
-                <line x1="4" y1="18" x2="20" y2="18" stroke-linecap="round"/>
-              </svg>
-            </button>
-          </template>
+  <button
+    @click="sidebarOpen = !sidebarOpen"
+    class="w-10 h-10 flex items-center justify-center rounded-xl
+           bg-gradient-to-br from-blue-500 to-indigo-600
+           text-white shadow-md hover:shadow-lg transition shrink-0"
+  >
+    <svg
+      class="w-6 h-6"
+      fill="none"
+      stroke="currentColor"
+      viewBox="0 0 24 24"
+      stroke-width="2"
+      stroke-linecap="round"
+    >
+      <line x1="4" y1="6" x2="20" y2="6" />
+      <line x1="4" y1="12" x2="20" y2="12" />
+      <line x1="4" y1="18" x2="20" y2="18" />
+    </svg>
+  </button>
+</template>
 
         </div>
       </div>
 
       <!-- Navigation Menu -->
-      <nav class="flex-1 py-4 px-3 space-y-1.5 overflow-y-auto" style="max-height: calc(100vh - 200px);">
+      <nav class="flex-1 py-4 px-3 space-y-1.5">
         <button
           v-for="tab in visibleTabs"
           :key="tab.id"
@@ -230,7 +233,7 @@
               <p class="text-gray-600 mt-2">Create and manage your exams</p>
             </div>
 
-    <!-- Button Group -->
+   <!-- Button Group -->
     <div class="flex gap-4 mb-6">
       <button
         @click="toggleExamForm"
@@ -238,26 +241,7 @@
       >
         {{ showForm ? 'Close' : 'Create Exam' }}
       </button>
-      <button 
-        @click="toggleGroups"
-        class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
-      >
-        {{ showGroups ? 'Close' : 'Groups' }}
-      </button>
-      <button 
-        @click="toggleApplicantForm"
-        class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
-      >
-        {{ showApplicantForm ? 'Close' : 'Add Applicants' }}
-      </button>
-      <button
-        @click="navigateTo('UploadStudents')"
-        class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
-      >
-        Upload Applicants
-      </button>
     </div>
-
     <!-- Create Exam Form -->
     <div
       v-if="showForm"
@@ -401,29 +385,30 @@
   <div v-if="currentTab === 'Dashboard'">
     <!-- Exam Table (Upcoming/Created) -->
     <div v-if="createdExams.length" class="mt-8">
-      <h2 class="text-2xl font-semibold mb-4">Created Exams</h2>
-      <table class="min-w-full border text-sm text-left">
-        <thead class="bg-gray-200">
-          <tr>
-            <th class="px-4 py-2">Exam Name</th>
-            <th class="px-4 py-2">Date</th>
-            <th class="px-4 py-2">Time</th>
-            <th class="px-4 py-2">Duration (Min)</th>
-            <th class="px-4 py-2">Total Questions</th>
-            <th class="px-4 py-2">Max Marks</th>
-            <th class="px-4 py-2 text-center">Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr v-for="exam in createdExams" :key="exam.Exam_Id" class="border-t">
-            <td class="px-4 py-2">{{ exam.Exam_Name }}</td>
-            <td class="px-4 py-2">{{ exam.Exam_Date }}</td>
-            <td class="px-4 py-2">{{ exam.Exam_Time }}</td>
-            <td class="px-4 py-2">{{ exam.Duration_Minutes }}</td>
-            <td class="px-4 py-2">{{ exam.Total_Questions }}</td>
-            <td class="px-4 py-2">{{ exam.Max_Marks }}</td>
-            <td class="px-4 py-3">
-  <div class="flex flex-wrap justify-center items-center gap-2">
+<h2 class="text-2xl font-semibold mb-4 text-gray-800">Created Exams</h2>
+              <div class="bg-white rounded-xl shadow-lg overflow-hidden">
+                <table class="min-w-full">
+                  <thead class="bg-gradient-to-r from-blue-50 to-indigo-50">
+                    <tr>
+                      <th class="px-6 py-4 text-left text-sm font-bold text-gray-700">Exam Name</th>
+                      <th class="px-6 py-4 text-left text-sm font-bold text-gray-700">Date</th>
+                      <th class="px-6 py-4 text-left text-sm font-bold text-gray-700">Time</th>
+                      <th class="px-6 py-4 text-left text-sm font-bold text-gray-700">Duration</th>
+                      <th class="px-6 py-4 text-left text-sm font-bold text-gray-700">Questions</th>
+                      <th class="px-6 py-4 text-left text-sm font-bold text-gray-700">Max Marks</th>
+                      <th class="px-6 py-4 text-center text-sm font-bold text-gray-700">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody class="divide-y divide-gray-200">
+                    <tr v-for="exam in createdExams" :key="exam.Exam_Id" class="hover:bg-gray-50 transition">
+                      <td class="px-6 py-4 text-sm text-gray-800 font-medium">{{ exam.Exam_Name }}</td>
+                      <td class="px-6 py-4 text-sm text-gray-600">{{ exam.Exam_Date }}</td>
+                      <td class="px-6 py-4 text-sm text-gray-600">{{ exam.Exam_Time }}</td>
+                      <td class="px-6 py-4 text-sm text-gray-600">{{ exam.Duration_Minutes }} min</td>
+                      <td class="px-6 py-4 text-sm text-gray-600">{{ exam.Total_Questions }}</td>
+                      <td class="px-6 py-4 text-sm text-gray-600">{{ exam.Max_Marks }}</td>
+                      <td class="px-6 py-4">  
+                        <div class="flex flex-wrap justify-center items-center gap-2">
 
     <!-- Add Students -->
     <button
@@ -528,6 +513,7 @@
               </div>
             </div>
           </div>
+          </div>
 
           <!-- Groups View -->
           <div v-else-if="activeTab === 'groups'" class="w-full min-h-[85vh]">
@@ -543,10 +529,8 @@
 
           <!-- Upload Students View -->
           <div v-else-if="activeTab === 'upload-students'" class="w-full min-h-[85vh]">
-  <UploadStudents />
-</div>
-
-
+            <UploadStudents />
+          </div>
         </div>
       </div>
     </main>
@@ -590,7 +574,7 @@ const activeTab = ref(null)
 const allTabs = [
   { id: "my-exams", name: "My Exams", icon: "exams", access: "create_exam" },
   { id: "groups", name: "Groups", icon: "groups", access: "view_groups" },
-  { id: "add-applicants", name: "Add Applicants", icon: "applicants", access: "add_applicants" },
+  { id: "add-applicants", name: "Add Students", icon: "applicants", access: "add_applicants" },
   { id: "upload-students", name: "Upload Students", icon: "applicants", access: "upload_students" }
 ]
 

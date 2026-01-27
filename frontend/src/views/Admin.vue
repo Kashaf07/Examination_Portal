@@ -2,55 +2,54 @@
   <div class="min-h-screen flex" style="background: linear-gradient(to bottom right, #E3F2FD, #F3E5F5, #FCE4EC);">
 
    <!-- Sidebar -->
-<aside
-  :class="[
-    'fixed left-0 top-0 h-screen border-r border-gray-200 text-gray-800 transition-all duration-300 z-50 shadow-lg',
-    sidebarOpen ? 'w-64' : 'w-20'
-  ]"
-  style="background: linear-gradient(180deg, #B6D4F2, #DCEBFA);"
->
+    <aside
+      :class="[
+        'fixed left-0 top-0 h-screen border-r border-gray-200 text-gray-800 transition-all duration-300 z-50 shadow-lg',
+        sidebarOpen ? 'w-64' : 'w-20'
+      ]"
+      style="background: linear-gradient(180deg, #B6D4F2, #DCEBFA);"
+    >
 
-  <!-- Sidebar Header (ChatGPT Style) -->
-<div class="px-4 py-3 border-b border-white/40">
-  <div class="flex items-center justify-between">
+      <!-- Sidebar Header (ChatGPT Style) -->
+    <div class="px-4 py-3 border-b border-white/40">
+      <div class="flex items-center justify-between">
 
-    <template v-if="!sidebarOpen">
-      <button
-        @click="sidebarOpen = !sidebarOpen"
-        class="w-10 h-10 flex items-center justify-center rounded-xl
-               bg-gradient-to-br from-blue-500 to-indigo-600
-               text-white shadow-md hover:shadow-lg transition"
-      >
-        ☰
-      </button>
-    </template>
+        <template v-if="!sidebarOpen">
+          <button
+            @click="sidebarOpen = !sidebarOpen"
+            class="w-10 h-10 flex items-center justify-center rounded-xl
+                  bg-gradient-to-br from-blue-500 to-indigo-600
+                  text-white shadow-md hover:shadow-lg transition"
+          >
+            ☰
+          </button>
+        </template>
 
-    <template v-else>
-      <div class="flex items-center gap-3 overflow-hidden">
-        <div class="w-9 h-9 bg-gradient-to-br from-blue-500 to-indigo-600 text-white flex items-center justify-center rounded-full font-bold">
-          {{ adminInitial }}
-        </div>
+        <template v-else>
+          <div class="flex items-center gap-3 overflow-hidden">
+            <div class="w-9 h-9 bg-gradient-to-br from-blue-500 to-indigo-600 text-white flex items-center justify-center rounded-full font-bold">
+              {{ adminInitial }}
+            </div>
 
-        <div class="leading-tight truncate">
-          <p class="font-semibold text-gray-800 text-sm truncate">
-            {{ adminName }}
-          </p>
-          <p class="text-xs text-gray-600">
-            Administrator
-          </p>
-        </div>
+            <div class="leading-tight truncate">
+              <p class="font-semibold text-gray-800 text-sm truncate">
+                {{ adminName }}
+              </p>
+              <p class="text-xs text-gray-600">
+                Administrator
+              </p>
+            </div>
+          </div>
+
+          <button
+            @click="sidebarOpen = !sidebarOpen"
+            class="w-9 h-9 flex items-center justify-center rounded-lg border-0 text-white hover:bg-blue-700 transition bg-blue-600 shrink-0"
+          >
+            ☰
+          </button>
+        </template>
       </div>
-
-      <button
-        @click="sidebarOpen = !sidebarOpen"
-        class="w-9 h-9 flex items-center justify-center rounded-lg border-0 text-white hover:bg-blue-700 transition bg-blue-600 shrink-0"
-      >
-        ☰
-      </button>
-    </template>
-
-  </div>
-</div>
+    </div>
 
       <!-- Navigation Menu -->
       <nav class="flex-1 py-4 px-3 space-y-1.5">
@@ -109,21 +108,21 @@
 
           <!-- Role Dropdown Menu (always positioned to the right) -->
           <div
-  v-if="showRoleMenu"
-  class="absolute bottom-0 left-full ml-2 bg-white rounded-xl shadow-2xl border border-gray-200 py-3 z-[60] min-w-[280px]"
->
-  <div class="px-5 py-3 text-base text-gray-600 border-b border-gray-100">
-    Available Roles
-  </div>
+            v-if="showRoleMenu"
+            class="absolute bottom-0 left-full ml-2 bg-white rounded-xl shadow-2xl border border-gray-200 py-3 z-[60] min-w-[280px]"
+          >
+            <div class="px-5 py-3 text-base text-gray-600 border-b border-gray-100">
+              Available Roles
+            </div>
 
-  <button
-    v-for="role in availableRoles"
-    :key="role.id"
-    @click.stop="selectRole(role.id)"
-    :class="[
-      'w-full px-5 py-4 text-left text-base hover:bg-blue-50 transition-colors text-gray-700 font-semibold hover:text-blue-600'
-    ]"
-  >
+            <button
+              v-for="role in availableRoles"
+              :key="role.id"
+              @click.stop="selectRole(role.id)"
+              :class="[
+                'w-full px-5 py-4 text-left text-base hover:bg-blue-50 transition-colors text-gray-700 font-semibold hover:text-blue-600'
+              ]"
+            >
               <div class="flex items-center justify-between">
                 <span>{{ role.name }}</span>
               </div>
@@ -151,6 +150,7 @@
       <!-- Main Content Area -->
       <div class="px-8 py-6 max-w-full overflow-x-hidden">
 
+        <!-- In your Admin.vue file, find the welcome section and replace it with this: -->
 
         <!-- Welcome/Home Screen (shown when activeTab is 'home' or null) -->
         <div
@@ -171,20 +171,17 @@
             </p>
           </div>
         </div>
-
         <div v-else>
           <div class="mb-6 mt-2">
-  <h1
-    class="text-4xl font-bold text-blue-700 leading-tight"
-  >
-    {{ currentTabName }}
-  </h1>
-  <p class="text-sm text-gray-600 mt-1">
-    Manage your {{ currentTabName.toLowerCase() }} efficiently
-  </p>
-</div>
-
-
+            <h1
+              class="text-4xl font-bold text-blue-700 leading-tight"
+            >
+              {{ currentTabName }}
+            </h1>
+            <p class="text-sm text-gray-600 mt-1">
+              Manage your {{ currentTabName.toLowerCase() }} efficiently
+            </p>
+          </div>
           <router-view @toast="handleToast"/>
         </div>
       </div>
@@ -342,46 +339,69 @@ const toggleRoleMenu = () => {
 
 // Navigation
 const goToTab = (tab) => {
+  console.log('Navigating to tab:', tab);
   activeTab.value = tab;
+  
+  // Navigate to the tab route
   router.push(`/admin/${tab}`);
 };
 
-const syncTabWithRoute = () => {
-  const path = route.path;
+// Toggle role menu
+const toggleRoleMenu = () => {
+  showRoleMenu.value = !showRoleMenu.value;
+};
 
-  // Show dashboard ONLY for /admin
-  if (path === '/admin' || path === '/admin/') {
-    activeTab.value = null;
-    return;
-  }
-
-  // admin/{section}/...
-  const parts = path.split('/').filter(Boolean);
-  // e.g. ['admin', 'groups', 'students']
-
-  const section = parts[1];
-
-  // 🔥 IMPORTANT: handle nested groups routes
-  if (section === 'groups') {
-    activeTab.value = 'groups';
-    return;
-  }
-
-  if (tabs.find(t => t.id === section)) {
-    activeTab.value = section;
+// Select role - redirects to faculty dashboard directly
+const selectRole = (roleId) => {
+  if (roleId === 'faculty') {
+    // Set active role and navigate to faculty dashboard
+    localStorage.setItem("active_role", "Faculty");
+    showRoleMenu.value = false;
+    router.push('/faculty'); // Navigate to faculty route
   } else {
-    activeTab.value = null;
+    // For other roles, just show in console (view only for now)
+    console.log(`Role selected: ${roleId} (View only - not implemented yet)`);
+    showRoleMenu.value = false;
+    handleToast({ 
+      message: `${roleId.charAt(0).toUpperCase() + roleId.slice(1)} role - View only (Coming soon)`, 
+      type: "info" 
+    });
   }
 };
 
-onMounted(syncTabWithRoute);
-watch(() => route.path, syncTabWithRoute);
+// Close role menu when clicking outside
+onMounted(() => {
+  const handleClickOutside = (e) => {
+    if (showRoleMenu.value && !e.target.closest('.relative')) {
+      showRoleMenu.value = false;
+    }
+  };
+  
+  document.addEventListener('click', handleClickOutside);
+  
+  // Cleanup
+  return () => {
+    document.removeEventListener('click', handleClickOutside);
+  };
+});
 
-
+// Toast system
 const toast = ref({ message: "", type: "" });
-const handleToast = ({ message, type }) => toast.value = { message, type };
-const clearToast = () => toast.value = { message: "", type: "" };
+let toastTimer = null;
 
+const handleToast = ({ message, type }) => {
+  toast.value = { message, type };
+  if (toastTimer) clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => {
+    toast.value = { message: "", type: "" };
+  }, 3000);
+};
+
+const clearToast = () => {
+  toast.value = { message: "", type: "" };
+};
+
+// Logout
 const logout = async () => {
   const email = localStorage.getItem("admin_email");
   const { success } = await authApi.logout(email, "Admin");

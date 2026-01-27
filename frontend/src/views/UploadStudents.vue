@@ -1,5 +1,5 @@
 <template>
-  <div class="min-h-screen p-10 bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50">
+  <div class="p-10 bg-transparent">
 
     <div class="text-center mb-6">
       <h2 class="text-4xl font-bold text-blue-800">

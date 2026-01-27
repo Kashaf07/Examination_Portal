@@ -1252,5 +1252,45 @@ def create_admin_routes(mysql):
             ]
         })
 
+    @admin_bp.route('/applicants/<int:applicant_id>', methods=['GET'])
+    def get_single_applicant(applicant_id):
+        try:
+            cursor = mysql.connection.cursor()
+            cursor.execute("""
+                SELECT 
+                    Applicant_Id,
+                    Full_Name,
+                    Email,
+                    Phone,
+                    DOB,
+                    Gender,
+                    Address,
+                    Registration_Date
+                FROM applicants
+                WHERE Applicant_Id = %s
+            """, (applicant_id,))
+            
+            row = cursor.fetchone()
+            cursor.close()
+
+            if not row:
+                return jsonify({"error": "Applicant not found"}), 404
+
+            columns = [
+                "Applicant_Id",
+                "Full_Name",
+                "Email",
+                "Phone",
+                "DOB",
+                "Gender",
+                "Address",
+                "Registration_Date"
+            ]
+
+            return jsonify(dict(zip(columns, row))), 200
+
+        except Exception as e:
+            print("Error fetching applicant details:", e)
+            return jsonify({"error": "Unable to fetch applicant"}), 500
 
     return admin_bp

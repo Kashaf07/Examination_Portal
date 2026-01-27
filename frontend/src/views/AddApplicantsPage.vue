@@ -1,8 +1,10 @@
 <template>
-  <div :class="['p mx-auto', activeRole === 'Faculty' ? 'bg-transparent shadow-none max-w-full' : 'bg-white/80 backdrop-blur-lg shadow-xl border border-white/40 rounded-2xl p-10 max-w-5xl mx-auto mb-10 transition-all']">
+  <div :class="[
+  'p mx-auto',
+  'bg-white/80 backdrop-blur-lg shadow-xl border border-white/40 rounded-2xl p-10 max-w-5xl mx-auto mb-10 transition-all']">
 
     <h3 class="text-2xl font-bold mb-6 text-gray-800">
-      Add New Applicant
+      Add New Student
     </h3>
 
     <form @submit.prevent="submitApplicant" class="space-y-4">
@@ -100,9 +102,9 @@
       <!-- Submit/Cancel Buttons -->
       <div class="flex justify-end gap-3 pt-2">
         <button type="button"
-                @click="goBack"
+                @click="clearForm"
                 class="cancel-btn">
-          Cancel
+          Clear
         </button>
 
         <button type="submit"
@@ -198,6 +200,19 @@ const goBack = () => {
   }
 }
 
+// --------------------
+// CLEAR FORM BUTTON
+// --------------------
+const clearForm = () => {
+  applicant.Full_Name = ""
+  applicant.Email = ""
+  applicant.Password = ""
+  applicant.Phone = ""
+  applicant.DOB = ""
+  applicant.Gender = ""
+  applicant.Address = ""
+  applicant.group_id = ""
+}
 
 onMounted(loadGroups)
 </script>
