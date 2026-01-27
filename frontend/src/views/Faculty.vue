@@ -40,45 +40,48 @@
           </template>
 
           <!-- When Open: Show Avatar + Name and Hamburger -->
-          <template v-else>
-            <div class="flex items-center gap-3 overflow-hidden">
-              <div class="w-9 h-9 bg-gradient-to-br from-blue-500 to-indigo-600 text-white flex items-center justify-center rounded-full font-bold shrink-0 shadow-md">
-                {{ facultyInitial }}
-              </div>
+<template v-else>
+  <div class="flex items-center gap-3 overflow-hidden">
+    <div class="w-9 h-9 bg-gradient-to-br from-blue-500 to-indigo-600 text-white flex items-center justify-center rounded-full font-bold shrink-0 shadow-md">
+      {{ facultyInitial }}
+    </div>
 
-              <div class="leading-tight truncate">
-                <p class="font-semibold text-gray-800 text-sm truncate">
-                  {{ facultyName }}
-                </p>
-                <p class="text-xs text-gray-600">
-                  Faculty Member
-                </p>
-              </div>
-            </div>
+    <div class="leading-tight truncate">
+      <p class="font-semibold text-gray-800 text-sm truncate">
+        {{ facultyName }}
+      </p>
+      <p class="text-xs text-gray-600">
+        Faculty Member
+      </p>
+    </div>
+  </div>
 
-            <button
-              @click="sidebarOpen = !sidebarOpen"
-              class="w-9 h-9 flex items-center justify-center rounded-lg border-0 text-white hover:bg-blue-700 transition bg-blue-600 shrink-0"
-            >
-              <svg
-                class="w-5 h-5"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-                stroke-width="2"
-              >
-                <line x1="4" y1="6" x2="20" y2="6" stroke-linecap="round"/>
-                <line x1="4" y1="12" x2="20" y2="12" stroke-linecap="round"/>
-                <line x1="4" y1="18" x2="20" y2="18" stroke-linecap="round"/>
-              </svg>
-            </button>
-          </template>
+  <button
+    @click="sidebarOpen = !sidebarOpen"
+    class="w-10 h-10 flex items-center justify-center rounded-xl
+           bg-gradient-to-br from-blue-500 to-indigo-600
+           text-white shadow-md hover:shadow-lg transition shrink-0"
+  >
+    <svg
+      class="w-6 h-6"
+      fill="none"
+      stroke="currentColor"
+      viewBox="0 0 24 24"
+      stroke-width="2"
+      stroke-linecap="round"
+    >
+      <line x1="4" y1="6" x2="20" y2="6" />
+      <line x1="4" y1="12" x2="20" y2="12" />
+      <line x1="4" y1="18" x2="20" y2="18" />
+    </svg>
+  </button>
+</template>
 
         </div>
       </div>
 
       <!-- Navigation Menu -->
-      <nav class="flex-1 py-4 px-3 space-y-1.5 overflow-y-auto" style="max-height: calc(100vh - 200px);">
+      <nav class="flex-1 py-4 px-3 space-y-1.5">
         <button
           v-for="tab in visibleTabs"
           :key="tab.id"
@@ -230,7 +233,7 @@
               <p class="text-gray-600 mt-2">Create and manage your exams</p>
             </div>
 
-    <!-- Button Group -->
+   <!-- Button Group -->
     <div class="flex gap-4 mb-6">
       <button
         @click="toggleExamForm"
@@ -238,26 +241,8 @@
       >
         {{ showForm ? 'Close' : 'Create Exam' }}
       </button>
-      <button 
-        @click="toggleGroups"
-        class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
-      >
-        {{ showGroups ? 'Close' : 'Groups' }}
-      </button>
-      <button 
-        @click="toggleApplicantForm"
-        class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
-      >
-        {{ showApplicantForm ? 'Close' : 'Add Applicants' }}
-      </button>
-      <button
-        @click="navigateTo('UploadStudents')"
-        class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
-      >
-        Upload Applicants
-      </button>
+      <!-- Removed: Groups, Add Applicants, and Upload Applicants buttons -->
     </div>
-
     <!-- Create Exam Form -->
     <div
       v-if="showForm"
@@ -551,6 +536,7 @@
       </div>
     </main>
   </div>
+  </div>
 </template>
 
 <script setup>
@@ -559,7 +545,6 @@ import { useRouter } from 'vue-router'
 import axios from '../utils/axiosInstance'
 import FacultyGroups from "../views/Groups.vue"
 import AddApplicantsPage from "../views/AddApplicantsPage.vue"
-import AddApplicantsPage from './AddApplicantsPage.vue'
 import UploadStudents from './UploadStudents.vue'
 import Groups from './Groups.vue'
 
