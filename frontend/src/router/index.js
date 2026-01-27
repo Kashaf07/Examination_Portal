@@ -32,27 +32,36 @@ const routes = [
       { path: 'schools', name: 'AdminSchools', component: () => import('../views/admin/AdminSchools.vue') },
       { path: 'designations', name: 'AdminDesignations', component: () => import('../views/admin/DesignationManagement.vue') },
       { path: 'role-assignment', name: 'AdminRoleAssignment', component: () => import('../views/admin/AdminRoleAssignment.vue') },
-      { path: 'groups', name: 'AdminApplicantGroups', component: () => import('../views/Groups.vue') },
+      {
+  path: 'groups',
+  name: 'AdminGroupsDashboard',
+  component: () => import('../views/admin/GroupsDashboard.vue')
+},
+{
+  path: 'groups/students',
+  name: 'AdminStudentGroups',
+  component: () => import('../views/Groups.vue')
+},
+{
+  path: 'groups/faculty',
+  name: 'AdminFacultyGroups',
+  component: () => import('../views/FacultyGroups.vue')
+},
+{
+  path: 'faculty-groups/:groupId/add-faculty',
+  name: 'AdminAddFacultyGroup',
+  component: () => import('../views/AddFacultyGroup.vue'),
+  props: true,
+  meta: { requiresAuth: true, role: 'Admin' }
+},
+
+
+
       { path: 'applicants', name: 'AdminApplicants', component: () => import('../views/admin/AdminApplicants.vue') },
 
       /* ================= FACULTY GROUPS (ADMIN) ================= */
 
-      {
-        path: 'faculty-groups',
-        name: 'AdminFacultyGroups',
-        component: () => import('@/views/Groups.vue')
-      },
-      {
-        path: 'faculty-groups/add',
-        name: 'AdminAddFacultyGroup',
-        component: () => import('@/views/AddFacultyGroup.vue')
-      },
-      {
-        path: 'faculty-groups/:groupId/add-faculty',
-        name: 'AdminAddFacultyToGroup',
-        component: () => import('@/views/AddFaculty.vue'),
-        props: true
-      },
+      
 
       /* =========================================================== */
 

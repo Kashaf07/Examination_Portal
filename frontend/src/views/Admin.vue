@@ -150,8 +150,6 @@
       <!-- Main Content Area -->
       <div class="px-8 py-6 max-w-full overflow-x-hidden">
 
-
-        <!-- Welcome/Home Screen (shown when activeTab is 'home' or null) -->
         <!-- In your Admin.vue file, find the welcome section and replace it with this: -->
 
         <!-- Welcome/Home Screen (shown when activeTab is 'home' or null) -->
@@ -203,9 +201,11 @@ import { ref, computed, onMounted, watch } from "vue";
 import { useRouter, useRoute } from "vue-router";
 import NotificationToast from "@/components/admin/NotificationToast.vue";
 import { authApi } from "@/services/adminApi.js";
-
 const roles = JSON.parse(localStorage.getItem("roles") || "[]");
-const canSwitch = roles.length > 1;
+
+// Admin should always be allowed to switch
+const canSwitch = true;
+
 
 const router = useRouter();
 const route = useRoute();
@@ -215,6 +215,20 @@ const adminInitial = computed(() => adminName.value.charAt(0).toUpperCase());
 
 const sidebarOpen = ref(true);
 const showRoleMenu = ref(false);
+
+const selectRole = (roleId) => {
+  if (roleId === 'faculty') {
+    localStorage.setItem("active_role", "Faculty");
+
+    // ✅ DO NOT TOUCH email here
+    // ❌ remove the admin_email overwrite
+
+    showRoleMenu.value = false;
+    router.push('/faculty');
+  }
+};
+
+
 const activeTab = ref(null);
 
 
@@ -315,9 +329,13 @@ watch(() => route.query, (newQuery) => {
 
 // Available roles for dropdown
 const availableRoles = ref([
-  { id: 'faculty', name: 'Faculty' },
+  { id: 'faculty', name: 'Faculty' }
+])
 
-]);
+// Toggle role menu
+const toggleRoleMenu = () => {
+  showRoleMenu.value = !showRoleMenu.value;
+};
 
 // Navigation
 const goToTab = (tab) => {
