@@ -14,35 +14,20 @@
 <div class="px-4 py-3 border-b border-white/40">
   <div class="flex items-center justify-between">
 
-    <!-- When Closed: Show Avatar on Left, Hamburger on Right -->
     <template v-if="!sidebarOpen">
-  <button
-    @click="sidebarOpen = !sidebarOpen"
-    class="w-10 h-10 flex items-center justify-center rounded-xl
-           bg-gradient-to-br from-blue-500 to-indigo-600
-           text-white shadow-md hover:shadow-lg transition"
-    title="Open Menu"
-  >
-    <svg
-      class="w-6 h-6"
-      fill="none"
-      stroke="currentColor"
-      viewBox="0 0 24 24"
-      stroke-width="2"
-      stroke-linecap="round"
-    >
-      <line x1="4" y1="6" x2="20" y2="6" />
-      <line x1="4" y1="12" x2="20" y2="12" />
-      <line x1="4" y1="18" x2="20" y2="18" />
-    </svg>
-  </button>
-</template>
+      <button
+        @click="sidebarOpen = !sidebarOpen"
+        class="w-10 h-10 flex items-center justify-center rounded-xl
+               bg-gradient-to-br from-blue-500 to-indigo-600
+               text-white shadow-md hover:shadow-lg transition"
+      >
+        ☰
+      </button>
+    </template>
 
-
-    <!-- When Open: Show Avatar + Name on Left, Hamburger on Right -->
     <template v-else>
       <div class="flex items-center gap-3 overflow-hidden">
-        <div class="w-9 h-9 bg-gradient-to-br from-blue-500 to-indigo-600 text-white flex items-center justify-center rounded-full font-bold shrink-0 shadow-md">
+        <div class="w-9 h-9 bg-gradient-to-br from-blue-500 to-indigo-600 text-white flex items-center justify-center rounded-full font-bold">
           {{ adminInitial }}
         </div>
 
@@ -60,17 +45,7 @@
         @click="sidebarOpen = !sidebarOpen"
         class="w-9 h-9 flex items-center justify-center rounded-lg border-0 text-white hover:bg-blue-700 transition bg-blue-600 shrink-0"
       >
-        <svg
-          class="w-5 h-5"
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-          stroke-width="2"
-        >
-          <line x1="4" y1="6" x2="20" y2="6" stroke-linecap="round"/>
-          <line x1="4" y1="12" x2="20" y2="12" stroke-linecap="round"/>
-          <line x1="4" y1="18" x2="20" y2="18" stroke-linecap="round"/>
-        </svg>
+        ☰
       </button>
     </template>
 
@@ -90,7 +65,6 @@
               : 'hover:bg-white hover:bg-opacity-40 text-gray-700 hover:text-gray-900'
           ]"
         >
-          <!-- Icon Image -->
           <div class="icon-container">
             <img 
               :src="'/' + tab.icon + '.png'" 
@@ -99,22 +73,9 @@
             />
           </div>
 
-          
-          <!-- Label -->
-          <span 
-            v-if="sidebarOpen" 
-            class="font-semibold text-sm"
-          >
+          <span v-if="sidebarOpen" class="font-semibold text-sm">
             {{ tab.name }}
           </span>
-
-          <!-- Tooltip for collapsed state -->
-          <div
-            v-if="!sidebarOpen"
-            class="absolute left-full ml-2 px-3 py-2 bg-gray-900 text-white text-sm rounded-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all whitespace-nowrap z-50"
-          >
-            {{ tab.name }}
-          </div>
         </button>
       </nav>
 
@@ -173,23 +134,9 @@
         <!-- Logout Button -->
         <button
           @click="logout"
-          :class="[
-            'w-full flex items-center gap-3 px-4 py-2.5 rounded-xl transition-all duration-200 group',
-            'bg-red-500 hover:bg-red-600 text-white shadow-md hover:shadow-lg relative'
-          ]"
+          class="w-full flex items-center gap-3 px-4 py-2.5 rounded-xl bg-red-500 text-white shadow-md hover:bg-red-600"
         >
-          <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-          </svg>
-          <span v-if="sidebarOpen" class="font-semibold text-sm">Logout</span>
-
-          <!-- Tooltip for collapsed state -->
-          <div
-            v-if="!sidebarOpen"
-            class="absolute left-full ml-2 px-3 py-2 bg-gray-900 text-white text-sm rounded-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all whitespace-nowrap z-50"
-          >
-            Logout
-          </div>
+          Logout
         </button>
       </div>
     </aside>
@@ -228,7 +175,6 @@
   </div>
 </div>
 
-        <!-- Content Area (shown when specific tab is selected) -->
         <div v-else>
           <div class="mb-6 mt-2">
   <h1
@@ -247,7 +193,6 @@
       </div>
     </main>
 
-    <!-- Toast Notification -->
     <NotificationToast
       v-if="toast.message"
       :message="toast.message"
@@ -263,24 +208,17 @@ import { useRouter, useRoute } from "vue-router";
 import NotificationToast from "@/components/admin/NotificationToast.vue";
 import { authApi } from "@/services/adminApi.js";
 
-// Roles
 const roles = JSON.parse(localStorage.getItem("roles") || "[]");
 const canSwitch = roles.length > 1;
 
 const router = useRouter();
 const route = useRoute();
 
-// Admin Info - Using "name" key like in the first code
 const adminName = ref(localStorage.getItem("name") || "Admin");
 const adminInitial = computed(() => adminName.value.charAt(0).toUpperCase());
 
-// Sidebar state
 const sidebarOpen = ref(true);
-
-// Role menu state
 const showRoleMenu = ref(false);
-
-// Active tab detection - Default to 'home' (blank welcome page)
 const activeTab = ref(null);
 
 
@@ -297,7 +235,6 @@ const tabs = [
   { id: "logs", name: "Login Logs", icon: "logs" }
 ];
 
-// Current tab name for header
 const currentTabName = computed(() => {
   const tab = tabs.find(t => t.id === activeTab.value);
   return tab ? tab.name : "Dashboard";
@@ -388,69 +325,24 @@ const availableRoles = ref([
 
 // Navigation
 const goToTab = (tab) => {
-  console.log('Navigating to tab:', tab);
   activeTab.value = tab;
-  
-  // Navigate to the tab route
   router.push(`/admin/${tab}`);
 };
 
-// Toggle role menu
-const toggleRoleMenu = () => {
-  showRoleMenu.value = !showRoleMenu.value;
-};
-
-// Select role - redirects to faculty dashboard directly
-const selectRole = (roleId) => {
-  if (roleId === 'faculty') {
-    // Set active role and navigate to faculty dashboard
-    localStorage.setItem("active_role", "Faculty");
-    showRoleMenu.value = false;
-    router.push('/faculty'); // Navigate to faculty route
-  } else {
-    // For other roles, just show in console (view only for now)
-    console.log(`Role selected: ${roleId} (View only - not implemented yet)`);
-    showRoleMenu.value = false;
-    handleToast({ 
-      message: `${roleId.charAt(0).toUpperCase() + roleId.slice(1)} role - View only (Coming soon)`, 
-      type: "info" 
-    });
-  }
-};
-
-// Close role menu when clicking outside
 onMounted(() => {
-  const handleClickOutside = (e) => {
-    if (showRoleMenu.value && !e.target.closest('.relative')) {
-      showRoleMenu.value = false;
-    }
-  };
-  
-  document.addEventListener('click', handleClickOutside);
-  
-  // Cleanup
-  return () => {
-    document.removeEventListener('click', handleClickOutside);
-  };
+  const last = route.path.split('/').pop();
+  activeTab.value = tabs.find(t => t.id === last) ? last : null;
 });
 
-// Toast system
+watch(() => route.path, (newPath) => {
+  const last = newPath.split('/').pop();
+  activeTab.value = tabs.find(t => t.id === last) ? last : null;
+});
+
 const toast = ref({ message: "", type: "" });
-let toastTimer = null;
+const handleToast = ({ message, type }) => toast.value = { message, type };
+const clearToast = () => toast.value = { message: "", type: "" };
 
-const handleToast = ({ message, type }) => {
-  toast.value = { message, type };
-  if (toastTimer) clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => {
-    toast.value = { message: "", type: "" };
-  }, 3000);
-};
-
-const clearToast = () => {
-  toast.value = { message: "", type: "" };
-};
-
-// Logout
 const logout = async () => {
   const email = localStorage.getItem("admin_email");
   const { success } = await authApi.logout(email, "Admin");
@@ -461,8 +353,6 @@ const logout = async () => {
     localStorage.removeItem("active_role");
     localStorage.removeItem("roles");
     window.location.href = "/";
-  } else {
-    handleToast({ message: "Logout failed", type: "error" });
   }
 };
 </script>
@@ -485,28 +375,12 @@ body, html {
 
 /* Icon container for consistent sizing */
 .icon-container {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
   width: 24px;
   height: 24px;
-  flex-shrink: 0;
 }
-
-/* Icon image styling - standard for dark icons */
 .icon-image {
   width: 24px;
   height: 24px;
   object-fit: contain;
-  display: block;
-}
-
-/* Icon image styling - for white/light icons on colored backgrounds */
-.icon-image-white {
-  width: 20px;
-  height: 20px;
-  object-fit: contain;
-  display: block;
-  filter: brightness(0) invert(1); /* Makes dark icons white */
 }
 </style>

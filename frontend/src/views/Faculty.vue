@@ -39,42 +39,43 @@
             </button>
           </template>
 
-          <!-- When Open: Show Avatar + Name and menu -->
-          <template v-else>
-            <div class="flex items-center justify-between w-full">
-            <div class="flex items-center gap-3 overflow-hidden">
-              <div class="w-9 h-9 bg-gradient-to-br from-blue-500 to-indigo-600 text-white flex items-center justify-center rounded-full font-bold shrink-0 shadow-md">
-                {{ facultyInitial }}
-              </div>
+          <!-- When Open: Show Avatar + Name and Hamburger -->
+<template v-else>
+  <div class="flex items-center gap-3 overflow-hidden">
+    <div class="w-9 h-9 bg-gradient-to-br from-blue-500 to-indigo-600 text-white flex items-center justify-center rounded-full font-bold shrink-0 shadow-md">
+      {{ facultyInitial }}
+    </div>
 
-              <div class="leading-tight truncate">
-                <p class="font-semibold text-gray-800 text-sm truncate">
-                  {{ facultyName }}
-                </p>
-                <p class="text-xs text-gray-600">
-                  Faculty Member
-                </p>
-              </div>
-            </div>
+    <div class="leading-tight truncate">
+      <p class="font-semibold text-gray-800 text-sm truncate">
+        {{ facultyName }}
+      </p>
+      <p class="text-xs text-gray-600">
+        Faculty Member
+      </p>
+    </div>
+  </div>
 
-            <button
-              @click="sidebarOpen = !sidebarOpen"
-              class="w-9 h-9 flex items-center justify-center rounded-lg border-0 text-white hover:bg-blue-700 transition bg-blue-600 shrink-0"
-            >
-              <svg
-                class="w-5 h-5"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-                stroke-width="2"
-              >
-                <line x1="4" y1="6" x2="20" y2="6" stroke-linecap="round"/>
-                <line x1="4" y1="12" x2="20" y2="12" stroke-linecap="round"/>
-                <line x1="4" y1="18" x2="20" y2="18" stroke-linecap="round"/>
-              </svg>
-            </button>            
-            </div>
-          </template>
+  <button
+    @click="sidebarOpen = !sidebarOpen"
+    class="w-10 h-10 flex items-center justify-center rounded-xl
+           bg-gradient-to-br from-blue-500 to-indigo-600
+           text-white shadow-md hover:shadow-lg transition shrink-0"
+  >
+    <svg
+      class="w-6 h-6"
+      fill="none"
+      stroke="currentColor"
+      viewBox="0 0 24 24"
+      stroke-width="2"
+      stroke-linecap="round"
+    >
+      <line x1="4" y1="6" x2="20" y2="6" />
+      <line x1="4" y1="12" x2="20" y2="12" />
+      <line x1="4" y1="18" x2="20" y2="18" />
+    </svg>
+  </button>
+</template>
 
         </div>
       </div>
@@ -232,7 +233,7 @@
               <p class="text-gray-600 mt-2">Create and manage your exams</p>
             </div>
 
-    <!-- Button Group -->
+   <!-- Button Group -->
     <div class="flex gap-4 mb-6">
       <button
         @click="toggleExamForm"
@@ -241,7 +242,6 @@
         {{ showForm ? 'Close' : 'Create Exam' }}
       </button>
     </div>
-
     <!-- Create Exam Form -->
     <div
       v-if="showForm"
