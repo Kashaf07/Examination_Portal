@@ -6,13 +6,13 @@
       <button @click="toggleAddApplicant"
         class="bg-blue-500 hover:bg-blue-600 text-white font-semibold px-6 py-3 rounded-full shadow-lg transition-all hover:scale-105"
       >
-        {{ showAddApplicantPage ? 'Close' : 'Add Applicant' }}
+        {{ showAddApplicantPage ? 'Close' : 'Add Students' }}
       </button>
       <button
         @click="navigateUpload"
         class="bg-purple-500 hover:bg-purple-600 text-white font-semibold px-6 py-3 rounded-full shadow-lg transition-all hover:scale-105"
       >
-        Upload Students
+        {{ showUploadPage ? 'Close' : 'Upload Students' }}
       </button>
     </div>
     <div v-if="showAddApplicantPage" class="mb-8"></div>
@@ -24,64 +24,72 @@
       @saved="handleApplicantSaved"
     />
 
-    <!-- Applicants Table -->
-    <div class="bg-white rounded-2xl shadow-xl border border-gray-200 overflow-hidden">
+    <!-- Upload Students Page -->    
+    <UploadStudents
+      v-if="showUploadPage"
+      @close="showUploadPage = false"
+    />
 
-      <table class="w-full">
-        <thead class="bg-gradient-to-r from-blue-50 to-blue-100 text-gray-700">
-          <tr>
-            <th class="py-4 px-6">
-              <input
-                type="checkbox"
-                @change="toggleAll"
-                :checked="selectedApplicants.length === applicantsList.length && applicantsList.length > 0"
-              />
-            </th>
-            <th class="py-4 px-6 font-semibold">ID</th>
-            <th class="py-4 px-6 font-semibold">Name</th>
-            <th class="py-4 px-6 font-semibold">Email</th>
-            <th class="py-4 px-6 font-semibold">Phone</th>
-            <th class="py-4 px-6 font-semibold">Actions</th>
-          </tr>
-        </thead>
+    <div v-if="!showAddApplicantPage && !showUploadPage" class="bg-white rounded-2xl shadow-xl border border-gray-200 overflow-hidden">
+      <!-- Applicants Table -->
+      <div class="bg-white rounded-2xl shadow-xl border border-gray-200 overflow-hidden">
 
-        <tbody class="divide-y divide-gray-100">
-          <tr
-            v-for="(a, i) in applicantsList"
-            :key="a.Applicant_Id"
-            class="hover:bg-blue-50 transition cursor-pointer"
-          >
-            <td class="px-6 py-5">
-              <input type="checkbox" :value="a.Applicant_Id" v-model="selectedApplicants" />
-            </td>
+        <table class="w-full">
+          <thead class="bg-gradient-to-r from-blue-50 to-blue-100 text-gray-700">
+            <tr>
+              <th class="py-4 px-6">
+                <input
+                  type="checkbox"
+                  @change="toggleAll"
+                  :checked="selectedApplicants.length === applicantsList.length && applicantsList.length > 0"
+                />
+              </th>
+              <th class="py-4 px-6 font-semibold">ID</th>
+              <th class="py-4 px-6 font-semibold">Name</th>
+              <th class="py-4 px-6 font-semibold">Email</th>
+              <th class="py-4 px-6 font-semibold">Phone</th>
+              <th class="py-4 px-6 font-semibold">Actions</th>
+            </tr>
+          </thead>
 
-            <td class="px-6 py-5">{{ i + 1 }}</td>
-            <td class="px-6 py-5 font-medium text-gray-800">{{ a.Full_Name }}</td>
-            <td class="px-6 py-5">{{ a.Email }}</td>
-            <td class="px-6 py-5">{{ a.Phone }}</td>
+          <tbody class="divide-y divide-gray-100">
+            <tr
+              v-for="(a, i) in applicantsList"
+              :key="a.Applicant_Id"
+              class="hover:bg-blue-50 transition cursor-pointer"
+            >
+              <td class="px-6 py-5">
+                <input type="checkbox" :value="a.Applicant_Id" v-model="selectedApplicants" />
+              </td>
 
-            <td class="px-6 py-5 flex gap-2">
-              <button
-                @click="openViewModal(a)"
-                class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md shadow"
-              >
-                View
-              </button>
+              <td class="px-6 py-5">{{ i + 1 }}</td>
+              <td class="px-6 py-5 font-medium text-gray-800">{{ a.Full_Name }}</td>
+              <td class="px-6 py-5">{{ a.Email }}</td>
+              <td class="px-6 py-5">{{ a.Phone }}</td>
 
-              <button
-                @click="deleteApplicant(a.Applicant_Id)"
-                class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-md shadow"
-              >
-                Delete
-              </button>
-            </td>
-          </tr>
-        </tbody>
+              <td class="px-6 py-5 flex gap-2">
+                <button
+                  @click="openViewModal(a)"
+                  class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md shadow"
+                >
+                  View
+                </button>
 
-      </table>
+                <button
+                  @click="deleteApplicant(a.Applicant_Id)"
+                  class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-md shadow"
+                >
+                  Delete
+                </button>
+              </td>
+            </tr>
+          </tbody>
 
-      <div v-if="!applicantsList.length" class="text-center py-10 text-gray-500">
-        No Students found
+        </table>
+
+        <div v-if="!applicantsList.length" class="text-center py-10 text-gray-500">
+          No Students found
+        </div>
       </div>
     </div>
 
@@ -139,6 +147,7 @@ import { ref, onMounted } from "vue";
 import { useRouter } from "vue-router";
 import axios from "@/utils/axiosInstance";
 import AddApplicantsPage from "../AddApplicantsPage.vue";
+import UploadStudents from "../UploadStudents.vue";
 
 const emit = defineEmits(["toast"]);
 const router = useRouter();
@@ -148,6 +157,7 @@ const selectedApplicants = ref([]);
 const showViewModal = ref(false);
 const selectedApplicant = ref(null);
 const showAddApplicantPage = ref(false);
+const showUploadPage = ref(false);
 
 // ✅ FETCH
 const fetchApplicants = async () => {
@@ -162,6 +172,20 @@ const handleApplicantSaved = () => {
 
 const toggleAddApplicant = () => {
   showAddApplicantPage.value = !showAddApplicantPage.value;
+  showUploadPage.value = false;
+
+  if (!showAddApplicantPage.value) {
+    fetchApplicants(); // refresh when closing
+  }
+};
+
+const navigateUpload = () => {
+  showUploadPage.value = !showUploadPage.value;
+  showAddApplicantPage.value = false;
+
+  if (!showUploadPage.value) {
+    fetchApplicants(); // refresh when closing
+  }
 };
 
 // View
@@ -197,8 +221,6 @@ const toggleAll = () => {
 
 const formatDate = (d) =>
   d ? new Date(d).toLocaleDateString("en-IN") : "N/A";
-
-const navigateUpload = () => router.push("/upload-students");
 
 onMounted(fetchApplicants);
 </script>

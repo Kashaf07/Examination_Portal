@@ -14,40 +14,116 @@
     <!-- ---------------- CREATE EXAM FORM ---------------- -->
     <div
       v-if="showCreateForm"
-      class="bg-white/80 backdrop-blur-sm shadow-xl rounded-2xl p-8 border border-white/20"
+      class="max-w-3xl mx-auto mb-10 bg-white/80 backdrop-blur-lg shadow-xl border border-white/40 rounded-2xl p-8 transition-all"
     >
-      <h3 class="text-2xl font-bold text-gray-800 mb-6">Create New Exam</h3>
+      <h2 class="text-2xl font-bold mb-6 text-gray-800">
+        Create New Exam
+      </h2>
 
-      <form @submit.prevent="createExam">
+      <form @submit.prevent="createExam" class="space-y-6">
+
+        <!-- GRID -->
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
 
-          <InputField label="Exam Name" v-model="examForm.exam_name" required />
-          <InputField label="Exam Date" type="date" v-model="examForm.exam_date" required :min="today" />
-          <InputField label="Exam Time" type="time" v-model="examForm.exam_time" required />
-          <InputField label="Duration (Minutes)" type="number" v-model="examForm.duration" required />
-          <InputField label="Total Questions" type="number" v-model="examForm.total_questions" required />
-          <InputField label="Maximum Marks" type="number" v-model="examForm.max_marks" required />
+          <!-- Exam Name -->
+          <div class="flex flex-col gap-1">
+            <label class="font-semibold text-gray-700">Exam Name</label>
+            <input
+              v-model="examForm.exam_name"
+              type="text"
+              placeholder="Enter exam name"
+              required
+              class="w-full border border-gray-300 px-4 py-2.5 rounded-xl focus:ring-2 focus:ring-blue-400 focus:border-blue-500 outline-none transition"
+            />
+          </div>
+
+          <!-- Exam Date -->
+          <div class="flex flex-col gap-1">
+            <label class="font-semibold text-gray-700">Exam Date</label>
+
+            <input
+              v-model="examForm.exam_date"
+              type="date"
+              :min="today"
+              required
+              class="w-full border border-gray-300 px-4 py-2.5 rounded-xl focus:ring-2 focus:ring-blue-400 focus:border-blue-500 outline-none transition"
+            />
+          </div>
+
+          <!-- Exam Time -->
+          <div class="flex flex-col gap-1">
+            <label class="font-semibold text-gray-700">Exam Time</label>
+            <input
+              v-model="examForm.exam_time"
+              type="time"
+              required
+              class="w-full border border-gray-300 px-4 py-2.5 rounded-xl focus:ring-2 focus:ring-blue-400 focus:border-blue-500 outline-none transition"
+            />
+          </div>
+
+          <!-- Duration -->
+          <div class="flex flex-col gap-1">
+            <label class="font-semibold text-gray-700">Duration (Minutes)</label>
+            <input
+              v-model="examForm.duration"
+              type="number"
+              min="1"
+              placeholder="e.g., 60"
+              required
+              class="w-full border border-gray-300 px-4 py-2.5 rounded-xl focus:ring-2 focus:ring-blue-400 focus:border-blue-500 outline-none transition"
+            />
+          </div>
+
+          <!-- Total Questions -->
+          <div class="flex flex-col gap-1">
+            <label class="font-semibold text-gray-700">Total Questions</label>
+            <input
+              v-model="examForm.total_questions"
+              type="number"
+              min="1"
+              placeholder="e.g., 50"
+              required
+              class="w-full border border-gray-300 px-4 py-2.5 rounded-xl focus:ring-2 focus:ring-blue-400 focus:border-blue-500 outline-none transition"
+            />
+          </div>
+
+          <!-- Max Marks -->
+          <div class="flex flex-col gap-1">
+            <label class="font-semibold text-gray-700">Maximum Marks</label>
+            <input
+              v-model="examForm.max_marks"
+              type="number"
+              min="1"
+              placeholder="e.g., 100"
+              required
+              class="w-full border border-gray-300 px-4 py-2.5 rounded-xl focus:ring-2 focus:ring-blue-400 focus:border-blue-500 outline-none transition"
+            />
+          </div>
 
         </div>
 
-        <div class="flex justify-end mt-8 space-x-4">
-          <button
-            type="button"
-            @click="toggleCreateForm"
-            class="px-8 py-3 rounded-full bg-gray-200 hover:bg-gray-300"
-          >
-            Cancel
-          </button>
+        <!-- Footer Buttons -->
+        <div class="flex justify-end gap-4 pt-4">
 
           <button
+            type="button"
+            @click="clearExamForm"
+            class="bg-gray-300 text-gray-700 px-6 py-2 rounded-xl hover:bg-gray-400 transition font-semibold shadow-md hover:shadow-lg"
+          >
+            Clear
+          </button>
+          <button
             type="submit"
-            class="px-8 py-3 rounded-full bg-blue-600 hover:bg-blue-700 text-white"
+            class="bg-blue-600 text-white px-6 py-2 rounded-xl hover:bg-blue-700 transition font-semibold shadow-md hover:shadow-lg"
           >
             Create Exam
           </button>
+
         </div>
+
       </form>
     </div>
+
 
     <!-- ---------------- UPCOMING EXAMS TABLE ---------------- -->
     <div class="bg-white rounded-2xl shadow-lg overflow-hidden border border-gray-200">
@@ -136,7 +212,7 @@
               <th class="py-4 px-6 font-semibold text-blue-900">Exam Name</th>
               <th class="py-4 px-6 font-semibold text-blue-900">Date</th>
               <th class="py-4 px-6 font-semibold text-blue-900">Faculty Email</th>
-              <th class="py-4 px-6 font-semibold text-blue-900">Applicants</th>
+              <th class="py-4 px-6 font-semibold text-blue-900">Students</th>
               <th class="py-4 px-6 font-semibold text-blue-900">Attempted</th>
               <th class="py-4 px-6 font-semibold text-blue-900 text-center">Actions</th>
             </tr>
@@ -220,6 +296,18 @@ const examForm = ref({
   max_marks: "",
   faculty_email: adminEmail,
 });
+
+const clearExamForm = () => {
+  examForm.value = {
+    exam_name: "",
+    exam_date: "",
+    exam_time: "",
+    duration: "",
+    total_questions: "",
+    max_marks: "",
+    faculty_email: adminEmail
+  };
+};
 
 // Toggle create form
 const toggleCreateForm = () => {

@@ -9,7 +9,6 @@ import Student from '../views/Student.vue'
 // Shared / feature views
 import AddQuestion from '../components/AddQuestion.vue'
 import UploadQuestionBank from '../views/UploadQuestionBank.vue'
-import CreateExamForm from '../components/CreateExamForm.vue'
 import MakeQuestionPaperPage from '../views/MakeQuestionPaperPage.vue'
 import UploadStudents from '../views/UploadStudents.vue'
 import AddApplicantsPage from '../views/AddApplicantsPage.vue'
@@ -97,12 +96,6 @@ const routes = [
     path: '/exam/:examId/upload-question-bank',
     name: 'UploadQuestionBank',
     component: UploadQuestionBank,
-    meta: { requiresAuth: true, role: ['Admin', 'Faculty'] }
-  },
-  {
-    path: '/create-exam',
-    name: 'CreateExam',
-    component: CreateExamForm,
     meta: { requiresAuth: true, role: ['Admin', 'Faculty'] }
   },
   {
