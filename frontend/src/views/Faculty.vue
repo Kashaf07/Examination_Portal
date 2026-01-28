@@ -411,12 +411,22 @@
                         <div class="flex flex-wrap justify-center items-center gap-2">
 
     <!-- Add Students -->
-    <button
-      @click="navigateTo('AddApplicants_exam', exam.Exam_Id)"
-      class="flex items-center gap-1 bg-blue-500 text-white px-3 py-1.5 rounded-full text-xs shadow hover:scale-105 transition"
-    >
-      Add Students
-    </button>
+                        <button
+                        @click.stop="addStudents(exam.Exam_Id)"
+                        class="
+                        flex items-center gap-1
+                        bg-blue-400
+                        hover:bg-blue-500
+                        text-white
+                        px-3 py-1.5
+                        rounded-full
+                        text-xs font-semibold
+                        shadow
+                        hover:scale-105
+                        transition-all duration-200">Add Students</button>
+
+
+
 
                           <button
                             @click="navigateTo('AddQuestion', exam.Exam_Id)"
@@ -547,30 +557,26 @@ import AddApplicantsPage from "../views/AddApplicantsPage.vue"
 import UploadStudents from './UploadStudents.vue'
 import Groups from './Groups.vue'
 
-
-
 const router = useRouter()
-const currentTab = ref("Dashboard")  // default section
-const showGroups = ref(false)
 
-
-// Roles and Auth
+/* ================= AUTH ================= */
 const roles = JSON.parse(localStorage.getItem("roles") || "[]")
 const activeRole = ref(localStorage.getItem("active_role"))
 const canSwitch = roles.includes("Admin") && roles.includes("Faculty")
 
-// Faculty Info
+/* ================= FACULTY INFO ================= */
 const facultyName = ref(localStorage.getItem("name") || "Faculty")
+const facultyInitial = computed(() => facultyName.value.charAt(0).toUpperCase())
 const email = localStorage.getItem("email")
 const facultyEmail = email
-const facultyInitial = computed(() => facultyName.value.charAt(0).toUpperCase())
 
-// Sidebar state
+/* ================= UI STATE ================= */
 const sidebarOpen = ref(true)
 const showRoleMenu = ref(false)
 const activeTab = ref(null)
+const currentTab = ref("Dashboard")
 
-// All available tabs
+/* ================= TABS ================= */
 const allTabs = [
   { id: "my-exams", name: "My Exams", icon: "exams", access: "create_exam" },
   { id: "groups", name: "Groups", icon: "groups", access: "view_groups" },
@@ -578,7 +584,6 @@ const allTabs = [
   { id: "upload-students", name: "Upload Students", icon: "applicants", access: "upload_students" }
 ]
 
-// Faculty permissions (this should come from API in real implementation)
 const facultyPermissions = ref({
   create_exam: true,
   view_groups: true,
@@ -586,12 +591,11 @@ const facultyPermissions = ref({
   upload_students: true
 })
 
-// Filtered tabs based on permissions
-const visibleTabs = computed(() => {
-  return allTabs.filter(tab => facultyPermissions.value[tab.access])
-})
+const visibleTabs = computed(() =>
+  allTabs.filter(tab => facultyPermissions.value[tab.access])
+)
 
-// Exam data
+/* ================= EXAM DATA ================= */
 const showForm = ref(false)
 const examSubmitMessage = ref('')
 const createdExams = ref([])
@@ -599,11 +603,8 @@ const conductedExams = ref([])
 const examStatus = ref({})
 
 const todayDate = computed(() => {
-  const today = new Date()
-  const year = today.getFullYear()
-  const month = String(today.getMonth() + 1).padStart(2, '0')
-  const day = String(today.getDate()).padStart(2, '0')
-  return `${year}-${month}-${day}`
+  const d = new Date()
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`
 })
 
 const exam = ref({
@@ -616,42 +617,25 @@ const exam = ref({
   faculty_email: facultyEmail
 })
 
-// Auth check on mount
+/* ================= LIFECYCLE ================= */
 onMounted(() => {
   if (activeRole.value !== "Faculty") {
     router.push("/")
-  } else {
-    fetchExamsAndCategorize()
-    activeTab.value = 'my-exams'
-
+    return
   }
 
-  // Close role menu when clicking outside
-  const handleClickOutside = (e) => {
-    if (showRoleMenu.value && !e.target.closest('.relative')) {
-      showRoleMenu.value = false
-    }
-  }
-  
-  document.addEventListener('click', handleClickOutside)
+  fetchExamsAndCategorize()
+  activeTab.value = 'my-exams'
 })
 
+/* ================= METHODS ================= */
 const toggleExamForm = () => {
   showForm.value = !showForm.value
   examSubmitMessage.value = ''
 }
 
-const toggleGroups = () => {
-  showGroups.value = !showGroups.value
-}
-
-const toggleApplicantForm = () => {
-  showApplicantForm.value = !showApplicantForm.value
-}
-
-const closeApplicantForm = () => {
-  showApplicantForm.value = false
-  currentTab.value = "Dashboard"
+const goToTab = (tab) => {
+  activeTab.value = tab
 }
 
 const formatDate = (dateString) => {
@@ -674,7 +658,9 @@ const loadExamStatuses = async (exams) => {
   for (const exam of exams) {
     try {
       const res = await axios.get(`/exam/status/${exam.Exam_Id}`)
-      statusMap[exam.Exam_Id] = res.data.success ? res.data.status : { has_question_bank: false, has_question_paper: false }
+      statusMap[exam.Exam_Id] = res.data.success
+        ? res.data.status
+        : { has_question_bank: false, has_question_paper: false }
     } catch {
       statusMap[exam.Exam_Id] = { has_question_bank: false, has_question_paper: false }
     }
@@ -687,20 +673,15 @@ const fetchExamsAndCategorize = async () => {
     const res = await axios.get(`/exam/get_exams/${facultyEmail}`)
     if (res.data.success) {
       const now = new Date()
-      const allExams = res.data.exams || []
+      const exams = res.data.exams || []
 
-      createdExams.value = allExams.filter(exam => now < getExamEndTime(exam))
-      conductedExams.value = allExams.filter(exam => now >= getExamEndTime(exam))
+      createdExams.value = exams.filter(e => now < getExamEndTime(e))
+      conductedExams.value = exams.filter(e => now >= getExamEndTime(e))
 
       await loadExamStatuses(createdExams.value)
     }
-
-    const conductedRes = await axios.get(`/faculty/conducted_exams/${facultyEmail}`)
-    if (conductedRes.data.success) {
-      conductedExams.value = conductedRes.data.exams
-    }
   } catch (err) {
-    console.error('Failed to fetch exams', err)
+    console.error("Failed to fetch exams", err)
   }
 }
 
@@ -708,10 +689,8 @@ const submitExam = async () => {
   try {
     const res = await axios.post('/exam/create', exam.value)
     if (res.data.success) {
-      examSubmitMessage.value = 'Exam created successfully!'
       showForm.value = false
       fetchExamsAndCategorize()
-
       exam.value = {
         exam_name: '',
         exam_date: '',
@@ -722,31 +701,40 @@ const submitExam = async () => {
         faculty_email: facultyEmail
       }
     } else {
-      examSubmitMessage.value = res.data.message || 'Failed to create exam.'
+      examSubmitMessage.value = res.data.message || 'Failed to create exam'
     }
   } catch {
-    examSubmitMessage.value = 'Error creating exam.'
+    examSubmitMessage.value = 'Error creating exam'
   }
 }
 
 const deleteExam = async (examId) => {
-  if (!confirm('Are you sure you want to delete this exam?')) return
-  
+  if (!confirm("Delete this exam?")) return
   try {
     const res = await axios.delete(`/exam/delete/${examId}`)
-    if (res.data.success) {
-      fetchExamsAndCategorize()
-    }
+    if (res.data.success) fetchExamsAndCategorize()
   } catch (err) {
-    console.error('Failed to delete exam', err)
+    console.error("Delete failed", err)
   }
 }
 
+/* ================= ✅ FIXED ADD STUDENTS ================= */
+const addStudents = (examId) => {
+  console.log("Add Students clicked for exam:", examId)
 
-const goToTab = (tab) => {
-  activeTab.value = tab
+  if (!examId) {
+    alert("Invalid exam ID")
+    return
+  }
+
+  router.push({
+    name: 'AddApplicantsExam',
+    params: { examId }
+  })
 }
 
+
+/* ================= ROLE SWITCH ================= */
 const toggleRoleMenu = () => {
   showRoleMenu.value = !showRoleMenu.value
 }
@@ -765,11 +753,10 @@ const logout = async () => {
       email,
       role: activeRole.value
     })
-
     localStorage.clear()
     router.push('/')
   } catch {
-    alert('Logout failed. Try again.')
+    alert('Logout failed')
   }
 }
 </script>
