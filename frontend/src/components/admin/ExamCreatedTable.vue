@@ -44,32 +44,57 @@
                 Add Students
               </button>
 
-              <!-- Add Question Bank -->
               <button
-                @click="$emit('add-question-bank', exam.Exam_Id)"
-                class="bg-green-500 hover:bg-green-600 text-white px-3 py-1.5 rounded-lg text-xs
-                       font-medium hover:scale-105 transition"
-              >
-                Add Q-Bank
-              </button>
+                            @click="navigateTo('AddQuestion', exam.Exam_Id)"
+                            class="bg-green-500 text-white px-3 py-1.5 rounded-full text-xs shadow hover:scale-105 transition font-semibold"
+                          >
+                            Question Bank
+                          </button>
 
-              <!-- Make Question Paper -->
-              <button
-                @click="$emit('make-paper', exam.Exam_Id)"
-                class="bg-purple-500 hover:bg-purple-600 text-white px-3 py-1.5 rounded-lg text-xs
-                       font-medium hover:scale-105 transition"
-              >
-                Make Paper
-              </button>
+                          <span
+                            v-if="examStatus[exam.Exam_Id]?.has_question_bank"
+                            class="text-green-600 text-lg"
+                            title="Completed"
+                          >
+                            ✔
+                          </span>
+                          <span
+                            v-else
+                            class="text-yellow-600 text-lg"
+                            title="Pending"
+                          >
+                            ⏳
+                          </span>
 
-              <!-- Delete -->
-              <button
-                @click="$emit('delete', exam.Exam_Id)"
-                class="bg-red-500 hover:bg-red-600 text-white px-3 py-1.5 rounded-lg text-xs
-                       font-medium hover:scale-105 transition"
-              >
-                Delete
-              </button>
+                          <button
+                            @click="navigateTo('MakeQuestionPaper', exam.Exam_Id)"
+                            class="bg-purple-500 text-white px-3 py-1.5 rounded-full text-xs shadow hover:scale-105 transition font-semibold"
+                          >
+                            Question Paper
+                          </button>
+
+                          <span
+                            v-if="examStatus[exam.Exam_Id]?.has_question_paper"
+                            class="text-green-600 text-lg"
+                            title="Completed"
+                          >
+                            ✔
+                          </span>
+                          <span
+                            v-else
+                            class="text-yellow-600 text-lg"
+                            title="Pending"
+                          >
+                            ⏳
+                          </span>
+
+                          <button
+                            @click="deleteExam(exam.Exam_Id)"
+                            class="bg-red-500 text-white px-3 py-1.5 rounded-full text-xs shadow hover:scale-105 transition font-semibold"
+                          >
+                            🗑 Delete
+                          </button>
+                       
 
             </td>
           </tr>

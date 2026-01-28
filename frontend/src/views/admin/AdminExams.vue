@@ -159,30 +159,39 @@
               <td class="py-4 px-6 space-x-2">
                 <button
                   @click="goAddStudents(exam.Exam_Id)"
-                  class="px-3 py-1.5 rounded-lg bg-blue-500 text-white hover:bg-blue-600 text-xs"
+                  class="bg-blue-400 hover:bg-blue-500 text-white px-3 py-1.5 rounded-full text-xs shadow hover:scale-105 transition font-semibold"
                 >
-                  Add Students
+                   Add Students
                 </button>
 
+                <!-- Question Bank -->
                 <button
                   @click="goAddQuestions(exam.Exam_Id)"
-                  class="px-3 py-1.5 rounded-lg bg-green-500 text-white hover:bg-green-600 text-xs"
+                  class="bg-green-500 text-white px-3 py-1.5 rounded-full text-xs shadow hover:scale-105 transition font-semibold"
                 >
-                  Add Question Bank
+                  Question Bank
                 </button>
+                <span class="text-lg">
+                  {{ examStatus?.[exam.Exam_Id]?.has_question_bank ? '✔' : '⏳' }}
+                </span>
 
+                <!-- Question Paper -->
                 <button
                   @click="goMakeQuestionPaper(exam.Exam_Id)"
-                  class="px-3 py-1.5 rounded-lg bg-purple-500 text-white hover:bg-purple-600 text-xs"
+                  class="bg-purple-500 text-white px-3 py-1.5 rounded-full text-xs shadow hover:scale-105 transition font-semibold"
                 >
-                  Make Question Paper
+                  Question Paper
                 </button>
+                <span class="text-lg">
+                  {{ examStatus?.[exam.Exam_Id]?.has_question_paper ? '✔' : '⏳' }}
+                </span>
 
+                <!-- Delete -->
                 <button
                   @click="deleteExam(exam.Exam_Id)"
-                  class="px-3 py-1.5 rounded-lg bg-red-500 text-white hover:bg-red-600 text-xs"
+                  class="bg-red-500 text-white px-3 py-1.5 rounded-full text-xs shadow hover:scale-105 transition font-semibold"
                 >
-                  Delete
+                  🗑 Delete
                 </button>
               </td>
             </tr>
@@ -255,36 +264,19 @@ import axios from "axios";
 
 const emit = defineEmits(["toast"]);
 
-const InputField = {
-  props: ["label", "type", "modelValue", "placeholder", "required", "min"],
-  emits: ["update:modelValue"],
-  template: `
-    <div>
-      <label class="block text-sm font-semibold text-gray-700 mb-2">{{ label }}</label>
-      <input
-        :type="type || 'text'"
-        :value="modelValue"
-        :required="required"
-        :min="min"
-        @input="$emit('update:modelValue', $event.target.value)"
-        class="w-full px-4 py-3 rounded-xl border border-gray-300 focus:ring-2 focus:ring-blue-500"
-        :placeholder="placeholder"
-      />
-    </div>
-  `,
-};
-
 const router = useRouter();
 const API = "http://localhost:5000/api";
 
+/* ================= STATE ================= */
 const examsList = ref([]);
 const conductedList = ref([]);
+const examStatus = ref({});   // ✅ ADDED
 
 const adminEmail =
   localStorage.getItem("admin_email") ||
   localStorage.getItem("email") || "";
 
-// Form state
+/* ================= FORM STATE ================= */
 const showCreateForm = ref(false);
 
 const examForm = ref({
@@ -309,17 +301,44 @@ const clearExamForm = () => {
   };
 };
 
-// Toggle create form
 const toggleCreateForm = () => {
   showCreateForm.value = !showCreateForm.value;
 };
 
-// Fetch Exams
+/* ================= EXAM STATUS (✅ FIX) ================= */
+const loadExamStatuses = async (exams) => {
+  const statusMap = {};
+
+  for (const exam of exams) {
+    try {
+      const res = await axios.get(`${API}/exam/status/${exam.Exam_Id}`);
+
+      if (res.data.success) {
+        statusMap[exam.Exam_Id] = res.data.status;
+      } else {
+        statusMap[exam.Exam_Id] = {
+          has_question_bank: false,
+          has_question_paper: false
+        };
+      }
+    } catch {
+      statusMap[exam.Exam_Id] = {
+        has_question_bank: false,
+        has_question_paper: false
+      };
+    }
+  }
+
+  examStatus.value = statusMap;
+};
+
+/* ================= FETCH EXAMS ================= */
 const fetchExams = async () => {
   try {
     const res = await axios.get(`${API}/exam/get_exams/${adminEmail}`);
     if (res.data.success) {
       examsList.value = res.data.exams;
+      await loadExamStatuses(res.data.exams); // ✅ ADDED
     } else {
       examsList.value = [];
     }
@@ -328,7 +347,7 @@ const fetchExams = async () => {
   }
 };
 
-// Fetch conducted exams
+/* ================= FETCH CONDUCTED ================= */
 const fetchConducted = async () => {
   try {
     const res = await axios.get(`${API}/admin/conducted_exams`);
@@ -340,7 +359,7 @@ const fetchConducted = async () => {
   }
 };
 
-// Create Exam
+/* ================= CREATE EXAM ================= */
 const createExam = async () => {
   try {
     const res = await axios.post(`${API}/exam/create`, examForm.value);
@@ -365,24 +384,16 @@ const createExam = async () => {
   }
 };
 
-// Helpers
+/* ================= HELPERS ================= */
 const isExamEnded = (exam) => {
-  // Split date
   const [year, month, day] = exam.Exam_Date.split("-").map(Number);
-
-  // Split time safely (handles HH:mm or HH:mm:ss)
   const [hours, minutes] = exam.Exam_Time.split(":").map(Number);
 
-  // Create LOCAL datetime (not UTC)
   const start = new Date(year, month - 1, day, hours, minutes);
-
-  const end = new Date(
-    start.getTime() + Number(exam.Duration_Minutes) * 60000
-  );
+  const end = new Date(start.getTime() + Number(exam.Duration_Minutes) * 60000);
 
   return end < new Date();
 };
-
 
 const upcomingExams = computed(() =>
   examsList.value.filter((exam) => !isExamEnded(exam))
@@ -390,13 +401,12 @@ const upcomingExams = computed(() =>
 
 const conductedExams = computed(() => conductedList.value);
 
-// Delete Exam
+/* ================= DELETE ================= */
 const deleteExam = async (id) => {
   if (!confirm("Delete this exam?")) return;
 
   try {
     const res = await axios.delete(`${API}/exam/delete/${id}`);
-
     if (res.data.success) {
       emit("toast", { message: "Exam deleted successfully!", type: "success" });
       fetchExams();
@@ -407,7 +417,7 @@ const deleteExam = async (id) => {
   }
 };
 
-// Navigation buttons
+/* ================= NAVIGATION ================= */
 const goAddStudents = (id) =>
   router.push({ name: "AddApplicantsExam", params: { examId: id } });
 
@@ -423,15 +433,15 @@ const goViewResponses = (id) =>
 const today = new Date().toISOString().slice(0, 10);
 const formatDate = (d) => new Date(d).toLocaleDateString("en-IN");
 
-// Mounted
+/* ================= MOUNTED ================= */
 onMounted(() => {
   fetchExams();
   fetchConducted();
 
-  // Auto-refresh every 1 minute
   setInterval(() => {
     fetchExams();
     fetchConducted();
   }, 60000);
 });
 </script>
+

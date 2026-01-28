@@ -35,25 +35,22 @@ const routes = [
       {
   path: 'groups',
   name: 'AdminGroupsDashboard',
-  component: () => import('../views/admin/GroupsDashboard.vue')
+  component: () => import('../views/admin/GroupsDashboard.vue'),
+  meta: { requiresAuth: true, allowByActiveRole: ['Admin', 'Faculty'] }
 },
 {
   path: 'groups/students',
   name: 'AdminStudentGroups',
-  component: () => import('../views/Groups.vue')
+  component: () => import('../views/Groups.vue'),
+  meta: { requiresAuth: true, allowByActiveRole: ['Admin', 'Faculty'] }
 },
 {
   path: 'groups/faculty',
   name: 'AdminFacultyGroups',
-  component: () => import('../views/FacultyGroups.vue')
+  component: () => import('../views/FacultyGroups.vue'),
+  meta: { requiresAuth: true, allowByActiveRole: ['Admin'] }
 },
-{
-  path: 'faculty-groups/:groupId/add-faculty',
-  name: 'AdminAddFacultyGroup',
-  component: () => import('../views/AddFacultyGroup.vue'),
-  props: true,
-  meta: { requiresAuth: true, role: 'Admin' }
-},
+
 
 
 

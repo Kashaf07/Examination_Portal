@@ -13,23 +13,25 @@
 
       <div class="grid grid-cols-1 md:grid-cols-2 gap-12">
 
-        <!-- ✅ STUDENT GROUPS (ADMIN + FACULTY) -->
+        <!-- 🎓 STUDENT GROUPS (ADMIN + FACULTY) -->
         <button
           @click="goStudentGroups"
           class="bg-gradient-to-br from-blue-500 to-blue-700
                  text-white py-8 rounded-3xl text-xl font-semibold
-                 shadow-xl transition hover:-translate-y-2"
+                 shadow-xl transition-all duration-300
+                 hover:-translate-y-2 hover:shadow-2xl"
         >
           🎓 Student Groups
         </button>
 
-        <!-- ✅ FACULTY GROUPS (ADMIN ONLY) -->
+        <!-- 👨‍🏫 FACULTY GROUPS (ADMIN ONLY) -->
         <button
           v-if="isAdmin"
-          @click="$router.push('/admin/groups/faculty')"
+          @click="goFacultyGroups"
           class="bg-gradient-to-br from-purple-500 to-purple-700
                  text-white py-8 rounded-3xl text-xl font-semibold
-                 shadow-xl transition hover:-translate-y-2"
+                 shadow-xl transition-all duration-300
+                 hover:-translate-y-2 hover:shadow-2xl"
         >
           👨‍🏫 Faculty Groups
         </button>
@@ -45,17 +47,40 @@ import { useRouter } from 'vue-router'
 
 const router = useRouter()
 
-const isAdmin = computed(() =>
-  localStorage.getItem('active_role') === 'Admin'
-)
+/* ================= ROLE (SOURCE OF TRUTH) ================= */
+const activeRole = computed(() => {
+  return localStorage.getItem('active_role')
+})
 
-/* 🔥 ROLE-AWARE NAVIGATION */
+const isAdmin = computed(() => activeRole.value === 'Admin')
+
+/* ================= NAVIGATION ================= */
+
+/**
+ * Admin   → /admin/groups/students
+ * Faculty → /faculty/groups
+ */
 const goStudentGroups = () => {
-  const role = localStorage.getItem('active_role')
-  if (role === 'Admin') {
+  if (activeRole.value === 'Admin') {
     router.push('/admin/groups/students')
-  } else {
+    return
+  }
+
+  if (activeRole.value === 'Faculty') {
     router.push('/faculty/groups')
+    return
+  }
+
+  // Safety fallback
+  router.push('/')
+}
+
+/**
+ * Admin only
+ */
+const goFacultyGroups = () => {
+  if (isAdmin.value) {
+    router.push('/admin/groups/faculty')
   }
 }
 </script>
