@@ -197,6 +197,7 @@
 </template>
 
 <script setup>
+import axios from "axios";
 import { ref, computed, onMounted, watch } from "vue";
 import { useRouter, useRoute } from "vue-router";
 import NotificationToast from "@/components/admin/NotificationToast.vue";
@@ -385,17 +386,26 @@ const clearToast = () => {
 
 // Logout
 const logout = async () => {
-  const email = localStorage.getItem("admin_email");
-  const { success } = await authApi.logout(email, "Admin");
+  // Your login function stores email as `email`
+  const email = localStorage.getItem("email");
 
-  if (success) {
-    localStorage.removeItem("admin_email");
-    localStorage.removeItem("name");
-    localStorage.removeItem("active_role");
-    localStorage.removeItem("roles");
-    window.location.href = "/";
+  if (!email) {
+    console.error("No email found in localStorage.");
+  } else {
+    try {
+      await axios.post("http://localhost:5000/api/admin/logout", {
+        email: email
+      });
+      console.log("Logout time saved for:", email);
+    } catch (error) {
+      console.error("Logout logging failed:", error);
+    }
   }
+
+  localStorage.clear();
+  router.push('/');
 };
+
 </script>
 
 <style scoped>
