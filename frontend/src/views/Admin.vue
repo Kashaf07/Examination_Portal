@@ -159,8 +159,6 @@ const sidebarOpen = ref(true)
 const showRoleMenu = ref(false)
 const activeTab = ref(null)
 
-const canSwitch = true
-
 const tabs = [
   { id: "faculty", name: "Faculty", icon: "faculty" },
   { id: "schools", name: "Schools", icon: "schools" },
