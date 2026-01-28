@@ -716,24 +716,112 @@ def create_admin_routes(mysql):
     def get_logs():
         try:
             cursor = mysql.connection.cursor()
-            cursor.execute("""SELECT Log_ID, User_Email, Role, Login_Time, Logout_Time FROM login_log ORDER BY Log_ID""")
-            logs = cursor.fetchall()
+            cursor.execute("""
+                SELECT l.Log_ID,l.User_Email,l.Role,l.Login_Time,l.Logout_Time,
+                    -- Get name based on role
+                    CASE 
+                        WHEN l.Role = 'Admin' THEN (SELECT Name FROM mst_admin WHERE Email = l.User_Email LIMIT 1)
+                        WHEN l.Role = 'Faculty' THEN (SELECT F_Name FROM mst_faculty WHERE F_Email = l.User_Email LIMIT 1)
+                        WHEN l.Role = 'Student' THEN (SELECT Full_Name FROM applicants WHERE Email = l.User_Email LIMIT 1)
+                        ELSE 'Unknown'
+                    END AS User_Name
+                FROM login_log l
+                ORDER BY l.Log_ID DESC
+            """)
+            
+            rows = cursor.fetchall()
             columns = [desc[0] for desc in cursor.description]
-            result = []
-            for row in logs:
-                log_dict = dict(zip(columns, row))
-                # Convert datetime objects to strings
-                if log_dict.get('Login_Time'):
-                    log_dict['Login_Time'] = log_dict['Login_Time'].strftime('%Y-%m-%d %H:%M:%S') if hasattr(log_dict['Login_Time'], 'strftime') else str(log_dict['Login_Time'])
-                if log_dict.get('Logout_Time'):
-                    log_dict['Logout_Time'] = log_dict['Logout_Time'].strftime('%Y-%m-%d %H:%M:%S') if hasattr(log_dict['Logout_Time'], 'strftime') else str(log_dict['Logout_Time'])
-                result.append(log_dict)
-        
+            result = [dict(zip(columns, row)) for row in rows]
+
             cursor.close()
             return jsonify(result), 200
+
         except Exception as e:
             print("Error fetching logs:", e)
             return jsonify({"error": "Unable to fetch logs"}), 500
+
+    # ------------------- USER HISTORY -------------------
+    @admin_bp.route('/logs/history/<email>', methods=['GET'])
+    def get_user_log_history(email):
+        try:
+            cursor = mysql.connection.cursor()
+
+            cursor.execute("""
+                SELECT 
+                    Log_ID,
+                    User_Email,
+                    Role,
+                    Login_Time,
+                    Logout_Time
+                FROM login_log
+                WHERE User_Email = %s
+                ORDER BY Log_ID DESC
+            """, (email,))
+
+            rows = cursor.fetchall()
+            columns = [desc[0] for desc in cursor.description]
+
+            result = []
+            for row in rows:
+                item = dict(zip(columns, row))
+
+                # format datetime
+                if item.get("Login_Time"):
+                    item["Login_Time"] = (
+                        item["Login_Time"].strftime('%Y-%m-%d %H:%M:%S')
+                        if hasattr(item["Login_Time"], "strftime")
+                        else str(item["Login_Time"])
+                    )
+
+                if item.get("Logout_Time"):
+                    item["Logout_Time"] = (
+                        item["Logout_Time"].strftime('%Y-%m-%d %H:%M:%S')
+                        if hasattr(item["Logout_Time"], "strftime")
+                        else str(item["Logout_Time"])
+                    )
+
+                result.append(item)
+
+            cursor.close()
+            return jsonify(result), 200
+
+        except Exception as e:
+            print("Error fetching user history:", e)
+            return jsonify({"error": "Unable to fetch user history"}), 500
+
+    @admin_bp.route('/logout', methods=['POST'])
+    def update_logout():
+        try:
+            data = request.get_json()
+            email = data.get("email")
+
+            cursor = mysql.connection.cursor()
+
+            # ✔ FIXED VERSION
+            cursor.execute("""
+                UPDATE login_log
+                SET Logout_Time = NOW()
+                WHERE Log_ID = (
+                    SELECT Log_ID FROM (
+                        SELECT Log_ID
+                        FROM login_log
+                        WHERE User_Email = %s AND Logout_Time IS NULL
+                        ORDER BY Log_ID DESC
+                        LIMIT 1
+                    ) AS recent
+                )
+            """, (email,))
+
+            mysql.connection.commit()
+            print("Logout updated for:", email, "Rows:", cursor.rowcount)
+
+            cursor.close()
+            return jsonify({"message": "Logout time updated"}), 200
+
+        except Exception as e:
+            print("Logout error:", e)
+            return jsonify({"error": "Unable to update logout"}), 500
+
 
     @admin_bp.route('/logs/<int:log_id>', methods=['DELETE'])
     def delete_log(log_id):

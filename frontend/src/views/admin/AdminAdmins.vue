@@ -69,15 +69,36 @@
         <h3 class="text-2xl font-bold text-gray-800 mb-8 text-center">
           {{ isEdit ? "Edit Admin" : "Add Admin" }}
         </h3>
-
         <form @submit.prevent="isEdit ? updateAdmin() : addAdmin()">
           <div class="space-y-4">
 
-            <InputField label="Name" v-model="form.Name" required />
-            <InputField label="Email" v-model="form.Email" type="email" required />
+            <div>
+              <label class="font-semibold text-gray-700 mb-2 block">Name</label>
+              <input
+                v-model="form.Name"
+                required
+                class="w-full px-4 py-3 rounded-xl border bg-purple-50 focus:bg-white focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+
+            <div>
+              <label class="font-semibold text-gray-700 mb-2 block">Email</label>
+              <input
+                v-model="form.Email"
+                type="email"
+                required
+                class="w-full px-4 py-3 rounded-xl border bg-purple-50 focus:bg-white focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
 
             <div v-if="!isEdit">
-              <InputField label="Password" v-model="form.Password" type="password" required />
+              <label class="font-semibold text-gray-700 mb-2 block">Password</label>
+              <input
+                v-model="form.Password"
+                type="password"
+                required
+                class="w-full px-4 py-3 rounded-xl border bg-purple-50 focus:bg-white focus:ring-2 focus:ring-blue-500"
+              />
             </div>
 
           </div>
