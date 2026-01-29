@@ -76,9 +76,8 @@
       <div class="absolute bottom-0 left-0 right-0 p-3 border-t border-white/30 space-y-2">
 
         <!-- Switch Role -->
-        <div class="relative">
+        <div class="relative" v-if="canSwitch">
           <button
-            v-if="canSwitch"
             @click="toggleRoleMenu"
             :class="[
               'w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl transition-all duration-200 group relative',
@@ -154,17 +153,82 @@
     <!-- Main -->
     <main :class="['flex-1 transition-all duration-300', sidebarOpen ? 'ml-64' : 'ml-20']">
       <div class="px-8 py-6">
+        <!-- 🔔 Notification Bell (ADD ONLY) -->
+<div class="flex justify-end mb-4">
+  <div class="relative">
+    <button
+      @click="showNotifications = !showNotifications"
+      class="w-11 h-11 bg-white rounded-full shadow-lg
+             flex items-center justify-center hover:bg-gray-100 relative"
+    >
+      🔔
+      <span
+        v-if="examReminders.length"
+        class="absolute -top-1 -right-1 bg-red-600 text-white
+               text-xs font-bold rounded-full px-1.5"
+      >
+        {{ examReminders.length }}
+      </span>
+    </button>
 
-        <!-- Welcome -->
-        <div v-if="activeTab === null" class="flex items-center justify-center min-h-[80vh]">
-          <div class="text-center">
-            <div class="w-24 h-24 bg-gradient-to-br from-blue-500 to-indigo-600 text-white rounded-full flex items-center justify-center mx-auto text-4xl font-bold shadow-2xl">
-              {{ adminInitial }}
-            </div>
-            <h1 class="text-4xl font-bold mt-6 text-gray-800">Welcome, {{ adminName }}!</h1>
-            <p class="text-gray-600 mt-2">Select a menu item to get started</p>
-          </div>
+    <!-- Dropdown -->
+    <div
+      v-if="showNotifications"
+      class="absolute right-0 mt-3 w-96 bg-white rounded-2xl
+             shadow-2xl z-[9999]"
+    >
+      <div class="px-5 py-4 border-b font-bold text-gray-800">
+        🔔 Upcoming Exams
+      </div>
+
+      <div v-if="examReminders.length">
+        <div
+          v-for="exam in examReminders"
+          :key="exam.Exam_Id"
+          class="px-5 py-4 border-b last:border-none hover:bg-gray-50"
+        >
+          <p class="font-semibold text-gray-800">
+            {{ exam.Exam_Name }}
+          </p>
+          <p class="text-sm text-gray-500">
+            {{ exam.Exam_Date }} at {{ exam.Exam_Time }}
+          </p>
         </div>
+      </div>
+
+      <div v-else class="px-5 py-4 text-sm text-gray-500">
+        No upcoming exams 🎉
+      </div>
+    </div>
+  </div>
+</div>
+
+
+        <!-- Dashboard -->
+<div v-if="activeTab === null" class="space-y-8">
+
+  <!-- Welcome Card -->
+  <div class="bg-white/80 backdrop-blur-lg rounded-2xl p-8 shadow-xl">
+    <div class="flex items-center gap-4">
+      <div class="w-16 h-16 bg-gradient-to-br from-blue-500 to-indigo-600
+                  text-white rounded-full flex items-center justify-center
+                  text-2xl font-bold shadow-xl">
+        {{ adminInitial }}
+      </div>
+      <div>
+        <h1 class="text-3xl font-bold text-gray-800">
+          Welcome, {{ adminName }}!
+        </h1>
+        <p class="text-gray-600 mt-1">
+          Here’s what’s coming up 👇
+        </p>
+      </div>
+    </div>
+  </div>
+
+  
+</div>
+
 
         <!-- Routed Content -->
         <div v-else>
@@ -206,18 +270,17 @@ import { useRouter, useRoute } from "vue-router";
 import NotificationToast from "@/components/admin/NotificationToast.vue";
 import { authApi } from "@/services/adminApi.js";
 
-const roles = JSON.parse(localStorage.getItem("roles") || "[]");
-const canSwitch = true;
-
 const router = useRouter();
 const route = useRoute();
 
 const adminName = ref(localStorage.getItem("name") || "Admin")
 const adminInitial = computed(() => adminName.value.charAt(0).toUpperCase())
+const adminEmail = localStorage.getItem("email")
 
 const sidebarOpen = ref(true)
 const showRoleMenu = ref(false)
 const activeTab = ref(null)
+const canSwitch = ref(false)
 
 const tooltip = ref({
   text: '',
@@ -243,7 +306,7 @@ const tabs = [
   { id: "designations", name: "Designations", icon: "designations" },
   { id: "role-assignment", name: "Role Assignment", icon: "role-assignment" },
   { id: "groups", name: "Groups", icon: "groups" },
-  { id: "applicants", name: "Applicants", icon: "applicants" },
+  { id: "applicants", name: "Students", icon: "applicants" },
   { id: "exams", name: "Exams", icon: "exams" },
   { id: "admins", name: "Admins", icon: "admins" },
   { id: "logs", name: "Login Logs", icon: "logs" }
@@ -262,8 +325,22 @@ const getAdminTabFromPath = (path) => {
   return null
 }
 
+// Check if admin can switch to faculty role
+const checkFacultyRole = async () => {
+  try {
+    const response = await axios.get(`http://localhost:5000/api/admin/check-faculty-role/${adminEmail}`)
+    if (response.data.success) {
+      canSwitch.value = response.data.isFaculty
+    }
+  } catch (error) {
+    console.error("Error checking faculty role:", error)
+    canSwitch.value = false
+  }
+}
+
 onMounted(() => {
   activeTab.value = getAdminTabFromPath(route.path)
+  checkFacultyRole()
 })
 
 watch(() => route.path, (newPath) => {
@@ -283,6 +360,30 @@ const selectRole = (roleId) => {
   showRoleMenu.value = false
   router.push('/faculty')
 }
+
+// 🔔 Notification state (ADD ONLY)
+const showNotifications = ref(false)
+const examReminders = ref([])
+
+// Load exam reminders (ADMIN)
+const loadExamReminders = async () => {
+  try {
+    const res = await axios.get(
+      "http://localhost:5000/api/exam/reminders",
+      {
+        params: { role: "Admin" }
+      }
+    )
+    if (res.data.success) {
+      examReminders.value = res.data.reminders
+    }
+  } catch (err) {
+    console.error("EXAM REMINDER ERROR:", err)
+  }
+}
+
+// ADD inside your existing onMounted (do NOT create a new one)
+loadExamReminders()
 
 const toast = ref({ message: "", type: "" })
 let timer

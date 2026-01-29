@@ -147,14 +147,30 @@ const isConfirmed = ref(false)
 
 /* ---------------- EXAM ---------------- */
 const fetchExamDetails = async () => {
-  const res = await fetch(`http://localhost:5000/api/exam/get_exam_by_id/${examId}`)
-  const data = await res.json()
-  if (data.exam) {
-    examName.value = data.exam.Exam_Name
-    examDate.value = data.exam.Exam_Date
-    examTime.value = data.exam.Exam_Time
+  try {
+    const res = await fetch(
+      `http://localhost:5000/api/exam/get_exam_by_id/${examId}`
+    )
+    const data = await res.json()
+
+    // ✅ Handle BOTH response formats safely
+    if (data.exam) {
+      examName.value = data.exam.Exam_Name
+      examDate.value = data.exam.Exam_Date
+      examTime.value = data.exam.Exam_Time
+    } 
+    else if (data.exam_name) {
+      examName.value = data.exam_name
+    } 
+    else {
+      examName.value = "Unknown Exam"
+    }
+  } catch (err) {
+    console.error("Failed to load exam details", err)
+    examName.value = "Error loading exam"
   }
 }
+
 
 /* ---------------- GROUPS ---------------- */
 const fetchGroups = async () => {

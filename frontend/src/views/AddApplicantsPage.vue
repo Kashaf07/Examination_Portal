@@ -209,6 +209,12 @@ const submitApplicant = async () => {
     showToast("Applicant added successfully!", "success")
     clearForm()
 
+    if (activeRole === "Admin") {
+      router.push("/admin/applicants")
+    } else {
+      router.push("/faculty")   // ✅ Faculty-safe route
+    }
+
   } catch (err) {
     emit("toast", {
       message: err.response?.data?.message || "Error adding applicant",

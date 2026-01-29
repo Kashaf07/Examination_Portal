@@ -25,7 +25,7 @@ def create_auth_routes(mysql):
                 data = jwt.decode(token, SECRET_KEY, algorithms=["HS256"])
                 current_user = {
                     'email': data['email'],
-                    'role': data['role']
+                    'role': data['active_role']
                 }
             except jwt.ExpiredSignatureError:
                 return jsonify({'message': 'Token expired! Please login again.'}), 401
@@ -118,7 +118,7 @@ def create_auth_routes(mysql):
         }
 
         if selected_role == "Student":
-            response["id"] = student_id
+             response["applicant_id"] = student_id
 
         return jsonify(response), 200
         
