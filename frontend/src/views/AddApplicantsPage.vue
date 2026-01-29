@@ -181,12 +181,18 @@ const submitApplicant = async () => {
     await axios.post("/applicants/add", applicant)
     alert("Applicant added successfully")
 
-    router.push("/admin/applicants")   // redirect back
+    if (activeRole === "Admin") {
+      router.push("/admin/applicants")
+    } else {
+      router.push("/faculty")   // ✅ Faculty-safe route
+    }
+
   } catch (err) {
     console.error("ADD APPLICANT ERROR:", err.response?.data)
     alert(err.response?.data?.message || "Error adding applicant")
   }
 }
+
 
 // --------------------
 // CANCEL BUTTON
