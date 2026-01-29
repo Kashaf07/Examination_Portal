@@ -640,6 +640,38 @@ def create_admin_routes(mysql):
             print("Error fetching admins:", e)
             return jsonify({"error": "Unable to fetch admins"}), 500
 
+    # ✅ CORRECT - Add it HERE with 4 spaces indentation
+    @admin_bp.route('/check-faculty-role/<email>', methods=['GET'])
+    def check_faculty_role(email):
+        """Check if admin email exists in faculty table"""
+        try:
+            cursor = mysql.connection.cursor()
+            cursor.execute("SELECT Faculty_Id FROM mst_faculty WHERE F_Email = %s", (email,))
+            result = cursor.fetchone()
+            cursor.close()
+            
+            if result:
+                return jsonify({
+                    "success": True,
+                    "isFaculty": True,
+                    "message": "Admin is also assigned as faculty"
+                }), 200
+            else:
+                return jsonify({
+                    "success": True,
+                    "isFaculty": False,
+                    "message": "Admin is not assigned as faculty"
+                }), 200
+                
+        except Exception as e:
+            print("Error checking faculty role:", e)
+            return jsonify({
+                "success": False,
+                "isFaculty": False,
+                "message": "Error checking faculty role"
+            }), 500
+            
+            
     @admin_bp.route('/admins', methods=['POST'])
     def add_admin():
         try:
