@@ -76,9 +76,8 @@
       <div class="absolute bottom-0 left-0 right-0 p-3 border-t border-white/30 space-y-2">
 
         <!-- Switch Role -->
-        <div class="relative">
+        <div class="relative" v-if="canSwitch">
           <button
-            v-if="canSwitch"
             @click="toggleRoleMenu"
             :class="[
               'w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl transition-all duration-200 group relative',
@@ -271,19 +270,17 @@ import { useRouter, useRoute } from "vue-router";
 import NotificationToast from "@/components/admin/NotificationToast.vue";
 import { authApi } from "@/services/adminApi.js";
 
-const roles = JSON.parse(localStorage.getItem("roles") || "[]");
-const canSwitch = true;
-
 const router = useRouter();
 const route = useRoute();
 
 const adminName = ref(localStorage.getItem("name") || "Admin")
 const adminInitial = computed(() => adminName.value.charAt(0).toUpperCase())
+const adminEmail = localStorage.getItem("email")
 
 const sidebarOpen = ref(true)
 const showRoleMenu = ref(false)
 const activeTab = ref(null)
-
+const canSwitch = ref(false)
 
 const tooltip = ref({
   text: '',
@@ -309,7 +306,7 @@ const tabs = [
   { id: "designations", name: "Designations", icon: "designations" },
   { id: "role-assignment", name: "Role Assignment", icon: "role-assignment" },
   { id: "groups", name: "Groups", icon: "groups" },
-  { id: "applicants", name: "Applicants", icon: "applicants" },
+  { id: "applicants", name: "Students", icon: "applicants" },
   { id: "exams", name: "Exams", icon: "exams" },
   { id: "admins", name: "Admins", icon: "admins" },
   { id: "logs", name: "Login Logs", icon: "logs" }
@@ -328,6 +325,23 @@ const getAdminTabFromPath = (path) => {
   return null
 }
 
+// Check if admin can switch to faculty role
+const checkFacultyRole = async () => {
+  try {
+    const response = await axios.get(`http://localhost:5000/api/admin/check-faculty-role/${adminEmail}`)
+    if (response.data.success) {
+      canSwitch.value = response.data.isFaculty
+    }
+  } catch (error) {
+    console.error("Error checking faculty role:", error)
+    canSwitch.value = false
+  }
+}
+
+onMounted(() => {
+  activeTab.value = getAdminTabFromPath(route.path)
+  checkFacultyRole()
+})
 
 watch(() => route.path, (newPath) => {
   activeTab.value = getAdminTabFromPath(newPath)

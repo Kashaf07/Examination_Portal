@@ -768,11 +768,7 @@ def create_student_routes(mysql):
                     status = "IN_PROGRESS"
                     message = "You have an ongoing attempt."
             
-            already_attempted = cur.fetchone()[0] > 0
-
-            if already_attempted:
-                status = "COMPLETED"
-                message = "You have already completed this exam."
+            
 
             cur.close()
             return jsonify({

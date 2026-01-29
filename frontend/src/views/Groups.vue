@@ -1,154 +1,168 @@
 <template>
   <div class="space-y-6">
 
-    <!-- 🔁 GROUP SWITCH (ADMIN ONLY) -->
+    <!-- Top Switch Buttons -->
     <div v-if="isAdmin" class="flex gap-4 mb-4">
-
-      <!-- STUDENT GROUPS -->
       <button
-        class="px-6 py-2 rounded-full font-semibold
-               bg-blue-600 text-white shadow"
-      >
+        class="px-6 py-3 rounded-full font-semibold shadow-md bg-blue-600 text-white 
+               hover:bg-blue-700 hover:scale-105 transition">
         🎓 Student Groups
       </button>
 
-      <!-- FACULTY GROUPS -->
       <button
         @click="$router.push('/admin/groups/faculty')"
-        class="px-6 py-2 rounded-full font-semibold
-               bg-gray-200 text-gray-700 hover:bg-gray-300"
-      >
+        class="px-6 py-3 rounded-full font-semibold shadow-md bg-gray-200 text-gray-700 
+               hover:bg-gray-300 hover:scale-105 transition">
         👨‍🏫 Faculty Groups
       </button>
-
     </div>
 
-    <!-- MAIN CARD -->
-    <div class="bg-white shadow-xl rounded-2xl p-8">
+    <!-- OUTER WRAPPER CARD (LIKE SCHOOLS PAGE) -->
+    <div class="bg-white/80 backdrop-blur-sm shadow-xl rounded-2xl p-8 border border-white/20">
 
       <!-- HEADER -->
       <div class="flex justify-between items-center mb-6">
-        <h2 class="text-2xl font-bold text-gray-800">
-          Applicant Groups
+        <h2 class="text-2xl font-bold text-gray-800 tracking-wide">
+          Student Groups Management
         </h2>
 
         <button
           @click="createGroup"
-          class="bg-blue-600 hover:bg-blue-700
-                 text-white px-6 py-2 rounded-full font-semibold"
-        >
+          class="bg-blue-500 hover:bg-blue-600 text-white font-semibold px-6 py-3 
+                 rounded-full shadow-lg transition hover:scale-105">
           Create Group
         </button>
       </div>
 
-      <!-- CREATE GROUP INPUT -->
-      <input
-        v-model="groupName"
-        placeholder="Enter Group Name"
-        class="mb-6 w-full max-w-sm px-4 py-2 border rounded-xl"
-      />
+      <!-- INNER CARD (LIKE TABLE WRAPPER) -->
+      <div class="bg-white rounded-2xl shadow-lg overflow-hidden border border-gray-200 p-6">
 
-      <!-- GROUPS TABLE -->
-      <table class="w-full border rounded-xl overflow-hidden">
-        <thead class="bg-gray-100">
-          <tr>
-            <th class="p-3 text-left">Group</th>
-            <th class="p-3 text-center">Applicants</th>
-            <th class="p-3 text-center">Actions</th>
-          </tr>
-        </thead>
+        <!-- CREATE INPUT -->
+        <div class="mb-6 flex gap-3">
+          <input
+            v-model="groupName"
+            placeholder="Enter Group Name"
+            class="w-full max-w-xs px-4 py-3 rounded-xl border bg-purple-50 focus:bg-white 
+                   focus:ring-2 focus:ring-blue-400 transition"
+          />
+        </div>
 
-        <tbody>
-          <template v-for="g in groups" :key="g.Group_Id">
-
-            <!-- GROUP ROW -->
-            <tr class="border-t">
-              <td class="p-3 font-medium">
-                {{ g.Group_Name }}
-              </td>
-
-              <!-- COUNT -->
-              <td class="p-3 text-center">
-                <span
-                  class="inline-flex items-center gap-1 px-3 py-1
-                         rounded-full text-sm font-semibold"
-                  :class="(applicants[g.Group_Id]?.length || 0) > 0
-                    ? 'bg-green-100 text-green-700'
-                    : 'bg-gray-200 text-gray-600'"
-                >
-                  👥 {{ applicants[g.Group_Id]?.length || 0 }}
-                </span>
-              </td>
-
-              <td class="p-3 text-center space-x-2">
-                <button
-                  @click="toggleView(g.Group_Id)"
-                  class="bg-blue-600 text-white px-4 py-1 rounded"
-                >
-                  {{ expandedGroup === g.Group_Id ? 'Hide' : 'View' }}
-                </button>
-
-                <button
-                  @click="deleteGroup(g.Group_Id)"
-                  class="bg-red-600 hover:bg-red-700
-                         text-white px-4 py-1 rounded"
-                >
-                  Delete
-                </button>
-              </td>
+        <!-- GROUPS TABLE -->
+        <table class="w-full">
+          <thead class="bg-gradient-to-r from-blue-50 to-blue-100 text-blue-900">
+            <tr>
+              <th class="py-3 px-4 font-semibold">Group Name</th>
+              <th class="py-3 px-4 font-semibold text-center">Students</th>
+              <th class="py-3 px-4 font-semibold text-center">Actions</th>
             </tr>
+          </thead>
 
-            <!-- EXPANDED APPLICANTS -->
-            <tr v-if="expandedGroup === g.Group_Id">
-              <td colspan="3" class="bg-gray-50 p-4">
+          <tbody class="bg-white divide-y divide-gray-100">
+            <template v-for="g in groups" :key="g.Group_Id">
 
-                <h3 class="font-semibold mb-3">
-                  Applicants in {{ g.Group_Name }}
-                </h3>
+              <!-- MAIN GROUP ROW -->
+              <tr class="hover:bg-gray-50 transition cursor-pointer">
+                <td class="px-4 py-4 font-medium text-gray-800">
+                  {{ g.Group_Name }}
+                </td>
 
-                <table
-                  v-if="applicants[g.Group_Id]?.length"
-                  class="w-full border rounded-lg"
-                >
-                  <thead class="bg-gray-200">
-                    <tr>
-                      <th class="p-2 text-left">Name</th>
-                      <th class="p-2 text-left">Email</th>
-                      <th class="p-2 text-center">Action</th>
-                    </tr>
-                  </thead>
+                <td class="px-4 py-4 text-center">
+                  <span
+                    class="px-3 py-1 rounded-full text-sm font-semibold"
+                    :class="(applicants[g.Group_Id]?.length || 0)
+                      ? 'bg-green-100 text-green-700'
+                      : 'bg-gray-200 text-gray-600'"
+                  >
+                    👥 {{ applicants[g.Group_Id]?.length || 0 }}
+                  </span>
+                </td>
 
-                  <tbody>
-                    <tr
-                      v-for="a in applicants[g.Group_Id]"
-                      :key="a.Applicant_Id"
-                      class="border-t"
-                    >
-                      <td class="p-2">{{ a.Full_Name }}</td>
-                      <td class="p-2">{{ a.Email }}</td>
-                      <td class="p-2 text-center">
-                        <button
-                          @click="removeApplicant(g.Group_Id, a.Applicant_Id)"
-                          class="bg-red-600 hover:bg-red-700
-                                 text-white px-2 py-1 rounded"
-                        >
-                          Remove
-                        </button>
-                      </td>
-                    </tr>
-                  </tbody>
-                </table>
+                <td class="px-4 py-4 flex justify-center gap-2">
+                  <button
+                    @click="toggleView(g.Group_Id)"
+                    class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg shadow hover:scale-105 transition"
+                  >
+                    {{ expandedGroup === g.Group_Id ? "Hide" : "View" }}
+                  </button>
 
-                <p v-else class="italic text-gray-500">
-                  No applicants in this group
-                </p>
+                  <button
+                    @click="deleteGroup(g.Group_Id)"
+                    class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg shadow hover:scale-105 transition"
+                  >
+                    Delete
+                  </button>
+                </td>
+              </tr>
 
-              </td>
-            </tr>
+              <!-- EXPANDED STUDENT LIST UNDER SAME GROUP -->
+              <tr v-if="expandedGroup === g.Group_Id" class="bg-gray-50">
+                <td colspan="3" class="p-6">
 
-          </template>
-        </tbody>
-      </table>
+                  <h3 class="text-lg font-bold mb-4 text-gray-700">
+                    Students in {{ g.Group_Name }}
+                  </h3>
+
+                  <!-- EXPANDED STUDENT LIST -->
+                  <div class="mt-4">
+
+                    <!-- IF STUDENTS EXIST -->
+                    <div v-if="applicants[g.Group_Id]?.length" class="rounded-2xl shadow-md border bg-white overflow-hidden">
+
+                      <table class="w-full">
+                        <thead class="bg-gradient-to-r from-blue-50 to-blue-100 text-blue-900">
+                          <tr>
+                            <th class="py-3 px-4 font-semibold text-left">Name</th>
+                            <th class="py-3 px-4 font-semibold text-left">Email</th>
+                            <th class="py-3 px-4 font-semibold text-center">Action</th>
+                          </tr>
+                        </thead>
+
+                        <tbody class="bg-white divide-y divide-gray-100">
+                          <tr
+                            v-for="a in applicants[g.Group_Id]"
+                            :key="a.Applicant_Id"
+                            class="hover:bg-blue-50 transition cursor-pointer"
+                          >
+                            <td class="px-4 py-3 font-medium text-gray-800">
+                              {{ a.Full_Name }}
+                            </td>
+
+                            <td class="px-4 py-3 text-gray-700">
+                              {{ a.Email }}
+                            </td>
+
+                            <td class="px-4 py-3 text-center">
+                              <button
+                                @click="removeApplicant(g.Group_Id, a.Applicant_Id)"
+                                class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-full text-sm shadow hover:scale-105 transition">
+                                Remove
+                              </button>
+                            </td>
+                          </tr>
+                        </tbody>
+                      </table>
+
+                    </div>
+
+                    <!-- IF EMPTY -->
+                    <p v-else class="text-gray-500 italic text-center py-4">
+                      No students in this group
+                    </p>
+
+                  </div>
+
+
+                </td>
+              </tr>
+
+            </template>
+          </tbody>
+
+        </table>
+
+        
+
+      </div>
     </div>
   </div>
 </template>
