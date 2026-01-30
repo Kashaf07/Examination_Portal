@@ -1,20 +1,24 @@
 <template>
-  <div class="min-h-screen px-10 py-8 bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50">
-    <!-- Heading -->
-    <div class="flex flex-col items-center gap-2 mb-10">
-      <h2 class="text-4xl font-extrabold text-blue-800 flex items-center gap-3">
-        <span class="text-5xl">📝</span>
-        Add Question Bank
-      </h2>
-      <p class="text-lg text-gray-700">
-        Adding questions for
-        <span class="font-semibold text-purple-700">Exam ID: {{ examId }}</span>
-      </p>
+  <!-- Upload Card -->
+  <div class="max-w-4xl mx-auto mt-8 bg-white rounded-2xl shadow-xl p-8">
+
+    <!-- Download format -->
+    <div class="text-center text-sm text-gray-700 mb-6">
+      Need a format?
+      <a
+        href="http://localhost:5000/static/sample_question_bank.csv"
+        download
+        class="ml-1 text-blue-600 underline hover:text-blue-800 transition"
+      >
+        Download Sample CSV Template
+      </a>
     </div>
 
-    <!-- File row -->
-    <div class="flex items-center justify-between max-w-4xl mx-auto mt-4">
-      <!-- 1) REAL INPUT – HIDDEN -->
+    <!-- File Input Row -->
+    <div
+      class="flex items-center border border-green-300 rounded-full overflow-hidden shadow-sm"
+    >
+      <!-- Hidden input -->
       <input
         id="csv-file"
         type="file"
@@ -23,40 +27,52 @@
         @change="handleFileChange"
       />
 
-      <!-- 2) ONLY THIS TEXT VISIBLE ON LEFT -->
+      <!-- Choose File -->
       <label
         for="csv-file"
-        class="cursor-pointer text-lg text-gray-900"
+        class="cursor-pointer px-6 py-3 bg-green-100 text-green-700 font-semibold text-sm"
       >
         Choose File
-        <span class="text-gray-600">
-          {{ fileName || 'No file chosen' }}
-        </span>
       </label>
 
-      <!-- 3) GREEN BUTTON ON RIGHT -->
+      <!-- File name -->
+      <span class="flex-1 px-4 text-sm text-gray-600 truncate">
+        {{ fileName || 'No file chosen' }}
+      </span>
+
+      <!-- Upload button -->
       <button
         @click="uploadCSV"
-        class="flex items-center gap-2 bg-green-500 hover:bg-green-600
-               text-white font-semibold text-lg px-10 py-3 rounded-full shadow-md
-               transition duration-200"
+        :disabled="!file"
+        class="px-8 py-3 bg-green-500 text-white font-semibold text-sm
+               hover:bg-green-600 transition
+               disabled:bg-gray-300 disabled:cursor-not-allowed"
       >
-        <span class="text-2xl">📥</span>
         Upload CSV
       </button>
     </div>
 
-    <p v-if="message" class="mt-8 text-center text-green-700 font-semibold">
+    <!-- Success / Error message -->
+    <p
+      v-if="message"
+      class="mt-5 text-center text-sm font-semibold text-green-600"
+    >
       {{ message }}
     </p>
+
   </div>
 </template>
 
 <script>
 export default {
+  props: {
+    examId: {
+      type: [String, Number],
+      required: true
+    }
+  },
   data() {
     return {
-      examId: this.$route.params.examId,
       file: null,
       fileName: '',
       message: ''
@@ -65,14 +81,17 @@ export default {
   methods: {
     handleFileChange(e) {
       const f = e.target.files[0];
-      this.file = f;
+      this.file = f || null;
       this.fileName = f ? f.name : '';
+      this.message = '';
+    },
+    clearMessageAfterDelay() {
+      setTimeout(() => {
+        this.message = '';
+      }, 3000);
     },
     async uploadCSV() {
-      if (!this.file) {
-        this.message = 'Please select a CSV file.';
-        return;
-      }
+      if (!this.file) return;
 
       const formData = new FormData();
       formData.append('file', this.file);
@@ -81,17 +100,27 @@ export default {
       formData.append('role', 'Faculty');
 
       try {
-        const res = await fetch('http://localhost:5000/api/questions/upload-csv', {
-          method: 'POST',
-          body: formData
-        });
+        const res = await fetch(
+          'http://localhost:5000/api/questions/upload-csv',
+          { method: 'POST', body: formData }
+        );
         const result = await res.json();
+
         this.message = res.ok
-          ? (result.message || 'File uploaded successfully.')
-          : (result.error || 'Unknown error occurred.');
+          ? (result.message || 'Questions uploaded successfully.')
+          : (result.error || 'Upload failed.');
+
+        if (res.ok) {
+          this.file = null;
+          this.fileName = '';
+          document.getElementById('csv-file').value = '';
+        }
+
+        this.clearMessageAfterDelay();
       } catch (err) {
         console.error(err);
         this.message = 'An error occurred during upload.';
+        this.clearMessageAfterDelay();
       }
     }
   }
