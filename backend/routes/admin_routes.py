@@ -854,19 +854,6 @@ def create_admin_routes(mysql):
             print("Logout error:", e)
             return jsonify({"error": "Unable to update logout"}), 500
 
-
-    @admin_bp.route('/logs/<int:log_id>', methods=['DELETE'])
-    def delete_log(log_id):
-        try:
-            cursor = mysql.connection.cursor()
-            cursor.execute("DELETE FROM login_log WHERE Log_ID = %s", (log_id,))
-            mysql.connection.commit()
-            cursor.close()
-            return jsonify({"message": "Log deleted successfully"}), 200
-        except Exception as e:
-            print("Error deleting log:", e)
-            return jsonify({"error": f"Unable to delete log: {str(e)}"}), 500
-
     # Bulk delete operations
     @admin_bp.route('/applicants/bulk-delete', methods=['POST'])
     def bulk_delete_applicants():
@@ -977,14 +964,15 @@ def create_admin_routes(mysql):
 
             for index, row in df.iterrows():
                 try:
-                    cursor.execute("""INSERT INTO applicants (Full_Name, Email, Password, Phone, DOB, Gender, Address) VALUES (%s, %s, %s, %s, %s, %s, %s)""", (
+                    cursor.execute("""INSERT INTO applicants (Full_Name, Email, Password, Phone, DOB, Gender, Address, group_id) VALUES (%s, %s, %s, %s, %s, %s, %s, %s)""", (
                         row['Full_Name'],
                         row['Email'],
                         row['Password'],
                         row['Phone'],
                         row['DOB'],
                         row['Gender'],
-                        row['Address']
+                        row['Address'],
+                        None
                     ))
                     successful_uploads += 1
 
@@ -1044,14 +1032,15 @@ def create_admin_routes(mysql):
 
             for index, row in df.iterrows():
                 try:
-                    cursor.execute("""INSERT INTO applicants (Full_Name, Email, Password, Phone, DOB, Gender, Address) VALUES (%s, %s, %s, %s, %s, %s, %s)""", (
+                    cursor.execute("""INSERT INTO applicants (Full_Name, Email, Password, Phone, DOB, Gender, Address, group_id) VALUES (%s, %s, %s, %s, %s, %s, %s, %s)""", (
                         row['Full_Name'],
                         row['Email'],
                         row['Password'],
                         row['Phone'],
                         row['DOB'],
                         row['Gender'],
-                        row['Address']
+                        row['Address'],
+                        None
                     ))
                     successful_uploads += 1
 
@@ -1164,87 +1153,51 @@ def create_admin_routes(mysql):
     def delete_exam(exam_id):
         try:
             cursor = mysql.connection.cursor()
-            
-            # Get all exam papers for this exam
-            cursor.execute("SELECT Exam_Paper_Id FROM exam_paper WHERE Exam_Id = %s", (exam_id,))
-            exam_papers = [row[0] for row in cursor.fetchall()]
-            
-            # Delete exam attempts and answers for all exam papers
-            if exam_papers:
-                for exam_paper_id in exam_papers:
-                    # Get all attempts for this exam paper
-                    cursor.execute("SELECT Attempt_Id FROM applicant_attempt WHERE Exam_Paper_Id = %s", (exam_paper_id,))
-                    attempts = [row[0] for row in cursor.fetchall()]
-                    
-                    # Delete answers for each attempt
-                    if attempts:
-                        for attempt_id in attempts:
-                            cursor.execute("DELETE FROM applicant_answers WHERE Attempt_Id = %s", (attempt_id,))
-                    
-                    # Delete attempts
-                    cursor.execute("DELETE FROM applicant_attempt WHERE Exam_Paper_Id = %s", (exam_paper_id,))
-            
-            # Delete applicant exam assignments
-            cursor.execute("DELETE FROM applicant_exam_assign WHERE Exam_Id = %s", (exam_id,))
-            
-            # Delete exam papers
-            cursor.execute("DELETE FROM exam_paper WHERE Exam_Id = %s", (exam_id,))
-            
-            # Delete the exam
-            cursor.execute("DELETE FROM Entrance_Exam WHERE Exam_Id = %s", (exam_id,))
-            
-            mysql.connection.commit()
-            cursor.close()
-            
-            return jsonify({"success": True, "message": "Exam deleted successfully"}), 200
-        except Exception as e:
-            print("Error deleting exam:", e)
-            mysql.connection.rollback()
-            return jsonify({"success": False, "error": f"Unable to delete exam: {str(e)}"}), 500
 
-    @admin_bp.route('/exam/delete/<int:exam_id>', methods=['DELETE'])
-    def admin_delete_exam(exam_id):
-        """Admin-specific exam deletion endpoint"""
-        try:
-            cursor = mysql.connection.cursor()
-            
-            # Get all exam papers for this exam
-            cursor.execute("SELECT Exam_Paper_Id FROM exam_paper WHERE Exam_Id = %s", (exam_id,))
-            exam_papers = [row[0] for row in cursor.fetchall()]
-            
-            # Delete exam attempts and answers for all exam papers
-            if exam_papers:
-                for exam_paper_id in exam_papers:
-                    # Get all attempts for this exam paper
-                    cursor.execute("SELECT Attempt_Id FROM applicant_attempt WHERE Exam_Paper_Id = %s", (exam_paper_id,))
-                    attempts = [row[0] for row in cursor.fetchall()]
-                    
-                    # Delete answers for each attempt
-                    if attempts:
-                        for attempt_id in attempts:
-                            cursor.execute("DELETE FROM applicant_answers WHERE Attempt_Id = %s", (attempt_id,))
-                    
-                    # Delete attempts
-                    cursor.execute("DELETE FROM applicant_attempt WHERE Exam_Paper_Id = %s", (exam_paper_id,))
-            
-            # Delete applicant exam assignments
-            cursor.execute("DELETE FROM applicant_exam_assign WHERE Exam_Id = %s", (exam_id,))
-            
-            # Delete exam papers
-            cursor.execute("DELETE FROM exam_paper WHERE Exam_Id = %s", (exam_id,))
-            
-            # Delete the exam
-            cursor.execute("DELETE FROM Entrance_Exam WHERE Exam_Id = %s", (exam_id,))
-            
+            # 1️⃣ DELETE QUESTION BANK FIRST (🔥 REQUIRED)
+            cursor.execute("DELETE FROM entrance_question_bank WHERE Exam_Id = %s",(exam_id,))
+
+            # 2️⃣ Get all exam paper IDs
+            cursor.execute("SELECT Exam_Paper_Id FROM exam_paper WHERE Exam_Id = %s",(exam_id,))
+            paper_ids = [row[0] for row in cursor.fetchall()]
+
+            if paper_ids:
+                # 3️⃣ Get all attempt IDs
+                cursor.execute(f"""SELECT Attempt_Id FROM applicant_attempt WHERE Exam_Paper_Id IN ({','.join(['%s'] * len(paper_ids))})""",paper_ids)
+                attempt_ids = [row[0] for row in cursor.fetchall()]
+
+                # 4️⃣ Delete answers
+                if attempt_ids:
+                    cursor.execute(f"""DELETE FROM applicant_answers WHERE Attempt_Id IN ({','.join(['%s'] * len(attempt_ids))})""",attempt_ids)
+
+                # 5️⃣ Delete attempts
+                cursor.execute(f"""DELETE FROM applicant_attempt WHERE Exam_Paper_Id IN ({','.join(['%s'] * len(paper_ids))})""",paper_ids)
+
+            # 6️⃣ Delete exam assignments
+            cursor.execute("DELETE FROM applicant_exam_assign WHERE Exam_Id = %s",(exam_id,))
+
+            # 7️⃣ Delete exam papers
+            cursor.execute("DELETE FROM exam_paper WHERE Exam_Id = %s",(exam_id,))
+
+            # 8️⃣ FINALLY delete exam
+            cursor.execute("DELETE FROM Entrance_Exam WHERE Exam_Id = %s",(exam_id,))
+
             mysql.connection.commit()
             cursor.close()
-            
-            return jsonify({"success": True, "message": "Exam deleted successfully"}), 200
+
+            return jsonify({
+                "success": True,
+                "message": "Exam and all related data deleted successfully"
+            }), 200
+
         except Exception as e:
-            print("Error deleting exam:", e)
             mysql.connection.rollback()
-            return jsonify({"success": False, "error": f"Unable to delete exam: {str(e)}"}), 500
-        
+            print("🔥 Exam delete failed:", e)
+            return jsonify({
+                "success": False,
+                "error": str(e)
+            }), 500
+       
     @admin_bp.route('/designations', methods=['GET'])
     def get_designations():
         cursor = mysql.connection.cursor()
