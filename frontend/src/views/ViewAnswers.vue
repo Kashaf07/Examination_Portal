@@ -1,18 +1,36 @@
 <template>
   <div class="min-h-screen w-full bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 flex flex-col items-center py-10">
     <div class="w-full max-w-[1600px] px-8">
+      <!-- Back Button -->
+      <button
+        @click="goBack"
+        class="mb-6 flex items-center gap-2 px-4 py-2 bg-white/70 hover:bg-white/90 
+               text-gray-800 rounded-lg shadow-md hover:shadow-lg transition-all duration-200 
+               backdrop-blur-sm border border-gray-200"
+      >
+        <svg 
+          xmlns="http://www.w3.org/2000/svg" 
+          class="h-5 w-5" 
+          viewBox="0 0 20 20" 
+          fill="currentColor"
+        >
+          <path 
+            fill-rule="evenodd" 
+            d="M9.707 16.707a1 1 0 01-1.414 0l-6-6a1 1 0 010-1.414l6-6a1 1 0 011.414 1.414L5.414 9H17a1 1 0 110 2H5.414l4.293 4.293a1 1 0 010 1.414z" 
+            clip-rule="evenodd" 
+          />
+        </svg>
+        <span class="font-semibold">Back</span>
+      </button>
+
       <h1 class="text-3xl font-bold mb-6 text-transparent bg-clip-text bg-gradient-to-r from-purple-700 to-pink-500 tracking-tight">
         Submitted Answers for Attempt {{ attemptId }}
       </h1>
+      
       <div v-if="error" class="mb-6 p-4 bg-red-100 text-red-700 border border-red-400 rounded w-full">
         {{ error }}
       </div>
-      <button
-        @click="goBack"
-        :class="['bg-purple-600 hover:bg-purple-700 text-white px-6 py-2 rounded-full font-semibold shadow transition', 'mb-12']"
-      >
-        Back to Attempts
-      </button>
+      
       <div class="rounded-xl shadow-xl overflow-x-auto bg-white">
         <table class="min-w-full border-separate border-spacing-0">
           <thead>
@@ -56,6 +74,7 @@ const router = useRouter()
 const attemptId = ref(route.params.attemptId)
 const answers = ref([])
 const error = ref('')
+const examId = ref(null)
 
 const fetchAnswers = async () => {
   error.value = ''
@@ -66,6 +85,10 @@ const fetchAnswers = async () => {
       error.value = data.error || 'Failed to load answers'
     } else {
       answers.value = data.answers
+      // Get exam_id from the first answer if available
+      if (data.answers && data.answers.length > 0 && data.answers[0].Exam_Id) {
+        examId.value = data.answers[0].Exam_Id
+      }
     }
   } catch (e) {
     error.value = 'Error fetching answers: ' + e.message
@@ -78,7 +101,22 @@ const isCorrect = (answer) => {
 }
 
 const goBack = () => {
-  router.back()
+  // Navigate back to ViewResponses for this exam
+  const activeRole = localStorage.getItem('active_role')
+  
+  if (!examId.value) {
+    // Fallback: if we don't have exam_id, just go back using browser history
+    router.back()
+    return
+  }
+  
+  if (activeRole === 'Admin') {
+    router.push({ name: 'ViewResponsesAdmin', params: { examId: examId.value } })
+  } else if (activeRole === 'Faculty') {
+    router.push({ name: 'ViewResponsesFaculty', params: { examId: examId.value } })
+  } else {
+    router.back()
+  }
 }
 
 onMounted(fetchAnswers)

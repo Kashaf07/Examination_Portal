@@ -3,20 +3,33 @@
     class="min-h-screen w-full bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 flex flex-col items-center py-10"
   >
     <div class="w-full max-w-full px-6">
+      <!-- Back Button -->
+      <button
+        @click="goBack"
+        class="mb-6 flex items-center gap-2 px-4 py-2 bg-white/70 hover:bg-white/90 
+               text-gray-800 rounded-lg shadow-md hover:shadow-lg transition-all duration-200 
+               backdrop-blur-sm border border-gray-200"
+      >
+        <svg 
+          xmlns="http://www.w3.org/2000/svg" 
+          class="h-5 w-5" 
+          viewBox="0 0 20 20" 
+          fill="currentColor"
+        >
+          <path 
+            fill-rule="evenodd" 
+            d="M9.707 16.707a1 1 0 01-1.414 0l-6-6a1 1 0 010-1.414l6-6a1 1 0 011.414 1.414L5.414 9H17a1 1 0 110 2H5.414l4.293 4.293a1 1 0 010 1.414z" 
+            clip-rule="evenodd" 
+          />
+        </svg>
+        <span class="font-semibold">Back</span>
+      </button>
+
       <h1
         class="text-3xl font-bold mb-6 text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-purple-700 tracking-tight"
       >
         Applicant Attempts for Exam {{ examId }}
       </h1>
-
-      <!-- Go to Dashboard button with dynamic theme colors -->
-      
-      <button
-        @click="goToDashboard"
-        :class="['bg-purple-600 hover:bg-purple-700 text-white px-6 py-2 rounded-full font-semibold shadow transition', 'mb-12']"
-      >
-        Go to Dashboard
-      </button>
 
       <div
         v-if="error"
@@ -95,15 +108,6 @@ const examId = ref(route.params.examId)
 const attempts = ref([])
 const error = ref('')
 
-// Simple reactive theme flag (replace or integrate with your theme management)
-const isDarkTheme = ref(false) // Set true or false based on actual theme state
-
-const buttonClasses = computed(() =>
-  isDarkTheme.value
-    ? 'mb-6 bg-purple-700 hover:bg-purple-800 text-white px-4 py-2 rounded-md shadow-sm transition w-max'
-    : 'mb-6 bg-purple-400 hover:bg-purple-500 text-white px-4 py-2 rounded-md shadow-sm transition w-max'
-)
-
 const fetchAttempts = async () => {
   error.value = ''
   try {
@@ -125,8 +129,17 @@ const viewAnswers = (attemptId) => {
   router.push({ name: 'ViewAnswers', params: { attemptId } })
 }
 
-const goToDashboard = () => {
-  router.push({ name: 'Faculty' }) // Faculty.vue route name
+const goBack = () => {
+  // Navigate based on active role
+  const activeRole = localStorage.getItem('active_role')
+  
+  if (activeRole === 'Admin') {
+    router.push('/admin/exams')
+  } else if (activeRole === 'Faculty') {
+    router.push('/faculty')
+  } else {
+    router.push('/')
+  }
 }
 
 onMounted(() => {

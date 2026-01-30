@@ -1,16 +1,26 @@
 <template>
   <div class="min-h-screen p-10 bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 rounded-2xl shadow-xl">
     <!-- Back Button -->
-    <div class="mb-6">
-      <button
-        @click="goBack"
-        class="flex items-center gap-2 bg-white/70 hover:bg-white
-              text-gray-800 font-semibold px-5 py-2 rounded-full
-              shadow-md transition-all hover:scale-105"
+    <button
+      @click="goBack"
+      class="mb-6 flex items-center gap-2 px-4 py-2 bg-white/70 hover:bg-white/90 
+             text-gray-800 rounded-lg shadow-md hover:shadow-lg transition-all duration-200 
+             backdrop-blur-sm border border-gray-200"
+    >
+      <svg 
+        xmlns="http://www.w3.org/2000/svg" 
+        class="h-5 w-5" 
+        viewBox="0 0 20 20" 
+        fill="currentColor"
       >
-        ← Back
-      </button>
-    </div>
+        <path 
+          fill-rule="evenodd" 
+          d="M9.707 16.707a1 1 0 01-1.414 0l-6-6a1 1 0 010-1.414l6-6a1 1 0 011.414 1.414L5.414 9H17a1 1 0 110 2H5.414l4.293 4.293a1 1 0 010 1.414z" 
+          clip-rule="evenodd" 
+        />
+      </svg>
+      <span class="font-semibold">Back</span>
+    </button>
     
     <!-- Header -->
     <h2 class="text-4xl font-bold text-blue-800 mb-2 text-center">📝 Add Question Bank</h2>
@@ -167,22 +177,15 @@ export default {
   },
   methods: {
     goBack() {
-      // If there ensures a navigation history, go back
-      if (window.history.length > 1) {
-        this.$router.back();
-        return;
-      }
-
-      // Fallback: redirect based on role
-      const role = localStorage.getItem('role'); // "Admin" or "Faculty"
-
-      if (role === 'Admin') {
-        this.$router.push('/admin/exams');
-      } else if (role === 'Faculty') {
-        this.$router.push('/faculty/exams');
+      // Navigate based on active role
+      const activeRole = localStorage.getItem('active_role')
+      
+      if (activeRole === 'Admin') {
+        this.$router.push('/admin/exams')
+      } else if (activeRole === 'Faculty') {
+        this.$router.push('/faculty')
       } else {
-        // safe fallback
-        this.$router.push('/');
+        this.$router.push('/')
       }
     },
     handleTypeChange() {
