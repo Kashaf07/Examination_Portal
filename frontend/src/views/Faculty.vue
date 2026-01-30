@@ -200,7 +200,60 @@
       ]"
     >
       <!-- Main Content Area -->
-      <div class="p-8 pt-8 max-w-full overflow-x-hidden"> 
+      <div class="p-8 pt-1 max-w-full overflow-x-hidden"> 
+        <!-- 🔔 Faculty Notification Bell -->
+<div class="flex justify-end mb-4">
+  <div class="relative">
+
+    <!-- Bell Button -->
+    <button
+      @click="showNotifications = !showNotifications"
+      class="w-11 h-11 bg-white rounded-full shadow-lg
+             flex items-center justify-center hover:bg-gray-100 relative"
+    >
+      🔔
+      <span
+        v-if="examReminders.length"
+        class="absolute -top-1 -right-1 bg-red-600 text-white
+               text-xs font-bold rounded-full px-1.5"
+      >
+        {{ examReminders.length }}
+      </span>
+    </button>
+
+    <!-- Dropdown -->
+    <div
+      v-if="showNotifications"
+      class="absolute right-0 mt-3 w-96 bg-white rounded-2xl
+             shadow-2xl z-[9999]"
+    >
+      <div class="px-5 py-4 border-b font-bold text-gray-800">
+        🔔 Your Upcoming Exams
+      </div>
+
+      <div v-if="examReminders.length">
+        <div
+          v-for="exam in examReminders"
+          :key="exam.Exam_Id"
+          class="px-5 py-4 border-b last:border-none hover:bg-gray-50"
+        >
+          <p class="font-semibold text-gray-800">
+            {{ exam.Exam_Name }}
+          </p>
+          <p class="text-sm text-gray-500">
+            {{ exam.Exam_Date }} at {{ exam.Exam_Time }}
+          </p>
+        </div>
+      </div>
+
+      <div v-else class="px-5 py-4 text-sm text-gray-500">
+        No upcoming exams 🎉
+      </div>
+    </div>
+
+  </div>
+</div>
+
 
         <!-- Welcome Screen (shown when activeTab is null) -->
         <div
@@ -511,11 +564,13 @@
                       <td class="px-6 py-4 text-sm text-gray-600">{{ exam.attempted_applicants || 0 }}</td>
                       <td class="px-6 py-4 text-center">
                         <button
-                          @click="navigateTo('ViewResponses', exam.Exam_Id)"
-                          class="bg-purple-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-purple-700 shadow-md hover:shadow-lg transition font-semibold"
-                        >
-                          View Responses
-                        </button>
+  @click="navigateTo('ViewResponsesFaculty', exam.Exam_Id)"
+  class="bg-purple-600 text-white px-4 py-2 rounded-lg text-sm
+         hover:bg-purple-700 shadow-md hover:shadow-lg transition font-semibold"
+>
+  View Responses
+</button>
+
                       </td>
                     </tr>
                   </tbody>
@@ -569,6 +624,29 @@ const facultyName = ref(localStorage.getItem("name") || "Faculty")
 const facultyInitial = computed(() => facultyName.value.charAt(0).toUpperCase())
 const email = localStorage.getItem("email")
 const facultyEmail = email
+
+/* ================= 🔔 FACULTY NOTIFICATIONS ================= */
+const showNotifications = ref(false)
+const examReminders = ref([])
+const loadFacultyExamReminders = async () => {
+  try {
+    const res = await axios.get(
+      "http://localhost:5000/api/exam/reminders",
+      {
+        params: {
+          role: "Faculty",
+          email: facultyEmail
+        }
+      }
+    )
+
+    if (res.data.success) {
+      examReminders.value = res.data.reminders
+    }
+  } catch (err) {
+    console.error("FACULTY EXAM REMINDER ERROR:", err)
+  }
+}
 
 /* ================= UI STATE ================= */
 const sidebarOpen = ref(true)
@@ -625,6 +703,8 @@ onMounted(() => {
   }
 
   fetchExamsAndCategorize()
+  loadFacultyExamReminders()
+
   activeTab.value = 'my-exams'
 })
 
@@ -732,6 +812,22 @@ const addStudents = (examId) => {
     params: { examId }
   })
 }
+
+/* ================= ✅ NAVIGATION HELPER ================= */
+const navigateTo = (routeName, examId) => {
+  console.log("Navigating to:", routeName, examId)
+
+  if (!examId) {
+    alert("Invalid exam ID")
+    return
+  }
+
+  router.push({
+    name: routeName,
+    params: { examId }
+  })
+}
+
 
 
 /* ================= ROLE SWITCH ================= */

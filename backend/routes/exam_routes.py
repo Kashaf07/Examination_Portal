@@ -7,166 +7,259 @@ import MySQLdb.cursors
 def create_exam_routes(mysql):
     exam_bp = Blueprint('exam', __name__)
 
+    # =====================================================
+    # CREATE EXAM
+    # =====================================================
     @exam_bp.route('/create', methods=['POST'])
     def create_exam():
         data = request.json
+
         exam_name = data.get('exam_name')
-        exam_date = data.get('exam_date')      # format: YYYY-MM-DD
-        exam_time = data.get('exam_time')      # format: HH:MM
-        duration = data.get('duration')         # integer
+        exam_date = data.get('exam_date')
+        exam_time = data.get('exam_time')
+        duration = data.get('duration')
         total_questions = data.get('total_questions')
         max_marks = data.get('max_marks')
         faculty_email = data.get('faculty_email')
 
-        if not all([exam_name, exam_date, exam_time, duration, total_questions, max_marks, faculty_email]):
-            return jsonify({'success': False, 'message': 'Missing required fields'}), 400
+        if not all([
+            exam_name, exam_date, exam_time,
+            duration, total_questions, max_marks, faculty_email
+        ]):
+            return jsonify(success=False, message="Missing required fields"), 400
 
         try:
-            exam_datetime_str = f"{exam_date} {exam_time}"
-            exam_datetime = datetime.strptime(exam_datetime_str, "%Y-%m-%d %H:%M")
-            current_datetime = datetime.now()
+            exam_datetime = datetime.strptime(
+                f"{exam_date} {exam_time}", "%Y-%m-%d %H:%M"
+            )
 
-            if exam_datetime < current_datetime:
-                return jsonify({'success': False, 'message': 'Exam date/time cannot be in the past'}), 400
+            if exam_datetime < datetime.now():
+                return jsonify(
+                    success=False,
+                    message="Exam date/time cannot be in the past"
+                ), 400
 
             cursor = mysql.connection.cursor()
             cursor.execute("""
-                INSERT INTO Entrance_Exam 
-                (Exam_Name, Exam_Date, Exam_Time, Duration_Minutes, Total_Questions, Max_Marks, Faculty_Email)
+                INSERT INTO Entrance_Exam
+                (Exam_Name, Exam_Date, Exam_Time, Duration_Minutes,
+                 Total_Questions, Max_Marks, Faculty_Email)
                 VALUES (%s, %s, %s, %s, %s, %s, %s)
-            """, (exam_name, exam_date, exam_time, duration, total_questions, max_marks, faculty_email))
+            """, (
+                exam_name, exam_date, exam_time,
+                duration, total_questions, max_marks, faculty_email
+            ))
+
             mysql.connection.commit()
             exam_id = cursor.lastrowid
             cursor.close()
 
-            return jsonify({
-                'success': True,
-                'message': f'Exam created successfully with ID: {exam_id}',
-                'exam_id': exam_id
-            })
+            return jsonify(success=True, exam_id=exam_id)
 
         except Exception as e:
-            print("DB error:", e)
-            return jsonify({'success': False, 'message': 'Database error'}), 500
+            print("❌ Create exam error:", e)
+            traceback.print_exc()
+            return jsonify(success=False, message="Database error"), 500
 
+    # =====================================================
+    # GET EXAMS (WITH APPLICANT COUNTS)
+    # =====================================================
     @exam_bp.route('/get_exams/<faculty_email>', methods=['GET'])
     def get_exams(faculty_email):
         try:
-            cursor = mysql.connection.cursor()
+            cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+
             cursor.execute("""
-                SELECT Exam_Id, Exam_Name, Exam_Date, Exam_Time, Duration_Minutes,
-                       Total_Questions, Max_Marks
+                SELECT Exam_Id, Exam_Name, Exam_Date, Exam_Time,
+                       Duration_Minutes, Total_Questions, Max_Marks
                 FROM Entrance_Exam
                 WHERE Faculty_Email = %s
             """, (faculty_email,))
             exams = cursor.fetchall()
-            cursor.close()
 
             exam_list = []
-            for row in exams:
+
+            for exam in exams:
+                exam_id = exam["Exam_Id"]
+
+                cursor.execute("""
+                    SELECT COUNT(DISTINCT Applicant_Id) AS total
+                    FROM applicant_exam_assign
+                    WHERE Exam_Id = %s
+                """, (exam_id,))
+                total_applicants = cursor.fetchone()["total"]
+
+                cursor.execute("""
+                    SELECT COUNT(DISTINCT aa.Applicant_Id) AS attempted
+                    FROM applicant_attempt aa
+                    JOIN exam_paper ep
+                      ON aa.Exam_Paper_Id = ep.Exam_Paper_Id
+                    WHERE ep.Exam_Id = %s
+                """, (exam_id,))
+                attempted_applicants = cursor.fetchone()["attempted"]
+
                 exam_list.append({
-                    'Exam_Id': row[0],
-                    'Exam_Name': row[1],
-                    'Exam_Date': str(row[2]),
-                    'Exam_Time': str(row[3]),
-                    'Duration_Minutes': row[4],
-                    'Total_Questions': row[5],
-                    'Max_Marks': row[6]
+                    "Exam_Id": exam["Exam_Id"],
+                    "Exam_Name": exam["Exam_Name"],
+                    "Exam_Date": str(exam["Exam_Date"]),
+                    "Exam_Time": str(exam["Exam_Time"]),
+                    "Duration_Minutes": str(exam["Duration_Minutes"]),
+                    "Total_Questions": exam["Total_Questions"],
+                    "Max_Marks": exam["Max_Marks"],
+                    "total_applicants": total_applicants,
+                    "attempted_applicants": attempted_applicants
                 })
 
-            return jsonify({'success': True, 'exams': exam_list})
+            cursor.close()
+            return jsonify(success=True, exams=exam_list)
 
         except Exception as e:
-            print("Error fetching exams:", e)
-            return jsonify({'success': False, 'message': 'Server error'}), 500
+            print("❌ Get exams error:", e)
+            traceback.print_exc()
+            return jsonify(success=False, message="Server error"), 500
 
+    # =====================================================
+    # ✅ GET EXAM BY ID (FIXED)
+    # =====================================================
     @exam_bp.route('/get_exam_by_id/<int:exam_id>', methods=['GET'])
     def get_exam_by_id(exam_id):
         try:
-            cursor = mysql.connection.cursor()
+            cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+
             cursor.execute("""
-                SELECT Exam_Id, Exam_Name, Exam_Date, Exam_Time, Duration_Minutes,
-                       Total_Questions, Max_Marks, Faculty_Email
+                SELECT Exam_Id, Exam_Name, Exam_Date, Exam_Time, Duration_Minutes
                 FROM Entrance_Exam
                 WHERE Exam_Id = %s
             """, (exam_id,))
-            row = cursor.fetchone()
+
+            exam = cursor.fetchone()
             cursor.close()
 
-            if row:
-                exam = {
-                    'Exam_Id': row[0],
-                    'Exam_Name': row[1],
-                    'Exam_Date': str(row[2]),
-                    'Exam_Time': str(row[3]),
-                    'Duration_Minutes': row[4],
-                    'Total_Questions': row[5],
-                    'Max_Marks': row[6],
-                    'Faculty_Email': row[7]
-                }
-                return jsonify({'exam': exam})
-            else:
-                return jsonify({'error': 'Exam not found'}), 404
+            print("DEBUG exam raw:", exam)
+
+            if not exam:
+                return jsonify(success=False, message="Exam not found"), 404
+
+            # 🔥 Convert non-JSON-serializable fields
+            exam["Exam_Date"] = str(exam["Exam_Date"])
+            exam["Exam_Time"] = str(exam["Exam_Time"])
+            exam["Duration_Minutes"] = str(exam["Duration_Minutes"])
+
+            return jsonify(success=True, exam=exam)
 
         except Exception as e:
-            print("Exception occurred:", e)
+            print("❌ Get exam by id error:", e)
             traceback.print_exc()
-            return jsonify({'error': 'Server error'}), 500
+            return jsonify(success=False, message="Server error"), 500
 
-    @exam_bp.route('/delete/<int:exam_id>', methods=['DELETE'])
-    def delete_exam(exam_id):
-        try:
-            cursor = mysql.connection.cursor()
-
-            cursor.execute("SET FOREIGN_KEY_CHECKS = 0")
-
-            cursor.execute("""
-                DELETE FROM exam_paper_questions 
-                WHERE Exam_Paper_Id IN (
-                    SELECT Exam_Paper_Id FROM exam_paper WHERE Exam_Id = %s)
-            """, (exam_id,))
-            cursor.execute("DELETE FROM exam_paper WHERE Exam_Id = %s", (exam_id,))
-            cursor.execute("DELETE FROM entrance_question_bank WHERE Exam_Id = %s", (exam_id,))
-            cursor.execute("DELETE FROM applicant_exam_assign WHERE Exam_Id = %s", (exam_id,))
-            cursor.execute("DELETE FROM Entrance_Exam WHERE Exam_Id = %s", (exam_id,))
-
-            cursor.execute("SET FOREIGN_KEY_CHECKS = 1")
-
-            mysql.connection.commit()
-            cursor.close()
-
-            return jsonify({'success': True, 'message': 'Exam deleted successfully!'})
-
-        except Exception as e:
-            print("Error deleting exam:", e)
-            return jsonify({'success': False, 'message': 'Failed to delete exam'}), 500
-
-    # New route to get question bank and paper status
+    # =====================================================
+    # EXAM STATUS
+    # =====================================================
     @exam_bp.route('/status/<int:exam_id>', methods=['GET'])
     def get_exam_status(exam_id):
         try:
             cursor = mysql.connection.cursor()
 
             cursor.execute("""
-                SELECT COUNT(*) FROM entrance_question_bank WHERE Exam_Id = %s
+                SELECT COUNT(*) FROM entrance_question_bank
+                WHERE Exam_Id = %s
             """, (exam_id,))
             qb_count = cursor.fetchone()[0]
 
             cursor.execute("""
-                SELECT COUNT(*) FROM exam_paper WHERE Exam_Id = %s
+                SELECT COUNT(*) FROM exam_paper
+                WHERE Exam_Id = %s
             """, (exam_id,))
             qp_count = cursor.fetchone()[0]
 
             cursor.close()
 
-            status = {
-                'has_question_bank': qb_count > 0,
-                'has_question_paper': qp_count > 0
-            }
-            return jsonify({'success': True, 'status': status})
+            return jsonify(
+                success=True,
+                status={
+                    "has_question_bank": qb_count > 0,
+                    "has_question_paper": qp_count > 0
+                }
+            )
 
         except Exception as e:
-            print("Error in get_exam_status:", e)
-            return jsonify({'success': False, 'message': 'Server error'}), 500
+            print("❌ Status error:", e)
+            traceback.print_exc()
+            return jsonify(success=False), 500
 
+        # =====================================================
+    # 🔔 EXAM REMINDERS (DASHBOARD NOTIFICATION)
+    # =====================================================
+       # =====================================================
+    # 🔔 EXAM REMINDERS (ADMIN + FACULTY)
+    # =====================================================
+    @exam_bp.route('/reminders', methods=['GET'])
+    def exam_reminders():
+        try:
+            role = request.args.get("role")
+            email = request.args.get("email")
+
+            cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+
+            # -----------------------------
+            # ADMIN → ALL EXAMS
+            # -----------------------------
+            if role == "Admin":
+                cursor.execute("""
+                    SELECT
+                        Exam_Id,
+                        Exam_Name,
+                        Exam_Date,
+                        Exam_Time,
+                        Faculty_Email,
+                        DATEDIFF(Exam_Date, CURDATE()) AS days_left
+                    FROM Entrance_Exam
+                    WHERE Exam_Date >= CURDATE()
+                    ORDER BY Exam_Date ASC
+                    LIMIT 10
+                """)
+
+            # -----------------------------
+            # FACULTY → OWN EXAMS ONLY
+            # -----------------------------
+            elif role == "Faculty" and email:
+                cursor.execute("""
+                    SELECT
+                        Exam_Id,
+                        Exam_Name,
+                        Exam_Date,
+                        Exam_Time,
+                        Faculty_Email,
+                        DATEDIFF(Exam_Date, CURDATE()) AS days_left
+                    FROM Entrance_Exam
+                    WHERE Faculty_Email = %s
+                      AND Exam_Date >= CURDATE()
+                    ORDER BY Exam_Date ASC
+                    LIMIT 5
+                """, (email,))
+
+            else:
+                return jsonify(
+                    success=False,
+                    message="Invalid role or missing email"
+                ), 400
+
+            reminders = cursor.fetchall()
+            cursor.close()
+
+            # Convert date/time
+            for exam in reminders:
+                exam["Exam_Date"] = str(exam["Exam_Date"])
+                exam["Exam_Time"] = str(exam["Exam_Time"])
+
+            return jsonify(success=True, reminders=reminders)
+
+        except Exception as e:
+            print("❌ Exam reminder error:", e)
+            traceback.print_exc()
+            return jsonify(success=False, message="Server error"), 500
+
+    # =====================================================
+    # RETURN BLUEPRINT
+    # =====================================================
     return exam_bp

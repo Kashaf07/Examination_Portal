@@ -115,17 +115,44 @@
 
     </form>
   </div>
+  <NotificationToast
+      v-if="toast.message"
+      :message="toast.message"
+      :type="toast.type"
+      @clear="clearToast"
+    />
 </template>
 
 <script setup>
 import { reactive, ref, onMounted } from "vue"
 import { useRouter } from "vue-router"
 import axios from "../utils/axiosInstance"
+import NotificationToast from "@/components/admin/NotificationToast.vue"
 
 // --------------------
 // ROUTER
 // --------------------
 const router = useRouter()
+
+const toast = ref({
+  message: "",
+  type: ""
+})
+
+let toastTimer = null
+
+const showToast = (message, type = "success") => {
+  toast.value = { message, type }
+
+  clearTimeout(toastTimer)
+  toastTimer = setTimeout(() => {
+    toast.value = { message: "", type: "" }
+  }, 3000)
+}
+
+const clearToast = () => {
+  toast.value = { message: "", type: "" }
+}
 
 // --------------------
 // AUTH DATA (FROM LOGIN)
@@ -179,24 +206,20 @@ const loadGroups = async () => {
 const submitApplicant = async () => {
   try {
     await axios.post("/applicants/add", applicant)
-    alert("Applicant added successfully")
+    showToast("Applicant added successfully!", "success")
+    clearForm()
 
-    router.push("/admin/applicants")   // redirect back
+    if (activeRole === "Admin") {
+      router.push("/admin/applicants")
+    } else {
+      router.push("/faculty")   // ✅ Faculty-safe route
+    }
+
   } catch (err) {
-    console.error("ADD APPLICANT ERROR:", err.response?.data)
-    alert(err.response?.data?.message || "Error adding applicant")
-  }
-}
-
-// --------------------
-// CANCEL BUTTON
-// --------------------
-const goBack = () => {
-  if (activeRole === "Admin") {
-    router.push("/admin/applicants")
-  } else {
-    // Faculty mode: close this panel
-    emit("closeAddApplicant")
+    emit("toast", {
+      message: err.response?.data?.message || "Error adding applicant",
+      type: "error"
+    })
   }
 }
 

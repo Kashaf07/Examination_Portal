@@ -1,5 +1,17 @@
 <template>
-  <div class="p-10 bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 rounded-2xl shadow-xl">
+  <div class="min-h-screen p-10 bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 rounded-2xl shadow-xl">
+    <!-- Back Button -->
+    <div class="mb-6">
+      <button
+        @click="goBack"
+        class="flex items-center gap-2 bg-white/70 hover:bg-white
+              text-gray-800 font-semibold px-5 py-2 rounded-full
+              shadow-md transition-all hover:scale-105"
+      >
+        ← Back
+      </button>
+    </div>
+    
     <!-- Header -->
     <h2 class="text-4xl font-bold text-blue-800 mb-2 text-center">📝 Add Question Bank</h2>
     <p class="text-black-600 text-center mb-8">
@@ -7,78 +19,32 @@
       <strong class="text-purple-700">Exam ID: {{ $route.params.examId }}</strong>
     </p>
 
-    <!-- Need a format + download link -->
-    <div class="mb-4 text-sm text-gray-700 text-center">
-      Need a format?
-      <a
-        href="http://localhost:5000/static/sample_question_bank.csv"
-        download
-        class="ml-1 text-blue-600 underline hover:text-blue-800 transition duration-150"
+    <!-- Action Buttons (like Students page) -->
+    <div class="flex gap-4 justify-center mb-8">
+      <button
+        @click="activeTab = 'add'"
+        :class="activeTab === 'add' ? activeBtn : inactiveBtn"
       >
-        Download Sample Excel Template
-      </a>
-    </div>
+        ➕ Add Question
+      </button>
 
-    <!-- Pill file input + Upload button -->
-    <div class="flex items-center justify-center mb-4">
-      <div
-        class="flex items-center w-full max-w-3xl border border-green-300 rounded-full overflow-hidden shadow-sm bg-white py-1"
+      <button
+        @click="activeTab = 'upload'"
+        :class="activeTab === 'upload' ? activeBtn : inactiveBtn"
       >
-        <!-- Hidden real input -->
-        <input
-          id="csv-file"
-          type="file"
-          ref="csvFile"
-          accept=".csv"
-          class="hidden"
-          @change="handleFileChange"
-        />
-
-        <!-- Left green 'Choose File' -->
-        <label
-          for="csv-file"
-          class="cursor-pointer px-7 py-2 bg-green-100 text-green-700 font-semibold text-sm flex items-center justify-center"
-          style="border-top-right-radius: 0; border-bottom-right-radius: 0;"
-        >
-          Choose File
-        </label>
-
-        <!-- Middle filename text -->
-        <span class="flex-1 px-5 text-sm text-gray-600 truncate text-left">
-          {{ selectedFile ? selectedFile.name : 'No file chosen' }}
-        </span>
-
-        <!-- Right green Upload -->
-        <button
-          @click="uploadCSV"
-          :disabled="!selectedFile"
-          class="px-9 py-2 bg-green-500 text-white text-sm font-semibold hover:bg-green-600 transition
-                 disabled:opacity-50 disabled:cursor-not-allowed"
-          style="border-top-left-radius: 0; border-bottom-left-radius: 0;"
-        >
-          Upload
-        </button>
-      </div>
+        📤 Upload Questions
+      </button>
     </div>
 
-    <!-- Success message -->
-    <p
-      v-if="successMessage"
-      class="text-center text-sm text-green-600 font-semibold mt-4 mb-2"
-    >
-      {{ successMessage }}
-    </p>
-
-    <!-- CSV error list -->
-    <div v-if="csvErrors.length" class="mt-2 mb-6 text-left max-w-2xl mx-auto">
-      <div class="font-bold text-red-600 mb-2">CSV Errors:</div>
-      <ul class="text-red-700 pl-6 list-disc">
-        <li v-for="err in csvErrors" :key="err">{{ err }}</li>
-      </ul>
-    </div>
+    <!-- Upload Questions -->
+    <UploadQuestionBank
+      v-if="activeTab === 'upload'"
+      :examId="$route.params.examId"
+    />
 
     <!-- Add Question Form -->
     <form
+      v-if="activeTab === 'add'"
       @submit.prevent="submitForm"
       class="max-w-4xl mx-auto space-y-6 bg-white p-8 rounded-xl shadow-lg mt-4"
     >
@@ -173,9 +139,19 @@
 </template>
 
 <script>
+import UploadQuestionBank from '../views/UploadQuestionBank.vue';
+
 export default {
+  components: {
+    UploadQuestionBank
+  },
   data() {
     return {
+      activeTab: 'add', // default
+      activeBtn:
+        'bg-blue-500 hover:bg-blue-600 text-white font-semibold px-6 py-3 rounded-full shadow-lg transition-all hover:scale-105',
+      inactiveBtn:
+        'bg-gray-200 text-gray-700 px-6 py-3 rounded-full font-semibold hover:bg-gray-300 shadow-lg transition-all hover:scale-105',
       form: {
         exam_id: '',
         question_type: 'MCQ',
@@ -187,12 +163,28 @@ export default {
         correct_answer: '',
         marks: 1
       },
-      selectedFile: null,
-      csvErrors: [],
-      successMessage: ''
     };
   },
   methods: {
+    goBack() {
+      // If there ensures a navigation history, go back
+      if (window.history.length > 1) {
+        this.$router.back();
+        return;
+      }
+
+      // Fallback: redirect based on role
+      const role = localStorage.getItem('role'); // "Admin" or "Faculty"
+
+      if (role === 'Admin') {
+        this.$router.push('/admin/exams');
+      } else if (role === 'Faculty') {
+        this.$router.push('/faculty/exams');
+      } else {
+        // safe fallback
+        this.$router.push('/');
+      }
+    },
     handleTypeChange() {
       if (this.form.question_type === 'TF') {
         this.form.option_a = 'True';
@@ -262,48 +254,6 @@ export default {
         correct_answer: '',
         marks: 1
       };
-    },
-    handleFileChange(e) {
-      this.selectedFile = e.target.files[0] || null;
-      this.csvErrors = [];
-      this.successMessage = '';
-    },
-    async uploadCSV() {
-      if (!this.selectedFile) {
-        alert('Please select a CSV file before uploading.');
-        return;
-      }
-      this.csvErrors = [];
-      this.successMessage = '';
-      try {
-        const formData = new FormData();
-        formData.append('file', this.selectedFile);
-        formData.append('exam_id', this.$route.params.examId);
-        formData.append('email', localStorage.getItem('faculty_email'));
-        formData.append('role', 'Faculty');
-        const response = await fetch('http://localhost:5000/api/questions/upload-csv', {
-          method: 'POST',
-          body: formData
-        });
-        const result = await response.json();
-        if (response.ok) {
-          this.successMessage = result.message || 'CSV uploaded successfully.';
-          this.csvErrors = [];
-          this.$refs.csvFile.value = '';
-          this.selectedFile = null;
-        } else {
-          this.successMessage = '';
-          if (result.details) {
-            this.csvErrors = result.details;
-          } else {
-            alert('Error: ' + (result.error || 'CSV upload failed.'));
-          }
-        }
-      } catch (err) {
-        console.error('CSV upload failed:', err);
-        this.successMessage = '';
-        alert('An error occurred while uploading CSV.');
-      }
     }
   },
   mounted() {
