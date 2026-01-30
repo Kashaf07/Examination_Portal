@@ -176,5 +176,70 @@ def create_faculty_routes(mysql):
 
         except Exception as e:
             return jsonify({"success": False, "message": str(e)}), 500
+        
+    # -------------------------
+    # DELETE EXAM (FACULTY)
+    # -------------------------
+    @faculty_bp.route("/exam/delete/<int:exam_id>", methods=["DELETE"])
+    @token_required
+    def delete_exam_faculty(current_user, exam_id):
+        try:
+            faculty_email = current_user["email"]
+            cursor = mysql.connection.cursor()
+
+            # 🔐 1️⃣ Verify exam belongs to this faculty
+            cursor.execute("SELECT Exam_Id FROM Entrance_Exam WHERE Exam_Id = %s AND faculty_email = %s",(exam_id, faculty_email))
+            exam = cursor.fetchone()
+
+            if not exam:
+                cursor.close()
+                return jsonify({
+                    "success": False,
+                    "message": "Unauthorized or exam not found"
+                }), 403
+
+            # 🧹 2️⃣ DELETE QUESTION BANK FIRST (FK FIX)
+            cursor.execute("DELETE FROM entrance_question_bank WHERE Exam_Id = %s",(exam_id,))
+
+            # 3️⃣ Get exam paper IDs
+            cursor.execute("SELECT Exam_Paper_Id FROM exam_paper WHERE Exam_Id = %s",(exam_id,))
+            paper_ids = [row[0] for row in cursor.fetchall()]
+
+            if paper_ids:
+                # 4️⃣ Get attempt IDs
+                cursor.execute(f""" SELECT Attempt_Id FROM applicant_attempt WHERE Exam_Paper_Id IN ({','.join(['%s'] * len(paper_ids))})""",paper_ids)
+                attempt_ids = [row[0] for row in cursor.fetchall()]
+
+                # 5️⃣ Delete answers
+                if attempt_ids:
+                    cursor.execute(f""" DELETE FROM applicant_answers WHERE Attempt_Id IN ({','.join(['%s'] * len(attempt_ids))})""",attempt_ids)
+
+                # 6️⃣ Delete attempts
+                cursor.execute(f"""DELETE FROM applicant_attempt WHERE Exam_Paper_Id IN ({','.join(['%s'] * len(paper_ids))})""",paper_ids)
+
+            # 7️⃣ Delete applicant-exam assignments
+            cursor.execute("DELETE FROM applicant_exam_assign WHERE Exam_Id = %s",(exam_id,))
+
+            # 8️⃣ Delete exam papers
+            cursor.execute("DELETE FROM exam_paper WHERE Exam_Id = %s",(exam_id,))
+
+            # 9️⃣ Finally delete exam
+            cursor.execute("DELETE FROM Entrance_Exam WHERE Exam_Id = %s",(exam_id,))
+
+            mysql.connection.commit()
+            cursor.close()
+
+            return jsonify({
+                "success": True,
+                "message": "Exam deleted successfully"
+            }), 200
+
+        except Exception as e:
+            mysql.connection.rollback()
+            print("🔥 Faculty exam delete failed:", e)
+            return jsonify({
+                "success": False,
+                "error": str(e)
+            }), 500
 
     return faculty_bp

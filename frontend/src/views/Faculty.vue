@@ -790,13 +790,29 @@ const submitExam = async () => {
 
 const deleteExam = async (examId) => {
   if (!confirm("Delete this exam?")) return
+
   try {
-    const res = await axios.delete(`/exam/delete/${examId}`)
-    if (res.data.success) fetchExamsAndCategorize()
+    const res = await axios.delete(
+      `/faculty/exam/delete/${examId}`,   // ✅ FACULTY ROUTE
+      {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("token")}`
+        }
+      }
+    )
+
+    if (res.data.success) {
+      fetchExamsAndCategorize()
+    } else {
+      alert(res.data.message || "Failed to delete exam")
+    }
+
   } catch (err) {
     console.error("Delete failed", err)
+    alert("Delete failed. Check console.")
   }
 }
+
 
 /* ================= ✅ FIXED ADD STUDENTS ================= */
 const addStudents = (examId) => {

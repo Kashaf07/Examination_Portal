@@ -406,7 +406,7 @@ const deleteExam = async (id) => {
   if (!confirm("Delete this exam?")) return;
 
   try {
-    const res = await axios.delete(`${API}/exam/delete/${id}`);
+    const res = await axios.delete( `http://localhost:5000/api/admin/exam/delete/${id}`)
     if (res.data.success) {
       emit("toast", { message: "Exam deleted successfully!", type: "success" });
       fetchExams();
