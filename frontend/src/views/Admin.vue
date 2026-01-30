@@ -153,13 +153,18 @@
     <!-- Main -->
     <main :class="['flex-1 transition-all duration-300', sidebarOpen ? 'ml-64' : 'ml-20']">
       <div class="px-8 py-6">
-        <!-- 🔔 Notification Bell (ADD ONLY) -->
+     <!-- 🔔 Notification Bell -->
 <div class="flex justify-end mb-4">
   <div class="relative">
+
+    <!-- 🔔 Bell Button -->
     <button
       @click="showNotifications = !showNotifications"
-      class="w-11 h-11 bg-white rounded-full shadow-lg
-             flex items-center justify-center hover:bg-gray-100 relative"
+      aria-label="Admin Notifications"
+      class="w-11 h-11 bg-white rounded-full shadow-md
+             flex items-center justify-center
+             hover:bg-gray-100 relative
+             outline-none border-none cursor-pointer"
     >
       🔔
       <span
@@ -174,34 +179,97 @@
     <!-- Dropdown -->
     <div
       v-if="showNotifications"
-      class="absolute right-0 mt-3 w-96 bg-white rounded-2xl
-             shadow-2xl z-[9999]"
+      class="absolute right-0 mt-3 w-[420px]
+             bg-white rounded-2xl
+             shadow-xl z-[9999]
+             overflow-hidden border-none outline-none"
     >
-      <div class="px-5 py-4 border-b font-bold text-gray-800">
-        🔔 Upcoming Exams
+      <!-- Header -->
+      <div class="px-6 py-4 bg-gradient-to-r from-indigo-50 to-blue-50
+                  flex justify-between items-center">
+        <div class="flex items-center gap-2">
+          <span class="text-lg">🔔</span>
+          <span class="font-bold text-gray-800">
+            Admin Exam Notifications
+          </span>
+        </div>
+        <span class="text-sm text-gray-500">
+          {{ examReminders.length }}
+        </span>
       </div>
 
-      <div v-if="examReminders.length">
+      <!-- Notifications -->
+      <div
+        v-if="examReminders.length"
+        class="p-4 space-y-3 max-h-[420px] overflow-y-auto bg-white"
+      >
         <div
-          v-for="exam in examReminders"
-          :key="exam.Exam_Id"
-          class="px-5 py-4 border-b last:border-none hover:bg-gray-50"
+          v-for="(exam, index) in examReminders"
+          :key="exam.Notification_ID"
+          class="rounded-xl p-4 bg-gray-50
+                 hover:bg-indigo-50 transition
+                 relative cursor-default"
         >
-          <p class="font-semibold text-gray-800">
+          <!-- ❌ Remove -->
+          <button
+            @click.stop="removeNotification(index)"
+            class="absolute top-3 right-3 text-gray-400
+                   hover:text-red-500 text-lg font-bold"
+            title="Dismiss"
+          >
+            ×
+          </button>
+
+          <!-- Exam Name -->
+          <p class="font-semibold text-sm text-gray-800">
             {{ exam.Exam_Name }}
           </p>
-          <p class="text-sm text-gray-500">
-            {{ exam.Exam_Date }} at {{ exam.Exam_Time }}
-          </p>
+
+          <!-- Meta -->
+          <div class="flex flex-wrap gap-3 text-xs text-gray-500 mt-1">
+  <span>📅 {{ exam.Exam_Date }}</span>
+  <span>⏰ {{ exam.Exam_Time }}</span>
+
+  <span
+    v-if="exam.Faculty_Name"
+    class="text-indigo-600 font-medium"
+  >
+    👨‍🏫 {{ exam.Faculty_Name }}
+  </span>
+
+  <!-- 🔴 STARTING SOON TAG -->
+  <span
+    v-if="isStartingSoon(exam)"
+    class="bg-red-100 text-red-600 px-2 py-0.5 rounded-full font-semibold"
+  >
+    ⏳ Starting Soon
+  </span>
+
+  <!-- 🟢 COUNTDOWN -->
+  <span
+    v-if="isStartingSoon(exam)"
+    class="text-green-600 font-semibold"
+  >
+    ⏱ {{ formatCountdown(exam) }}
+  </span>
+</div>
+
         </div>
       </div>
 
-      <div v-else class="px-5 py-4 text-sm text-gray-500">
-        No upcoming exams 🎉
+      <!-- Empty -->
+      <div v-else class="px-6 py-8 text-center text-gray-500">
+        <div class="text-3xl mb-2">📭</div>
+        No upcoming exams
       </div>
     </div>
+
   </div>
 </div>
+
+
+
+
 
 
         <!-- Dashboard -->
@@ -263,15 +331,43 @@
 
 </template>
 
+
 <script setup>
 import axios from "axios";
-import { ref, computed, onMounted, watch } from "vue";
+import { ref, computed, onMounted,onUnmounted, watch } from "vue";
 import { useRouter, useRoute } from "vue-router";
 import NotificationToast from "@/components/admin/NotificationToast.vue";
 import { authApi } from "@/services/adminApi.js";
 
 const router = useRouter();
+const now = ref(new Date())
+
 const route = useRoute();
+const getRemainingMinutes = (exam) => {
+  const examDateTime = new Date(`${exam.Exam_Date}T${exam.Exam_Time}`)
+  return Math.floor((examDateTime - now.value) / 60000)
+}
+
+
+const isStartingSoon = (exam) => {
+  const mins = getRemainingMinutes(exam)
+  return mins >= 0 && mins <= 10
+}
+
+
+const formatCountdown = (exam) => {
+  const examDateTime = new Date(`${exam.Exam_Date}T${exam.Exam_Time}`)
+  const diff = examDateTime - now.value
+
+  if (diff <= 0) return "Starting now"
+
+  const mins = Math.floor(diff / 60000)
+  const secs = Math.floor((diff % 60000) / 1000)
+
+  return `${mins}m ${secs}s`
+}
+
+
 
 const adminName = ref(localStorage.getItem("name") || "Admin")
 const adminInitial = computed(() => adminName.value.charAt(0).toUpperCase())
@@ -299,6 +395,10 @@ const hideTooltip = () => {
   tooltip.value.visible = false
 }
 
+/* ================= 🔕 DISMISS SINGLE NOTIFICATION ================= */
+const removeNotification = (index) => {
+  examReminders.value.splice(index, 1)
+}
 
 const tabs = [
   { id: "faculty", name: "Faculty", icon: "faculty" },
@@ -338,9 +438,28 @@ const checkFacultyRole = async () => {
   }
 }
 
+onUnmounted(() => {
+  if (notificationTimer) clearInterval(notificationTimer)
+  if (countdownTimer) clearInterval(countdownTimer)
+})
+
+
 onMounted(() => {
   activeTab.value = getAdminTabFromPath(route.path)
   checkFacultyRole()
+
+  loadExamReminders()
+
+  // 🔁 Refresh notifications every 10s
+  notificationTimer = setInterval(() => {
+    loadExamReminders()
+  }, 10000)
+
+  // ⏱ Update countdown every second (UI only)
+  countdownTimer = setInterval(() => {
+  now.value = new Date()
+}, 1000)
+
 })
 
 watch(() => route.path, (newPath) => {
@@ -365,22 +484,26 @@ const selectRole = (roleId) => {
 const showNotifications = ref(false)
 const examReminders = ref([])
 
+let notificationTimer = null
+let countdownTimer = null
+
+
 // Load exam reminders (ADMIN)
+// 🔔 Load ADMIN notifications (FIXED)
 const loadExamReminders = async () => {
   try {
     const res = await axios.get(
-      "http://localhost:5000/api/exam/reminders",
-      {
-        params: { role: "Admin" }
-      }
+      "http://localhost:5000/api/admin/notifications"
     )
+
     if (res.data.success) {
       examReminders.value = res.data.reminders
     }
   } catch (err) {
-    console.error("EXAM REMINDER ERROR:", err)
+    console.error("ADMIN NOTIFICATION ERROR:", err)
   }
 }
+
 
 // ADD inside your existing onMounted (do NOT create a new one)
 loadExamReminders()

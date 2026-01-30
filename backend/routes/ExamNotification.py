@@ -1,11 +1,12 @@
 from flask import Blueprint, request, jsonify, current_app
 from datetime import datetime, timedelta
 from flask_mail import Message
+import MySQLdb.cursors
 
 exam_notify_bp = Blueprint("exam_notify_bp", __name__)
 
 # ==========================================================
-# 📧 EXISTING: SEND EMAIL TO APPLICANTS (UNCHANGED)
+# 📧 SEND EMAIL TO APPLICANTS
 # ==========================================================
 @exam_notify_bp.route("/api/send_exam_notification", methods=["POST"])
 def send_exam_notification():
@@ -46,21 +47,19 @@ Best of luck!
         current_app.extensions["mail"].send(msg)
 
     cur.close()
-    return jsonify({"success": True})
+    return jsonify(success=True)
 
 
 # ==========================================================
-# 🔔 FACULTY 10-MINUTE REMINDER (FINAL FIXED VERSION)
+# 🔔 FACULTY 10-MINUTE REMINDER (DB-SUPPORTED)
 # ==========================================================
 def notify_faculty_internal():
+    mysql = current_app.config["MYSQL"]
+    mail = current_app.extensions["mail"]
+
     try:
-        mysql = current_app.config["MYSQL"]
-        mail = current_app.extensions["mail"]
-
         cur = mysql.connection.cursor()
-
         now = datetime.now()
-        window_end = now + timedelta(minutes=1)
 
         cur.execute("""
             SELECT Exam_Id, Exam_Name, Exam_Date, Exam_Time, Faculty_Email
@@ -71,7 +70,7 @@ def notify_faculty_internal():
 
         for exam_id, name, exam_date, exam_time, faculty_email in exams:
 
-            # ✅ FIX: normalize Exam_Time
+            # Normalize Exam_Time
             if isinstance(exam_time, timedelta):
                 total_seconds = int(exam_time.total_seconds())
                 hours = total_seconds // 3600
@@ -81,14 +80,13 @@ def notify_faculty_internal():
             elif isinstance(exam_time, str):
                 exam_time = datetime.strptime(exam_time, "%H:%M:%S").time()
 
-            # ✅ SAFE datetime creation
             exam_datetime = datetime.combine(exam_date, exam_time)
-            reminder_time = exam_datetime - timedelta(minutes=10)
+            diff_seconds = (exam_datetime - now).total_seconds()
 
-        diff_seconds = (exam_datetime - now).total_seconds()
-        if 0 <= diff_seconds <= 600:  # within 10 minutes
+            # within 10 minutes
+            if 0 <= diff_seconds <= 600:
 
-                # 📧 EMAIL
+                # 📧 EMAIL TO FACULTY
                 msg = Message(
                     subject=f"⏰ Exam Reminder: {name}",
                     recipients=[faculty_email],
@@ -97,24 +95,25 @@ Hello,
 
 This is a reminder that your exam "{name}" will start at {exam_time.strftime('%H:%M')}.
 
-Please be ready.
-
 Regards,
 Examination Portal
 """
                 )
                 mail.send(msg)
 
-                # 🔔 DASHBOARD NOTIFICATION
+                # 🔔 DASHBOARD NOTIFICATION (WITH EXAM + FACULTY INFO)
                 cur.execute("""
-                    INSERT INTO notification (Title, Message, Target_Role)
-                    VALUES (%s, %s, 'Faculty')
-                """, (
-                    "Exam Reminder",
-                    f'Exam "{name}" will start in 10 minutes.'
-                ))
+    INSERT INTO notification
+    (Title, Message, Target_Role, Exam_Id, Faculty_Email)
+    VALUES (%s, %s, 'Faculty', %s, %s)
+""", (
+    "Exam Reminder",
+    f'Exam "{name}" will start in 10 minutes.',
+    exam_id,
+    faculty_email
+))
 
-                # ✅ MARK SENT
+                # Mark reminder sent
                 cur.execute("""
                     UPDATE entrance_exam
                     SET notify_10min = 1
@@ -122,6 +121,8 @@ Examination Portal
                 """, (exam_id,))
 
                 mysql.connection.commit()
+
+        cur.close()
 
     except Exception as e:
         print("❌ Faculty scheduler error:", e)
@@ -132,9 +133,64 @@ exam_notify_bp.notify_faculty_internal = notify_faculty_internal
 
 
 # ==========================================================
-# 🔁 OPTIONAL: MANUAL TEST ENDPOINT
+# 🔔 ADMIN – GET ALL FACULTY NOTIFICATIONS (WITH FACULTY NAME)
+# ==========================================================
+@exam_notify_bp.route("/api/admin/notifications", methods=["GET"])
+def get_admin_notifications():
+    mysql = current_app.config["MYSQL"]
+    cur = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+
+    cur.execute("""
+        SELECT
+            e.Exam_Id,
+            e.Exam_Name,
+            e.Exam_Date,
+            e.Exam_Time,
+            f.F_Name AS Faculty_Name
+        FROM entrance_exam e
+        JOIN mst_faculty f
+            ON e.Faculty_Email = f.F_Email
+        WHERE
+            STR_TO_DATE(
+                CONCAT(e.Exam_Date, ' ', e.Exam_Time),
+                '%Y-%m-%d %H:%i:%s'
+            ) > NOW()
+        ORDER BY
+            STR_TO_DATE(
+                CONCAT(e.Exam_Date, ' ', e.Exam_Time),
+                '%Y-%m-%d %H:%i:%s'
+            ) ASC
+    """)
+
+    rows = cur.fetchall()
+    cur.close()
+
+    # ✅ FIX: convert timedelta to string
+    reminders = []
+    for r in rows:
+        exam_time = r["Exam_Time"]
+
+        if isinstance(exam_time, timedelta):
+            total_seconds = int(exam_time.total_seconds())
+            hours = total_seconds // 3600
+            minutes = (total_seconds % 3600) // 60
+            seconds = total_seconds % 60
+            exam_time = f"{hours:02d}:{minutes:02d}:{seconds:02d}"
+
+        reminders.append({
+            "Exam_Id": r["Exam_Id"],
+            "Exam_Name": r["Exam_Name"],
+            "Exam_Date": r["Exam_Date"].strftime("%Y-%m-%d"),
+            "Exam_Time": exam_time,
+            "Faculty_Name": r["Faculty_Name"]
+        })
+
+    return jsonify(success=True, reminders=reminders)
+
+# ==========================================================
+# 🔁 MANUAL TEST ENDPOINT
 # ==========================================================
 @exam_notify_bp.route("/api/notify/faculty-exams", methods=["GET"])
 def manual_trigger():
     notify_faculty_internal()
-    return jsonify({"success": True})
+    return jsonify(success=True)

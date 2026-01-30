@@ -202,22 +202,23 @@
       <!-- Main Content Area -->
       <div class="p-8 pt-1 max-w-full overflow-x-hidden"> 
         <!-- 🔔 Faculty Notification Bell -->
+<!-- 🔔 Faculty Notification Bell -->
 <div class="flex justify-end mb-4">
   <div class="relative">
 
-    <!-- Bell Button -->
+    <!-- 🔔 Bell Button -->
     <button
       @click="showNotifications = !showNotifications"
-      class="w-11 h-11 bg-white rounded-full shadow-lg
+      class="w-11 h-11 bg-white rounded-full shadow-md
              flex items-center justify-center hover:bg-gray-100 relative"
     >
       🔔
       <span
-        v-if="examReminders.length"
+        v-if="upcomingFacultyExams.length"
         class="absolute -top-1 -right-1 bg-red-600 text-white
                text-xs font-bold rounded-full px-1.5"
       >
-        {{ examReminders.length }}
+        {{ upcomingFacultyExams.length }}
       </span>
     </button>
 
@@ -225,34 +226,82 @@
     <div
       v-if="showNotifications"
       class="absolute right-0 mt-3 w-96 bg-white rounded-2xl
-             shadow-2xl z-[9999]"
+             shadow-2xl z-[9999] overflow-hidden"
     >
-      <div class="px-5 py-4 border-b font-bold text-gray-800">
-        🔔 Your Upcoming Exams
+      <!-- Header -->
+      <div class="px-6 py-4 bg-gradient-to-r from-blue-50 to-indigo-50
+                  flex justify-between items-center">
+        <span class="font-bold text-gray-800">
+          🔔 Your Upcoming Exams
+        </span>
+        <span class="text-sm text-gray-500">
+          {{ upcomingFacultyExams.length }}
+        </span>
       </div>
 
-      <div v-if="examReminders.length">
+      <!-- Notifications -->
+      <div
+        v-if="upcomingFacultyExams.length"
+        class="p-4 space-y-3 max-h-[420px] overflow-y-auto"
+      >
         <div
-          v-for="exam in examReminders"
+          v-for="exam in upcomingFacultyExams"
           :key="exam.Exam_Id"
-          class="px-5 py-4 border-b last:border-none hover:bg-gray-50"
+          class="bg-gray-50 rounded-xl p-4
+                 hover:bg-indigo-50 transition relative shadow-sm"
         >
+          <!-- Exam Name -->
           <p class="font-semibold text-gray-800">
             {{ exam.Exam_Name }}
           </p>
-          <p class="text-sm text-gray-500">
-            {{ exam.Exam_Date }} at {{ exam.Exam_Time }}
+          <!-- ❌ Dismiss -->
+<button
+  @click.stop="dismissExam(exam.Exam_Id)"
+  class="absolute top-3 right-3 text-gray-400
+         hover:text-red-600 text-lg font-bold"
+  title="Dismiss"
+>
+  ×
+</button>
+
+
+          <!-- Date & Time -->
+          <p class="text-sm text-gray-500 mt-1">
+            📅 {{ exam.Exam_Date }} • ⏰ {{ exam.Exam_Time }}
           </p>
+
+          <!-- 🔴 Starting Soon -->
+          <span
+            v-if="isStartingSoon(exam)"
+            class="inline-block mt-2 bg-red-100 text-red-600
+                   px-3 py-1 rounded-full text-xs font-semibold"
+          >
+            ⏳ Starting in {{ formatCountdown(exam) }}
+          </span>
+
+          <!-- 🟢 Upcoming -->
+          <span
+            v-else
+            class="inline-block mt-2 bg-green-100 text-green-600
+                   px-3 py-1 rounded-full text-xs font-semibold"
+          >
+            📌 Upcoming
+          </span>
         </div>
       </div>
 
-      <div v-else class="px-5 py-4 text-sm text-gray-500">
-        No upcoming exams 🎉
+      <!-- Empty -->
+      <div v-else class="px-6 py-8 text-sm text-gray-500 text-center">
+        <div class="text-3xl mb-2">🎉</div>
+        No upcoming exams
       </div>
     </div>
 
   </div>
 </div>
+
+
+
 
 
         <!-- Welcome Screen (shown when activeTab is null) -->
@@ -604,7 +653,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, computed } from 'vue'
+import { ref, onMounted,onUnmounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import axios from '../utils/axiosInstance'
 import FacultyGroups from "../views/Groups.vue"
@@ -612,7 +661,13 @@ import AddApplicantsPage from "../views/AddApplicantsPage.vue"
 import UploadStudents from './UploadStudents.vue'
 import Groups from './Groups.vue'
 
+const now = ref(new Date())
+let countdownTimer = null
 const router = useRouter()
+
+// ❌ dismissed notifications (frontend-only)
+
+
 
 /* ================= AUTH ================= */
 const roles = JSON.parse(localStorage.getItem("roles") || "[]")
@@ -627,26 +682,48 @@ const facultyEmail = email
 
 /* ================= 🔔 FACULTY NOTIFICATIONS ================= */
 const showNotifications = ref(false)
-const examReminders = ref([])
-const loadFacultyExamReminders = async () => {
-  try {
-    const res = await axios.get(
-      "http://localhost:5000/api/exam/reminders",
-      {
-        params: {
-          role: "Faculty",
-          email: facultyEmail
-        }
-      }
-    )
 
-    if (res.data.success) {
-      examReminders.value = res.data.reminders
-    }
-  } catch (err) {
-    console.error("FACULTY EXAM REMINDER ERROR:", err)
-  }
+// ❌ dismissed notifications (frontend-only)
+const dismissedExamIds = ref(new Set())
+
+const dismissExam = (examId) => {
+  dismissedExamIds.value.add(examId)
 }
+
+const upcomingFacultyExams = computed(() => {
+  return createdExams.value.filter(exam => {
+    const examDateTime = new Date(`${exam.Exam_Date}T${exam.Exam_Time}`)
+
+    return (
+      examDateTime > now.value &&                 // not conducted
+      !dismissedExamIds.value.has(exam.Exam_Id)   // not dismissed
+    )
+  })
+})
+
+
+
+const getRemainingSeconds = (exam) => {
+  const examTime = new Date(`${exam.Exam_Date}T${exam.Exam_Time}`)
+  return Math.floor((examTime - now.value) / 1000)
+}
+
+const isStartingSoon = (exam) => {
+  const secs = getRemainingSeconds(exam)
+  return secs > 0 && secs <= 600
+}
+
+const formatCountdown = (exam) => {
+  const secs = getRemainingSeconds(exam)
+
+  if (secs <= 0) return "Starting now"
+
+  const m = Math.floor(secs / 60)
+  const s = secs % 60
+
+  return `${m}m ${s}s`
+}
+
 
 /* ================= UI STATE ================= */
 const sidebarOpen = ref(true)
@@ -672,6 +749,12 @@ const facultyPermissions = ref({
 const visibleTabs = computed(() =>
   allTabs.filter(tab => facultyPermissions.value[tab.access])
 )
+
+/* ================= 🔕 DISMISS SINGLE NOTIFICATION ================= */
+const removeNotification = (index) => {
+  examReminders.value.splice(index, 1)
+}
+
 
 /* ================= EXAM DATA ================= */
 const showForm = ref(false)
@@ -703,9 +786,17 @@ onMounted(() => {
   }
 
   fetchExamsAndCategorize()
-  loadFacultyExamReminders()
+
+  // ⏱ realtime clock
+  countdownTimer = setInterval(() => {
+    now.value = new Date()
+  }, 1000)
 
   activeTab.value = 'my-exams'
+})
+
+onUnmounted(() => {
+  if (countdownTimer) clearInterval(countdownTimer)
 })
 
 /* ================= METHODS ================= */
