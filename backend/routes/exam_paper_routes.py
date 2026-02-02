@@ -17,12 +17,14 @@ def create_exam_paper_routes(mysql):
         print(f"📥 Getting exam details for Exam ID: {exam_id}")
         try:
             cursor = mysql.connection.cursor(DictCursor)
-            cursor.execute("SELECT Exam_Name, Max_Marks AS Total_Marks FROM entrance_exam WHERE Exam_Id = %s", (exam_id,))
+            cursor.execute("SELECT Exam_Name, Exam_Date, Exam_Time, Max_Marks AS Total_Marks FROM entrance_exam WHERE Exam_Id = %s", (exam_id,))
             row = cursor.fetchone()
             print("📤 Query Result:", row)
             if row:
                 return jsonify({
                     'exam_name': row['Exam_Name'],
+                    'exam_date': row['Exam_Date'].strftime('%Y-%m-%d') if row['Exam_Date'] else None,
+                    'exam_time': str(row['Exam_Time']) if row['Exam_Time'] else None,
                     'total_marks': row['Total_Marks']
                     })
             else:

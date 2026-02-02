@@ -119,7 +119,6 @@ import axios from 'axios';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 
-
 export default {
   data() {
     return {
@@ -132,7 +131,8 @@ export default {
       duration: 0,
       examTotalMarks: 0,
       examName: '',
-
+      examDate: '',
+      examTime: '',
     };
   },
 
@@ -179,6 +179,17 @@ export default {
         console.error("Failed to fetch questions:", err);
       }
     },
+    async fetchPaperQuestionsForPDF() {
+      try {
+        const res = await axios.get(
+          `http://localhost:5000/api/questions/paper/${this.examId}`
+        )
+        return res.data
+      } catch (err) {
+        console.error("❌ Failed to fetch paper questions:", err)
+        return []
+      }
+    },
     async fetchSelectedQuestions() {
       try {
         const res = await axios.get(`http://localhost:5000/api/paper/selected/${this.examId}`);
@@ -193,11 +204,21 @@ export default {
         console.log("📋 Exam Details:", res.data);
         this.examTotalMarks = res.data.total_marks; // Your backend should return this
         this.examName = res.data.exam_name;
+        this.examDate = res.data.exam_date || res.data.Exam_Date
+        this.examTime = res.data.exam_time || res.data.Exam_Time
       } catch (err) {
         console.error("❌ Failed to fetch exam details:", err);
         this.examTotalMarks = 0;
         this.examName = '';
       }
+    },
+    formatTime12h(time) {
+      if (!time) return ''
+      const [h, m] = time.split(':')
+      const hour = Number(h)
+      const suffix = hour >= 12 ? 'PM' : 'AM'
+      const formattedHour = hour % 12 || 12
+      return `${formattedHour}:${m} ${suffix}`
     },
     addQuestionToPaper(question) {
       const exists = this.selectedQuestions.find(q => q.Question_Id === question.Question_Id);
@@ -262,37 +283,84 @@ export default {
       alert("Failed to randomize questions");
     }
   },
-  downloadPDF() {
-    const doc = new jsPDF();
-    const pageWidth = doc.internal.pageSize.getWidth();
+  async downloadPDF() {
+    const questions = await this.fetchPaperQuestionsForPDF()
+    if (!questions.length) {
+      alert("No questions found for paper")
+      return
+    }
 
-    const title = `${this.examName} Question Paper`;
+    const doc = new jsPDF("p", "mm", "a4")
+    let y = 20
 
-    // Center-align title
-    doc.setFontSize(16);
-    const textWidth = doc.getTextWidth(title);
-    doc.text(title, (pageWidth - textWidth) / 2, 20);
+    /* ================= HEADER ================= */
+    doc.setFontSize(16)
+    doc.setFont("helvetica", "bold")
+    doc.text(this.examName.toUpperCase(), 105, y, { align: "center" })
 
-    // Add metadata
-    doc.setFontSize(12);
-    doc.text(`Exam ID: ${this.examId}`, 14, 30);
-    doc.text(`Total Marks: ${this.examTotalMarks}`, 14, 38);
-    doc.text(`Total Questions: ${this.selectedQuestions.length}`, 14, 46);
+    y += 8
+    doc.setFontSize(11)
+    doc.setFont("helvetica", "normal")
+    doc.text(`Exam ID: ${this.examId}`, 14, y)
+    doc.text(`Date: ${this.examDate}`, 150, y)    
 
-    // Table
-    const tableData = this.selectedQuestions.map((q, index) => [
-      index + 1,
-      q.Question_Text,
-      q.Marks,
-    ]);
+    y += 6
+    doc.text(`Total Marks: ${this.examTotalMarks}`, 14, y)
+    doc.text(`Time: ${this.formatTime12h(this.examTime)}`,150,y)
+    y += 6
+    doc.line(14, y, 196, y)
+    y += 8
 
-    autoTable(doc, {
-      head: [['Sr No.', 'Question', 'Marks']],
-      body: tableData,
-      startY: 55,
-    });
+    /* ================= QUESTIONS ================= */
+    questions.forEach((q, index) => {
+      if (y > 270) {
+        doc.addPage()
+        y = 20
+      }
 
-    doc.save(`${this.examName.replace(/\s+/g, '_')}_Question_Paper.pdf`);
+      // Question text (left)
+      doc.setFont("helvetica", "bold")
+      doc.text(`${index + 1}. ${q.Question_Text}`, 14, y)
+
+      // Marks aligned with question (right)
+      doc.setFontSize(9)
+      doc.text(`[${q.Marks} Marks]`, 196, y, { align: "right" })
+      doc.setFontSize(11)
+
+      // Move down AFTER question row
+      y += 6
+      doc.setFont("helvetica", "normal")
+
+      /* ===== MCQ ===== */
+      if (q.Question_Type === "MCQ") {
+        if (q.Option_A) doc.text(`A. ${q.Option_A}`, 18, y), (y += 5)
+        if (q.Option_B) doc.text(`B. ${q.Option_B}`, 18, y), (y += 5)
+        if (q.Option_C) doc.text(`C. ${q.Option_C}`, 18, y), (y += 5)
+        if (q.Option_D) doc.text(`D. ${q.Option_D}`, 18, y), (y += 5)
+      }
+
+      /* ===== TRUE / FALSE ===== */
+      else if (q.Question_Type === "TF") {
+        doc.text("A. True", 18, y)
+        y += 5
+        doc.text("B. False", 18, y)
+        y += 5
+      }
+
+      /* ===== FILL / ONE WORD ===== */
+      else {
+        doc.text("______________________________", 18, y)
+        y += 6
+      }
+
+      y += 6
+    })
+
+    /* ================= FOOTER ================= */
+    doc.setFontSize(9)
+    doc.text("— End of Question Paper —", 105, 290, { align: "center" })
+
+    doc.save(`${this.examName.replace(/\s+/g, "_")}_Question_Paper.pdf`)
   }
   }
 };
