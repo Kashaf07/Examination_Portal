@@ -203,11 +203,11 @@
       <div class="p-8 pt-1 max-w-full overflow-x-hidden"> 
         <!-- 🔔 Faculty Notification Bell -->
         <div class="flex justify-end mb-4">
-          <div class="relative">
+          <div class="relative" ref="notificationContainer">
 
             <!-- 🔔 Bell Button -->
             <button
-              @click="showNotifications = !showNotifications"
+              @click="toggleNotifications"
               class="w-11 h-11 bg-white rounded-full shadow-md
                      flex items-center justify-center hover:bg-gray-100 relative"
             >
@@ -734,11 +734,15 @@ const facultyEmail = email
 /* ================= 🔔 FACULTY NOTIFICATIONS ================= */
 const showNotifications = ref(false)
 const dismissedExamIds = ref(new Set())
+const notificationContainer = ref(null)
+
+const toggleNotifications = () => {
+  showNotifications.value = !showNotifications.value
+}
 
 const dismissExam = (examId) => {
   dismissedExamIds.value.add(examId)
 }
-
 
 const hasAssignedStudents = (exam) => {
   return exam.total_applicants && exam.total_applicants > 0
@@ -770,6 +774,13 @@ const formatCountdown = (exam) => {
   const m = Math.floor(secs / 60)
   const s = secs % 60
   return `${m}m ${s}s`
+}
+
+/* ================= CLICK OUTSIDE TO CLOSE NOTIFICATIONS ================= */
+const handleClickOutside = (event) => {
+  if (notificationContainer.value && !notificationContainer.value.contains(event.target)) {
+    showNotifications.value = false
+  }
 }
 
 /* ================= UI STATE ================= */
@@ -869,10 +880,15 @@ onMounted(() => {
   }, 1000)
 
   activeTab.value = 'my-exams'
+
+  // Add click outside listener
+  document.addEventListener('click', handleClickOutside)
 })
 
 onUnmounted(() => {
   if (countdownTimer) clearInterval(countdownTimer)
+  // Remove click outside listener
+  document.removeEventListener('click', handleClickOutside)
 })
 
 /* ================= METHODS ================= */

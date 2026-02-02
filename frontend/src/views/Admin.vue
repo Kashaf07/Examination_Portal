@@ -155,11 +155,11 @@
       <div class="px-8 py-6">
      <!-- 🔔 Notification Bell -->
 <div class="flex justify-end mb-4">
-  <div class="relative">
+  <div class="relative" ref="notificationContainer">
 
     <!-- 🔔 Bell Button -->
     <button
-      @click="showNotifications = !showNotifications"
+      @click="toggleNotifications"
       aria-label="Admin Notifications"
       class="w-11 h-11 bg-white rounded-full shadow-md
              flex items-center justify-center
@@ -288,7 +288,7 @@
           Welcome, {{ adminName }}!
         </h1>
         <p class="text-gray-600 mt-1">
-          Here’s what’s coming up 👇
+          Here's what's coming up 👇
         </p>
       </div>
     </div>
@@ -334,7 +334,7 @@
 
 <script setup>
 import axios from "axios";
-import { ref, computed, onMounted,onUnmounted, watch } from "vue";
+import { ref, computed, onMounted, onUnmounted, watch } from "vue";
 import { useRouter, useRoute } from "vue-router";
 import NotificationToast from "@/components/admin/NotificationToast.vue";
 import { authApi } from "@/services/adminApi.js";
@@ -440,9 +440,31 @@ const checkFacultyRole = async () => {
   }
 }
 
+// 🔔 Notification state
+const showNotifications = ref(false)
+const examReminders = ref([])
+const notificationContainer = ref(null)
+
+let notificationTimer = null
+let countdownTimer = null
+
+/* ================= TOGGLE NOTIFICATIONS ================= */
+const toggleNotifications = () => {
+  showNotifications.value = !showNotifications.value
+}
+
+/* ================= CLICK OUTSIDE TO CLOSE NOTIFICATIONS ================= */
+const handleClickOutside = (event) => {
+  if (notificationContainer.value && !notificationContainer.value.contains(event.target)) {
+    showNotifications.value = false
+  }
+}
+
 onUnmounted(() => {
   if (notificationTimer) clearInterval(notificationTimer)
   if (countdownTimer) clearInterval(countdownTimer)
+  // Remove click outside listener
+  document.removeEventListener('click', handleClickOutside)
 })
 
 
@@ -461,6 +483,9 @@ onMounted(() => {
   countdownTimer = setInterval(() => {
   now.value = new Date()
 }, 1000)
+
+  // Add click outside listener
+  document.addEventListener('click', handleClickOutside)
 
 })
 
@@ -481,13 +506,6 @@ const selectRole = (roleId) => {
   showRoleMenu.value = false
   router.push('/faculty')
 }
-
-// 🔔 Notification state (ADD ONLY)
-const showNotifications = ref(false)
-const examReminders = ref([])
-
-let notificationTimer = null
-let countdownTimer = null
 
 
 // Load exam reminders (ADMIN)
