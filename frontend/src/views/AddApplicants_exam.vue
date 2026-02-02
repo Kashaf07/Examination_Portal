@@ -1,26 +1,14 @@
 <template>
   <div class="min-h-screen p-10 bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50">
 
-    <!-- ✅ BACK BUTTON -->
+    <!-- BACK BUTTON -->
     <button
       @click="goBack"
       class="mb-6 flex items-center gap-2 px-4 py-2 bg-white/70 hover:bg-white/90 
              text-gray-800 rounded-lg shadow-md hover:shadow-lg transition-all duration-200 
              backdrop-blur-sm border border-gray-200"
     >
-      <svg 
-        xmlns="http://www.w3.org/2000/svg" 
-        class="h-5 w-5" 
-        viewBox="0 0 20 20" 
-        fill="currentColor"
-      >
-        <path 
-          fill-rule="evenodd" 
-          d="M9.707 16.707a1 1 0 01-1.414 0l-6-6a1 1 0 010-1.414l6-6a1 1 0 011.414 1.414L5.414 9H17a1 1 0 110 2H5.414l4.293 4.293a1 1 0 010 1.414z" 
-          clip-rule="evenodd" 
-        />
-      </svg>
-      <span class="font-semibold">Back</span>
+      ← Back
     </button>
 
     <!-- Heading -->
@@ -33,7 +21,7 @@
 
     <div class="max-w-5xl mx-auto bg-white p-10 rounded-2xl shadow-xl">
 
-      <!-- ================= GROUP ASSIGNMENT ================= -->
+      <!-- GROUP ASSIGNMENT -->
       <h3 class="text-xl font-semibold mb-4 text-purple-700">
         Assign by Group
       </h3>
@@ -60,7 +48,7 @@
 
       <hr class="my-8" />
 
-      <!-- ================= APPLICANTS ================= -->
+      <!-- APPLICANTS -->
       <h3 class="text-xl font-semibold mb-4">Applicants</h3>
 
       <ul v-if="assignedApplicants.length">
@@ -70,10 +58,14 @@
           class="flex justify-between items-center py-2 border-b"
         >
           <span>
-            {{ app.Full_Name }} ({{ app.Email }})
-          </span>
+  {{ app.Full_Name }} ({{ app.Email }})
+  <span class="text-sm text-gray-500 ml-2">
+    • {{ app.Group_Name }}
+  </span>
+</span>
 
-          <!-- Already Assigned -->
+
+          <!-- Assigned -->
           <span
             v-if="app.is_assigned === 1"
             class="text-green-600 font-semibold text-sm"
@@ -81,22 +73,14 @@
             ✔ Assigned
           </span>
 
-          <!-- Newly Added (before confirm) -->
+          <!-- New -->
           <button
-            v-else-if="!isConfirmed"
+            v-else
             @click="removeApplicant(app.Applicant_Id)"
             class="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded"
           >
             Remove
           </button>
-
-          <!-- After Confirm -->
-          <span
-            v-else
-            class="text-green-600 font-semibold text-sm"
-          >
-            ✔ Assigned
-          </span>
         </li>
       </ul>
 
@@ -104,7 +88,7 @@
         No applicants loaded.
       </p>
 
-      <!-- ================= CONFIRM ================= -->
+      <!-- CONFIRM -->
       <div class="mt-6 text-center">
         <p class="text-sm mb-2 text-gray-700">
           Selected (new): {{ selectedApplicants.length }} applicants
@@ -112,21 +96,21 @@
 
         <button
           @click="confirmAdd"
-          :disabled="selectedApplicants.length === 0 || isConfirmed"
+          :disabled="selectedApplicants.length === 0"
           class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded disabled:bg-gray-400"
         >
           Confirm Assignment
         </button>
       </div>
 
-      <!-- SUCCESS MESSAGE -->
+      <!-- SUCCESS -->
       <p v-if="message" class="mt-4 text-center text-green-600 font-semibold">
         {{ message }}
       </p>
 
-      <!-- ================= EMAIL (UNCHANGED) ================= -->
+      <!-- EMAIL -->
       <div
-        v-if="assignedApplicants.length > 0 && isConfirmed"
+        v-if="assignedApplicants.some(a => a.is_assigned === 1)"
         class="mt-6 text-center"
       >
         <button
@@ -156,8 +140,8 @@ const email = localStorage.getItem("email")
 const groups = ref([])
 const selectedGroupId = ref('')
 
-const assignedApplicants = ref([])   // ALL applicants shown
-const selectedApplicants = ref([])   // ONLY newly added ones
+const assignedApplicants = ref([])
+const selectedApplicants = ref([])
 
 const examName = ref('')
 const examDate = ref('')
@@ -166,61 +150,36 @@ const examTime = ref('')
 const message = ref('')
 const infoMessage = ref('')
 const sendingEmails = ref(false)
-const isConfirmed = ref(false)
 
-/* ---------------- NAVIGATION ---------------- */
+/* NAVIGATION */
 const goBack = () => {
-  // Navigate based on active role
   const activeRole = localStorage.getItem('active_role')
-  
-  if (activeRole === 'Admin') {
-    router.push('/admin/exams')
-  } else if (activeRole === 'Faculty') {
-    router.push('/faculty')
-  } else {
-    router.push('/')
-  }
+  if (activeRole === 'Admin') router.push('/admin/exams')
+  else if (activeRole === 'Faculty') router.push('/faculty')
+  else router.push('/')
 }
-/* ---------------- EXAM ---------------- */
+
+/* EXAM */
 const fetchExamDetails = async () => {
-  try {
-    const res = await fetch(
-      `http://localhost:5000/api/exam/get_exam_by_id/${examId}`
-    )
-    const data = await res.json()
-
-    // ✅ Handle BOTH response formats safely
-    if (data.exam) {
-      examName.value = data.exam.Exam_Name
-      examDate.value = data.exam.Exam_Date
-      examTime.value = data.exam.Exam_Time
-    } 
-    else if (data.exam_name) {
-      examName.value = data.exam_name
-    } 
-    else {
-      examName.value = "Unknown Exam"
-    }
-  } catch (err) {
-    console.error("Failed to load exam details", err)
-    examName.value = "Error loading exam"
+  const res = await fetch(`http://localhost:5000/api/exam/get_exam_by_id/${examId}`)
+  const data = await res.json()
+  if (data.exam) {
+    examName.value = data.exam.Exam_Name
+    examDate.value = data.exam.Exam_Date
+    examTime.value = data.exam.Exam_Time
   }
 }
 
-
-/* ---------------- GROUPS ---------------- */
+/* GROUPS */
 const fetchGroups = async () => {
-  const res = await fetch(
-    `http://localhost:5000/api/groups?role=${role}&email=${email}`
-  )
+  const res = await fetch(`http://localhost:5000/api/groups?role=${role}&email=${email}`)
   const data = await res.json()
   if (data.success) groups.value = data.groups
 }
 
-/* ---------------- ADD GROUP APPLICANTS ---------------- */
+/* ADD GROUP */
 const addGroupApplicants = async () => {
   infoMessage.value = ''
-
   if (!selectedGroupId.value) {
     infoMessage.value = 'Please select a group first.'
     return
@@ -231,21 +190,22 @@ const addGroupApplicants = async () => {
   )
   const data = await res.json()
 
-  if (!data.success || !Array.isArray(data.applicants)) {
-    infoMessage.value = 'Failed to load applicants.'
-    return
-  }
-
   let newCount = 0
 
   data.applicants.forEach(app => {
-    // Avoid duplicates in UI
     if (assignedApplicants.value.some(a => a.Applicant_Id === app.Applicant_Id)) return
 
-    assignedApplicants.value.push(app)
+assignedApplicants.value.push({
+  ...app,
+  Group_Name: groups.value.find(
+    g => g.Group_Id === selectedGroupId.value
+  )?.Group_Name || 'Unknown Group'
+})
 
-    // Track only new ones for confirm
-    if (app.is_assigned === 0) {
+    if (
+      app.is_assigned === 0 &&
+      !selectedApplicants.value.includes(app.Applicant_Id)
+    ) {
       selectedApplicants.value.push(app.Applicant_Id)
       newCount++
     }
@@ -256,10 +216,8 @@ const addGroupApplicants = async () => {
   }
 }
 
-/* ---------------- REMOVE (ONLY NEW) ---------------- */
+/* REMOVE */
 const removeApplicant = (id) => {
-  if (isConfirmed.value) return
-
   selectedApplicants.value =
     selectedApplicants.value.filter(a => a !== id)
 
@@ -269,10 +227,8 @@ const removeApplicant = (id) => {
     )
 }
 
-/* ---------------- CONFIRM ---------------- */
+/* CONFIRM */
 const confirmAdd = async () => {
-  if (selectedApplicants.value.length === 0) return
-
   const res = await fetch('http://localhost:5000/api/assign_applicants', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -286,9 +242,7 @@ const confirmAdd = async () => {
 
   if (data.success) {
     message.value = 'Applicants assigned successfully'
-    isConfirmed.value = true
 
-    // Mark newly added as assigned
     assignedApplicants.value.forEach(app => {
       if (selectedApplicants.value.includes(app.Applicant_Id)) {
         app.is_assigned = 1
@@ -299,7 +253,7 @@ const confirmAdd = async () => {
   }
 }
 
-/* ---------------- EMAIL (UNCHANGED) ---------------- */
+/* EMAIL */
 const sendEmails = async () => {
   sendingEmails.value = true
   await fetch('http://localhost:5000/api/send_exam_emails', {
@@ -318,7 +272,7 @@ const sendEmails = async () => {
   sendingEmails.value = false
 }
 
-/* ---------------- INIT ---------------- */
+/* INIT */
 onMounted(async () => {
   await fetchExamDetails()
   await fetchGroups()

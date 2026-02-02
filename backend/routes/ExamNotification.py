@@ -142,25 +142,30 @@ def get_admin_notifications():
 
     cur.execute("""
     SELECT
-            e.Exam_Id,
-            e.Exam_Name,
-            e.Exam_Date,
-            e.Exam_Time,
-            COALESCE(f.F_Name, 'Admin') AS Faculty_Name
-        FROM entrance_exam e
-        LEFT JOIN mst_faculty f
-            ON e.Faculty_Email = f.F_Email
-        WHERE
-            STR_TO_DATE(
-                CONCAT(e.Exam_Date, ' ', e.Exam_Time),
-                '%Y-%m-%d %H:%i:%s'
-            ) > NOW()
-        ORDER BY
-            STR_TO_DATE(
-                CONCAT(e.Exam_Date, ' ', e.Exam_Time),
-                '%Y-%m-%d %H:%i:%s'
-            ) ASC
-    """)
+        e.Exam_Id,
+        e.Exam_Name,
+        e.Exam_Date,
+        e.Exam_Time,
+        COALESCE(f.F_Name, a.Name) AS Creator_Name
+    FROM entrance_exam e
+    LEFT JOIN mst_faculty f
+        ON e.Faculty_Email = f.F_Email
+    LEFT JOIN mst_admin a
+        ON e.Faculty_Email = a.Email
+    WHERE
+        STR_TO_DATE(
+            CONCAT(e.Exam_Date, ' ', e.Exam_Time),
+            '%Y-%m-%d %H:%i:%s'
+        ) > NOW()
+    ORDER BY
+        STR_TO_DATE(
+            CONCAT(e.Exam_Date, ' ', e.Exam_Time),
+            '%Y-%m-%d %H:%i:%s'
+        ) ASC
+""")
+
+
+
 
     rows = cur.fetchall()
     cur.close()
@@ -182,7 +187,8 @@ def get_admin_notifications():
             "Exam_Name": r["Exam_Name"],
             "Exam_Date": r["Exam_Date"].strftime("%Y-%m-%d"),
             "Exam_Time": exam_time,
-            "Faculty_Name": r["Faculty_Name"]
+            "Faculty_Name": r["Creator_Name"]
+
         })
 
     return jsonify(success=True, reminders=reminders)
