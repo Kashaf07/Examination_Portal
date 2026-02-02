@@ -505,12 +505,32 @@
                           <div class="flex flex-wrap justify-center items-center gap-2">
 
                             <!-- Add Students -->
-                            <button
-                              @click.stop="addStudents(exam.Exam_Id)"
-                              class="flex items-center gap-1 bg-blue-400 hover:bg-blue-500 text-white px-3 py-1.5 rounded-full text-xs font-semibold shadow hover:scale-105 transition-all duration-200"
-                            >
-                              Add Students
-                            </button>
+                            <div class="flex items-center gap-1">
+                              <button
+                                @click.stop="addStudents(exam.Exam_Id)"
+                                class="flex items-center gap-1 bg-blue-400 hover:bg-blue-500 text-white px-3 py-1.5 rounded-full text-xs font-semibold shadow hover:scale-105 transition-all duration-200"
+                              >
+                                Add Students
+                              </button>
+
+                              <!-- ✅ STATUS -->
+                              <span
+                                v-if="hasAssignedStudents(exam)"
+                                class="text-green-600 text-lg"
+                                title="Students Assigned"
+                              >
+                                ✔
+                              </span>
+
+                              <span
+                                v-else
+                                class="text-yellow-600 text-lg"
+                                title="No Students Assigned"
+                              >
+                                ⏳
+                              </span>
+                            </div>
+
 
                             <button
                               @click="navigateTo('AddQuestion', exam.Exam_Id)"
@@ -717,6 +737,11 @@ const dismissedExamIds = ref(new Set())
 
 const dismissExam = (examId) => {
   dismissedExamIds.value.add(examId)
+}
+
+
+const hasAssignedStudents = (exam) => {
+  return exam.total_applicants && exam.total_applicants > 0
 }
 
 const upcomingFacultyExams = computed(() => {

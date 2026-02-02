@@ -349,6 +349,8 @@ const getRemainingMinutes = (exam) => {
 }
 
 
+
+
 const isStartingSoon = (exam) => {
   const mins = getRemainingMinutes(exam)
   return mins >= 0 && mins <= 10

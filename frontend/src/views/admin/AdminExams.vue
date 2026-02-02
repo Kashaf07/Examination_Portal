@@ -161,12 +161,31 @@
                   
                   <!-- Row 1: Add Students + Question Bank with Status -->
                   <div class="flex items-center justify-center gap-2">
-                    <button
-                      @click="goAddStudents(exam.Exam_Id)"
-                      class="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1.5 rounded-lg text-xs font-semibold shadow-sm hover:shadow transition-all"
-                    >
-                      Add Students
-                    </button>
+                    <div class="flex items-center gap-1">
+  <button
+    @click.stop="addStudents(exam.Exam_Id)"
+    class="flex items-center gap-1 bg-blue-400 hover:bg-blue-500 text-white px-3 py-1.5 rounded-full text-xs font-semibold shadow hover:scale-105 transition-all duration-200"
+  >
+    Add Students
+  </button>
+
+  <!-- ✅ STATUS -->
+  <span
+    v-if="hasAssignedStudents(exam)"
+    class="text-green-600 text-lg"
+    title="Students Assigned"
+  >
+    ✔
+  </span>
+
+  <span
+    v-else
+    class="text-yellow-600 text-lg"
+    title="No Students Assigned"
+  >
+    ⏳
+  </span>
+</div>
 
                     <button
                       @click="goAddQuestions(exam.Exam_Id)"
@@ -381,6 +400,10 @@ const examsList = ref([]);
 const conductedList = ref([]);
 const examStatus = ref({});
 
+const hasAssignedStudents = (exam) => {
+  return exam.total_applicants && exam.total_applicants > 0
+}
+
 const adminEmail =
   localStorage.getItem("admin_email") ||
   localStorage.getItem("email") || "";
@@ -579,22 +602,7 @@ const createExam = async () => {
   }
 };
 
-/* ================= HELPERS ================= */
-const isExamEnded = (exam) => {
-  const [year, month, day] = exam.Exam_Date.split("-").map(Number);
-  const [hours, minutes] = exam.Exam_Time.split(":").map(Number);
 
-  const start = new Date(year, month - 1, day, hours, minutes);
-  const end = new Date(start.getTime() + Number(exam.Duration_Minutes) * 60000);
-
-  return end < new Date();
-};
-
-const upcomingExams = computed(() =>
-  examsList.value.filter((exam) => !isExamEnded(exam))
-);
-
-const conductedExams = computed(() => conductedList.value);
 
 /* ================= DELETE ================= */
 const deleteExam = async (id) => {
