@@ -41,7 +41,7 @@
                 <input
                   type="checkbox"
                   @change="toggleAll"
-                  :checked="selectedApplicants.length === applicantsList.length && applicantsList.length > 0"
+                  :checked="selectedApplicants.length === paginatedApplicants.length && paginatedApplicants.length > 0"
                 />
               </th>
               <th class="py-4 px-6 font-semibold">ID</th>
@@ -54,7 +54,7 @@
 
           <tbody class="divide-y divide-gray-100">
             <tr
-              v-for="(a, i) in applicantsList"
+              v-for="(a, i) in paginatedApplicants"
               :key="a.Applicant_Id"
               class="hover:bg-blue-50 transition cursor-pointer"
             >
@@ -62,7 +62,7 @@
                 <input type="checkbox" :value="a.Applicant_Id" v-model="selectedApplicants" />
               </td>
 
-              <td class="px-6 py-5">{{ i + 1 }}</td>
+              <td class="px-6 py-5">{{ startIndex + i + 1 }}</td>
               <td class="px-6 py-5 font-medium text-gray-800">{{ a.Full_Name }}</td>
               <td class="px-6 py-5">{{ a.Email }}</td>
               <td class="px-6 py-5">{{ a.Phone }}</td>
@@ -89,6 +89,95 @@
 
         <div v-if="!applicantsList.length" class="text-center py-10 text-gray-500">
           No Students found
+        </div>
+
+        <!-- Pagination Controls -->
+        <div v-if="applicantsList.length > 0" class="bg-gray-50 px-6 py-4 border-t border-gray-200">
+          <div class="flex items-center justify-between">
+            
+            <!-- Results Info -->
+            <div class="text-sm text-gray-700">
+              Showing 
+              <span class="font-semibold">{{ startIndex + 1 }}</span>
+              to 
+              <span class="font-semibold">{{ endIndex }}</span>
+              of 
+              <span class="font-semibold">{{ totalApplicants }}</span>
+              results
+            </div>
+
+            <!-- Pagination Buttons -->
+            <div class="flex items-center gap-2">
+              
+              <!-- Previous Button -->
+              <button
+                @click="goToPage(currentPage - 1)"
+                :disabled="currentPage === 1"
+                class="px-3 py-2 rounded-lg border border-gray-300 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition"
+                :class="{ 'cursor-not-allowed': currentPage === 1 }"
+              >
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+                </svg>
+              </button>
+
+              <!-- First Page -->
+              <button
+                v-if="showFirstPage"
+                @click="goToPage(1)"
+                class="px-4 py-2 rounded-lg border transition"
+                :class="currentPage === 1 
+                  ? 'bg-blue-600 text-white border-blue-600' 
+                  : 'border-gray-300 bg-white hover:bg-gray-50'"
+              >
+                1
+              </button>
+
+              <!-- Left Ellipsis -->
+              <span v-if="showLeftEllipsis" class="px-2 text-gray-500">...</span>
+
+              <!-- Page Numbers -->
+              <button
+                v-for="page in visiblePages"
+                :key="page"
+                @click="goToPage(page)"
+                class="px-4 py-2 rounded-lg border transition"
+                :class="currentPage === page 
+                  ? 'bg-blue-600 text-white border-blue-600' 
+                  : 'border-gray-300 bg-white hover:bg-gray-50'"
+              >
+                {{ page }}
+              </button>
+
+              <!-- Right Ellipsis -->
+              <span v-if="showRightEllipsis" class="px-2 text-gray-500">...</span>
+
+              <!-- Last Page -->
+              <button
+                v-if="showLastPage"
+                @click="goToPage(totalPages)"
+                class="px-4 py-2 rounded-lg border transition"
+                :class="currentPage === totalPages 
+                  ? 'bg-blue-600 text-white border-blue-600' 
+                  : 'border-gray-300 bg-white hover:bg-gray-50'"
+              >
+                {{ totalPages }}
+              </button>
+
+              <!-- Next Button -->
+              <button
+                @click="goToPage(currentPage + 1)"
+                :disabled="currentPage === totalPages"
+                class="px-3 py-2 rounded-lg border border-gray-300 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition"
+                :class="{ 'cursor-not-allowed': currentPage === totalPages }"
+              >
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                </svg>
+              </button>
+
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -143,7 +232,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from "vue";
+import { ref, computed, onMounted } from "vue";
 import { useRouter } from "vue-router";
 import axios from "@/utils/axiosInstance";
 import AddApplicantsPage from "../AddApplicantsPage.vue";
@@ -159,10 +248,82 @@ const selectedApplicant = ref(null);
 const showAddApplicantPage = ref(false);
 const showUploadPage = ref(false);
 
+// ================= PAGINATION STATE =================
+const currentPage = ref(1);
+const itemsPerPage = ref(20);
+
+// ================= PAGINATION COMPUTED =================
+const totalApplicants = computed(() => applicantsList.value.length);
+
+const totalPages = computed(() => Math.ceil(totalApplicants.value / itemsPerPage.value));
+
+const paginatedApplicants = computed(() => {
+  const start = (currentPage.value - 1) * itemsPerPage.value;
+  const end = start + itemsPerPage.value;
+  return applicantsList.value.slice(start, end);
+});
+
+const startIndex = computed(() => (currentPage.value - 1) * itemsPerPage.value);
+
+const endIndex = computed(() => {
+  const end = currentPage.value * itemsPerPage.value;
+  return end > totalApplicants.value ? totalApplicants.value : end;
+});
+
+// Google-style pagination
+const visiblePages = computed(() => {
+  const pages = [];
+  const maxVisible = 5;
+  
+  let start = Math.max(2, currentPage.value - 2);
+  let end = Math.min(totalPages.value - 1, currentPage.value + 2);
+  
+  if (currentPage.value <= 3) {
+    end = Math.min(maxVisible, totalPages.value - 1);
+    start = 2;
+  }
+  
+  if (currentPage.value >= totalPages.value - 2) {
+    start = Math.max(2, totalPages.value - maxVisible + 1);
+    end = totalPages.value - 1;
+  }
+  
+  for (let i = start; i <= end; i++) {
+    pages.push(i);
+  }
+  
+  return pages;
+});
+
+const showFirstPage = computed(() => {
+  return totalPages.value > 1 && !visiblePages.value.includes(1);
+});
+
+const showLastPage = computed(() => {
+  return totalPages.value > 1 && !visiblePages.value.includes(totalPages.value);
+});
+
+const showLeftEllipsis = computed(() => {
+  return visiblePages.value.length > 0 && visiblePages.value[0] > 2;
+});
+
+const showRightEllipsis = computed(() => {
+  return visiblePages.value.length > 0 && visiblePages.value[visiblePages.value.length - 1] < totalPages.value - 1;
+});
+
+// ================= PAGINATION METHODS =================
+const goToPage = (page) => {
+  if (page >= 1 && page <= totalPages.value) {
+    currentPage.value = page;
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+};
+
 // ✅ FETCH
 const fetchApplicants = async () => {
   const res = await axios.get("/admin/applicants");
   applicantsList.value = res.data.applicants || res.data;
+  currentPage.value = 1; // Reset to first page when data refreshes
 };
 
 const handleApplicantSaved = () => {
@@ -175,7 +336,7 @@ const toggleAddApplicant = () => {
   showUploadPage.value = false;
 
   if (!showAddApplicantPage.value) {
-    fetchApplicants(); // refresh when closing
+    fetchApplicants();
   }
 };
 
@@ -184,7 +345,7 @@ const navigateUpload = () => {
   showAddApplicantPage.value = false;
 
   if (!showUploadPage.value) {
-    fetchApplicants(); // refresh when closing
+    fetchApplicants();
   }
 };
 
@@ -214,9 +375,9 @@ const formatDOB = (dob) => {
 
 const toggleAll = () => {
   selectedApplicants.value =
-    selectedApplicants.value.length === applicantsList.value.length
+    selectedApplicants.value.length === paginatedApplicants.value.length
       ? []
-      : applicantsList.value.map(a => a.Applicant_Id);
+      : paginatedApplicants.value.map(a => a.Applicant_Id);
 };
 
 const formatDate = (d) =>
@@ -225,7 +386,7 @@ const formatDate = (d) =>
 onMounted(fetchApplicants);
 </script>
 
-<style scooped>
+<style scoped>
 @keyframes fadeIn {
   from {
     transform: translateY(20px);
@@ -239,5 +400,18 @@ onMounted(fetchApplicants);
 
 .animate-fadeIn {
   animation: fadeIn 0.25s ease-out;
+}
+
+/* Smooth transitions for pagination buttons */
+button {
+  transition: all 0.2s ease;
+}
+
+button:hover:not(:disabled) {
+  transform: translateY(-1px);
+}
+
+button:active:not(:disabled) {
+  transform: translateY(0);
 }
 </style>
