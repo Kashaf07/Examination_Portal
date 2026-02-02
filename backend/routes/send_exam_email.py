@@ -81,8 +81,7 @@ IMPORTANT INSTRUCTIONS:
 Good luck with your exam!
 
 Best regards,
-Examination Team
-Examination Portal
+Examination Management Cell
 """
 
                 msg = MIMEMultipart()
