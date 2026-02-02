@@ -346,7 +346,7 @@ def create_admin_routes(mysql):
     def get_schools():
         try:
             cursor = mysql.connection.cursor()
-            cursor.execute("SELECT School_Id, School_Name, School_Short FROM mst_school ORDER BY School_Id")
+            cursor.execute("SELECT School_Id, School_Name, School_Short, Is_Active FROM mst_school ORDER BY Is_Active DESC, School_Name ASC")
             schools = cursor.fetchall()
             columns = [desc[0] for desc in cursor.description]
             result = [dict(zip(columns, row)) for row in schools]
@@ -414,26 +414,34 @@ def create_admin_routes(mysql):
             print("Error updating school:", e)
             return jsonify({"error": "Unable to update school"}), 500
 
-    @admin_bp.route('/schools/<int:school_id>', methods=['DELETE'])
-    def delete_school(school_id):
+    @admin_bp.route('/schools/toggle-status/<int:school_id>', methods=['PUT'])
+    def toggle_school_status(school_id):
         try:
             cursor = mysql.connection.cursor()
-            
-            # Check if school is referenced by faculty
-            cursor.execute("SELECT COUNT(*) FROM mst_faculty WHERE School_Id = %s", (school_id,))
-            faculty_count = cursor.fetchone()[0]
-            
-            if faculty_count > 0:
-                cursor.close()
-                return jsonify({"error": f"Cannot delete school. {faculty_count} faculty members are associated with this school."}), 400
-            
-            cursor.execute("DELETE FROM mst_school WHERE School_Id = %s", (school_id,))
+
+            cursor.execute("""
+                UPDATE mst_school
+                SET Is_Active = CASE
+                    WHEN Is_Active = 1 THEN 0
+                    ELSE 1
+                END
+                WHERE School_Id = %s
+            """, (school_id,))
+
             mysql.connection.commit()
             cursor.close()
-            return jsonify({"message": "School deleted successfully"}), 200
+
+            return jsonify({
+                "success": True,
+                "message": "School status updated successfully"
+            }), 200
+
         except Exception as e:
-            print("Error deleting school:", e)
-            return jsonify({"error": "Unable to delete school"}), 500
+            mysql.connection.rollback()
+            return jsonify({
+                "success": False,
+                "error": str(e)
+            }), 500
 
     # Applicants Routes
     @admin_bp.route('/applicants', methods=['GET'])

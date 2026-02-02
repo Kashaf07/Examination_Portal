@@ -7,13 +7,51 @@
       <div class="flex justify-between items-center mb-6">
         <h2 class="text-2xl font-bold text-gray-800">Schools Management</h2>
 
-        <button
-          @click="openAddModal"
-          class="bg-blue-500 hover:bg-blue-600 text-white font-semibold px-6 py-3 rounded-full shadow-lg transition-all hover:scale-105"
-        >
-          Add School
-        </button>
-      </div>
+        <div class="flex items-center gap-4">
+          <button
+            @click="openAddModal"
+            class="bg-blue-500 hover:bg-blue-600 text-white font-semibold px-6 py-3 rounded-full shadow-lg transition-all hover:scale-105"
+          >
+            Add School
+          </button>
+
+          <div class="flex items-center bg-gray-100 rounded-full p-1 shadow-inner">
+            <button
+              @click="showDisabled = false"
+              :class="[
+                'px-4 py-2 text-sm font-semibold rounded-full transition-all',
+                !showDisabled
+                  ? 'bg-white text-blue-600 shadow'
+                  : 'text-gray-600 hover:text-gray-800'
+              ]"
+            >
+              Active Only
+            </button>
+
+            <button
+              @click="showDisabled = true"
+              :class="[
+                'px-4 py-2 text-sm font-semibold rounded-full transition-all',
+                showDisabled
+                  ? 'bg-white text-blue-600 shadow'
+                  : 'text-gray-600 hover:text-gray-800'
+              ]"
+            >
+              All Schools
+            </button>
+          </div>
+        </div>
+        </div>
+
+        <transition name="fade">
+          <p
+            v-if="showDisabled"
+            class="text-xs text-gray-500 mb-2 text-right"
+          >
+            Disabled schools are shown in grey
+          </p>
+        </transition>
+
 
       <!-- Schools Table -->
       <div class="bg-white rounded-2xl shadow-lg overflow-hidden border border-gray-200">
@@ -30,9 +68,9 @@
 
             <tbody class="bg-white divide-y divide-gray-100">
               <tr
-                v-for="(school, i) in schoolsList"
+                v-for="(school, i) in filteredSchools"
                 :key="school.School_Id"
-                class="hover:bg-gray-50 transition-colors"
+                :class="['hover:bg-gray-50 transition-colors', school.Is_Active === 0 ? 'opacity-50 bg-gray-100' : '' ]"
               >
                 <td class="py-4 px-6">{{ i + 1 }}</td>
                 <td class="py-4 px-6">{{ school.School_Name }}</td>
@@ -47,10 +85,13 @@
                   </button>
 
                   <button
-                    @click="deleteSchool(school.School_Id)"
-                    class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg text-sm shadow transition hover:scale-105"
+                    @click="toggleSchoolStatus(school)"
+                    :class="Number(school.Is_Active) === 1
+                      ? 'bg-red-500 hover:bg-red-600'
+                      : 'bg-green-500 hover:bg-green-600'"
+                    class="text-white px-4 py-2 rounded-lg text-sm shadow transition hover:scale-105"
                   >
-                    Delete
+                    {{ Number(school.Is_Active) === 1 ? 'Disable' : 'Enable' }}
                   </button>
                 </td>
               </tr>
@@ -118,7 +159,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from "vue";
+import { ref, onMounted, computed } from "vue";
 import axios from "axios";
 
 // Toast emitter to parent Admin.vue
@@ -130,6 +171,16 @@ const schoolsList = ref([]);
 
 const showModal = ref(false);
 const isEdit = ref(false);
+const showDisabled = ref(false);
+
+const filteredSchools = computed(() => {
+  if (showDisabled.value) {
+    return schoolsList.value;
+  }
+  return schoolsList.value.filter(
+    s => Number(s.Is_Active) === 1
+  );
+});
 
 const schoolForm = ref({
   School_Id: null,
@@ -191,21 +242,31 @@ const updateSchool = async () => {
   }
 };
 
-// Delete School
-const deleteSchool = async (id) => {
-  if (!confirm("Are you sure you want to delete this school?")) return;
+// Disable/Enable School
+const toggleSchoolStatus = async (school) => {
+  const action = school.Is_Active ? "disable" : "enable";
+
+  if (!confirm(`Are you sure you want to ${action} this school?`)) return;
 
   try {
-    await axios.delete(`${API}/admin/schools/${id}`);
+    await axios.put(
+      `${API}/admin/schools/toggle-status/${school.School_Id}`
+    );
+
     await fetchSchools();
-    emit("toast", { message: "School deleted successfully!", type: "success" });
+
+    emit("toast", {
+      message: `School ${action}d successfully`,
+      type: "success"
+    });
   } catch (err) {
     emit("toast", {
-      message: err.response?.data?.error || "Error deleting school",
-      type: "error",
+      message: "Failed to update school status",
+      type: "error"
     });
   }
 };
+
 
 onMounted(() => {
   fetchSchools();

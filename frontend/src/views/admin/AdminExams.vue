@@ -162,31 +162,30 @@
                   <!-- Row 1: Add Students + Question Bank with Status -->
                   <div class="flex items-center justify-center gap-2">
                     <div class="flex items-center gap-1">
-  <button
-    @click.stop="addStudents(exam.Exam_Id)"
-    class="flex items-center gap-1 bg-blue-400 hover:bg-blue-500 text-white px-3 py-1.5 rounded-full text-xs font-semibold shadow hover:scale-105 transition-all duration-200"
-  >
-    Add Students
-  </button>
+                    <button
+                      @click.stop="addStudents(exam.Exam_Id)"
+                      class="flex items-center gap-1 bg-blue-400 hover:bg-blue-500 text-white px-3 py-1.5 rounded-full text-xs font-semibold shadow hover:scale-105 transition-all duration-200"
+                    >
+                      Add Students
+                    </button>
 
-  <!-- ✅ STATUS -->
-  <span
-    v-if="hasAssignedStudents(exam)"
-    class="text-green-600 text-lg"
-    title="Students Assigned"
-  >
-    ✔
-  </span>
+                      <!-- ✅ STATUS -->
+                      <span
+                        v-if="hasAssignedStudents(exam)"
+                        class="text-green-600 text-lg"
+                        title="Students Assigned"
+                      >
+                        ✔
+                      </span>
 
-  <span
-    v-else
-    class="text-yellow-600 text-lg"
-    title="No Students Assigned"
-  >
-    ⏳
-  </span>
-</div>
-
+                      <span
+                        v-else
+                        class="text-yellow-600 text-lg"
+                        title="No Students Assigned"
+                      >
+                        ⏳
+                      </span>
+                    </div>
                     <button
                       @click="goAddQuestions(exam.Exam_Id)"
                       class="bg-green-500 hover:bg-green-600 text-white px-3 py-1.5 rounded-lg text-xs font-semibold shadow-sm hover:shadow transition-all"
@@ -601,8 +600,6 @@ const createExam = async () => {
     emit("toast", { message: "Error creating exam", type: "error" });
   }
 };
-
-
 
 /* ================= DELETE ================= */
 const deleteExam = async (id) => {
