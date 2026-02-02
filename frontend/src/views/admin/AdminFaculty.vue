@@ -6,13 +6,47 @@
       <div class="flex justify-between items-center mb-6">
         <h2 class="text-2xl font-bold text-gray-800">Faculty Management</h2>
 
-        <button
-          @click="openAddModal"
-          class="bg-blue-500 hover:bg-blue-600 text-white font-semibold px-6 py-3 rounded-full shadow-lg transition-all hover:scale-105"
-        >
-          Add Faculty
-        </button>
+        <div class="flex items-center gap-4"> 
+          <button @click="openAddModal" 
+          class="bg-blue-500 hover:bg-blue-600 text-white font-semibold px-6 py-3 rounded-full shadow-lg transition-all hover:scale-105" > 
+            Add Faculty 
+          </button> 
+          
+          <div class="flex items-center bg-gray-100 rounded-full p-1 shadow-inner">
+            <button
+              @click="showDisabled = false"
+              :class="[
+                'px-4 py-2 text-sm font-semibold rounded-full transition-all',
+                !showDisabled
+                  ? 'bg-white text-blue-600 shadow'
+                  : 'text-gray-600 hover:text-gray-800'
+              ]"
+            >
+              Active Only
+            </button>
+
+            <button
+              @click="showDisabled = true"
+              :class="[
+                'px-4 py-2 text-sm font-semibold rounded-full transition-all',
+                showDisabled
+                  ? 'bg-white text-blue-600 shadow'
+                  : 'text-gray-600 hover:text-gray-800'
+              ]"
+            >
+              All Faculty
+            </button>
+          </div> 
+        </div>
       </div>
+      <transition name="fade">
+        <p
+          v-if="showDisabled"
+          class="text-xs text-gray-500 mb-2 text-right transition-opacity"
+        >
+          Disabled faculty are shown in grey
+        </p>
+      </transition>
 
       <!-- Faculty Table -->
       <div class="bg-white rounded-2xl shadow-lg overflow-hidden border border-gray-200">
@@ -31,9 +65,12 @@
 
             <tbody class="bg-white divide-y divide-gray-100">
               <tr
-                v-for="(faculty, i) in facultyList"
+                v-for="(faculty, i) in filteredFaculty"
                 :key="faculty.Faculty_Id"
-                class="hover:bg-gray-50 transition-colors"
+                :class="[
+                  'hover:bg-gray-50 transition-colors',
+                  faculty.Is_Active === 0 ? 'opacity-50 bg-gray-100' : ''
+                ]"
               >
                 <td class="py-4 px-6 text-gray-900">{{ i + 1 }}</td>
                 <td class="py-4 px-6">{{ faculty.F_Name }}</td>
@@ -49,10 +86,13 @@
                   </button>
 
                   <button
-                    @click="deleteFaculty(faculty.Faculty_Id)"
-                    class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg text-sm shadow transition hover:scale-105"
+                    @click="toggleFacultyStatus(faculty)"
+                    :class="Number(faculty.Is_Active) === 1
+                      ? 'bg-red-500 hover:bg-red-600'
+                      : 'bg-green-500 hover:bg-green-600'"
+                    class="text-white px-4 py-2 rounded-lg text-sm shadow transition hover:scale-105"
                   >
-                    Delete
+                    {{ Number(faculty.Is_Active) === 1 ? 'Disable' : 'Enable' }}
                   </button>
                 </td>
               </tr>
@@ -171,7 +211,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from "vue";
+import { ref, onMounted, computed } from "vue";
 import axios from "axios";
 
 // PARENT TOAST CONNECT
@@ -187,6 +227,16 @@ const designationsList = ref([]);
 // Modal
 const showModal = ref(false);
 const isEdit = ref(false);
+const showDisabled = ref(false);
+
+const filteredFaculty = computed(() => {
+  if (showDisabled.value) {
+    return facultyList.value;
+  }
+  return facultyList.value.filter(
+    f => Number(f.Is_Active) === 1
+  );
+});
 
 // Auto Assign Role
 const autoAssignRole = () => {
@@ -300,18 +350,27 @@ const updateFaculty = async () => {
   }
 };
 
-// Delete Faculty
-const deleteFaculty = async (id) => {
-  if (!confirm("Are you sure you want to delete this faculty?")) return;
+// Disable/Enable Faculty
+const toggleFacultyStatus = async (faculty) => {
+  const action = faculty.Is_Active ? "disable" : "enable";
+
+  if (!confirm(`Are you sure you want to ${action} this faculty?`)) return;
 
   try {
-    await axios.delete(`${API}/admin/faculty/${id}`);
+    await axios.put(
+      `${API}/admin/faculty/toggle-status/${faculty.Faculty_Id}`
+    );
+
     await fetchFaculty();
-    emit("toast", { message: "Faculty deleted successfully!", type: "success" });
+
+    emit("toast", {
+      message: `Faculty ${action}d successfully`,
+      type: "success"
+    });
   } catch (err) {
     emit("toast", {
-      message: err.response?.data?.error || "Error deleting faculty",
-      type: "error",
+      message: "Failed to update faculty status",
+      type: "error"
     });
   }
 };
@@ -322,3 +381,14 @@ onMounted(() => {
   fetchDesignations();
 });
 </script>
+
+<style scoped>
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.3s ease;
+}
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+}
+</style>

@@ -121,10 +121,11 @@ def create_admin_routes(mysql):
                 f.School_Id,
                 f.Designation_Id,
                 d.Designation_Name,
-                f.Role_Id
+                f.Role_Id,
+                f.Is_Active
             FROM mst_faculty f
             LEFT JOIN mst_designation d ON f.Designation_Id = d.Designation_Id
-            ORDER BY f.Faculty_Id
+            ORDER BY f.Is_Active DESC, f.F_Name ASC
         """)
         rows = cursor.fetchall()
         columns = [desc[0] for desc in cursor.description]
@@ -207,18 +208,35 @@ def create_admin_routes(mysql):
             return jsonify({"error": "Unable to update faculty"}), 500
 
 
-    @admin_bp.route('/faculty/<int:faculty_id>', methods=['DELETE'])
-    def delete_faculty(faculty_id):
+    @admin_bp.route('/faculty/toggle-status/<int:faculty_id>', methods=['PUT'])
+    def toggle_faculty_status(faculty_id):
         try:
             cursor = mysql.connection.cursor()
-            cursor.execute("DELETE FROM mst_faculty WHERE Faculty_Id = %s", (faculty_id,))
+
+            cursor.execute("""
+                UPDATE mst_faculty
+                SET Is_Active = CASE 
+                    WHEN Is_Active = 1 THEN 0
+                    ELSE 1
+                END
+                WHERE Faculty_Id = %s
+            """, (faculty_id,))
+
             mysql.connection.commit()
             cursor.close()
-            return jsonify({"message": "Faculty deleted successfully"}), 200
+
+            return jsonify({
+                "success": True,
+                "message": "Faculty status updated successfully"
+            }), 200
+
         except Exception as e:
-            print("Error deleting faculty:", e)
-            return jsonify({"error": "Unable to delete faculty"}), 500
-        
+            mysql.connection.rollback()
+            return jsonify({
+                "success": False,
+                "error": str(e)
+            }), 500
+            
     # ----------------------------------
     # GET ALL GROUPS
     # ----------------------------------
