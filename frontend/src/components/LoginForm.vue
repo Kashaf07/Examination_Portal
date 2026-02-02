@@ -28,6 +28,13 @@
           />
         </div>
 
+        <p
+          v-if="message"
+          class="text-sm text-red-600 text-center font-medium"
+        >
+          {{ message }}
+        </p>
+
         <button
           @click="login"
           class="w-full bg-blue-500 hover:bg-[#386dcd] text-white py-2 rounded-lg font-semibold transition"
@@ -48,6 +55,20 @@ const email = ref("")
 const password = ref("")
 const message = ref("")
 const router = useRouter()
+let messageTimer = null
+
+const showMessage = (text, duration = 3500) => {
+  message.value = text
+
+  // clear previous timer if exists
+  if (messageTimer) {
+    clearTimeout(messageTimer)
+  }
+
+  messageTimer = setTimeout(() => {
+    message.value = ""
+  }, duration)
+}
 
 const login = async () => {
   try {
@@ -60,7 +81,7 @@ const login = async () => {
     console.log("LOGIN RESPONSE:", res)
 
     if (res.status !== "success") {
-      message.value = res.message || "Invalid credentials"
+      showMessage(res.message || "Invalid credentials")
       return
     }
 
@@ -81,10 +102,15 @@ const login = async () => {
       router.push(`/${activeRole}`)
     }, 50)
 
-
   } catch (e) {
     console.error("LOGIN ERROR:", e)
-    message.value = "Server error"
+
+    if (e.response && e.response.data && e.response.data.message) {
+      // show backend message (disabled, invalid, etc.)
+      showMessage(e.response.data.message)
+    } else {
+      showMessage("Unable to login. Please try again.")
+    }
   }
 }
 </script>

@@ -50,16 +50,26 @@ def create_auth_routes(mysql):
         password_matched = False
 
         # ---- CHECK FACULTY ----
-        cursor.execute("SELECT F_Name, F_Email, Password FROM mst_faculty WHERE F_Email=%s", (email,))
+        cursor.execute("SELECT F_Name, F_Email, Password, Is_Active FROM mst_faculty WHERE F_Email=%s",(email,))
         faculty = cursor.fetchone()
 
         if faculty:
-            f_name, f_email, f_pass = faculty
-            roles.append("Faculty")   # add role even if password doesn't match
-            if f_pass == password:    # if password matches → this is the login role
+            f_name, f_email, f_pass, is_active = faculty
+            roles.append("Faculty")
+
+            # 🚫 Faculty exists but is DISABLED
+            if is_active == 0:
+                return jsonify({
+                    "status": "fail",
+                    "message": "Your faculty account is disabled. Please contact the administrator."
+                }), 403
+
+            # ✅ Faculty is active → check password
+            if f_pass == password:
                 password_matched = True
                 selected_role = "Faculty"
                 user_name = f_name
+
 
         # ---- CHECK ADMIN ----
         cursor.execute("SELECT Name, Email, Password FROM mst_admin WHERE Email=%s", (email,))
