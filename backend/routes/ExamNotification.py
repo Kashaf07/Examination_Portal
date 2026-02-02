@@ -91,12 +91,12 @@ def notify_faculty_internal():
                     subject=f"⏰ Exam Reminder: {name}",
                     recipients=[faculty_email],
                     body=f"""
-Hello,
+Dear Faculty,
 
 This is a reminder that your exam "{name}" will start at {exam_time.strftime('%H:%M')}.
 
 Regards,
-Examination Portal
+Examination Management Cell
 """
                 )
                 mail.send(msg)
@@ -141,14 +141,14 @@ def get_admin_notifications():
     cur = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
 
     cur.execute("""
-        SELECT
+    SELECT
             e.Exam_Id,
             e.Exam_Name,
             e.Exam_Date,
             e.Exam_Time,
-            f.F_Name AS Faculty_Name
+            COALESCE(f.F_Name, 'Admin') AS Faculty_Name
         FROM entrance_exam e
-        JOIN mst_faculty f
+        LEFT JOIN mst_faculty f
             ON e.Faculty_Email = f.F_Email
         WHERE
             STR_TO_DATE(

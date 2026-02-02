@@ -196,7 +196,7 @@ def create_question_routes(mysql):
         finally:
             cursor.close()
 
-    @question_bp.route('/questions/paper/<int:exam_id>', methods=['GET'])
+    @question_bp.route('/paper/<int:exam_id>', methods=['GET'])
     def get_exam_paper_questions(exam_id):
         conn = mysql.connection
         cursor = conn.cursor()

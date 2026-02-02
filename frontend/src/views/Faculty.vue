@@ -932,7 +932,6 @@ const submitExam = async () => {
 
 const deleteExam = async (examId) => {
   if (!confirm("Delete this exam?")) return
-
   try {
     const res = await axios.delete(
       `/faculty/exam/delete/${examId}`,
@@ -951,7 +950,6 @@ const deleteExam = async (examId) => {
 
   } catch (err) {
     console.error("Delete failed", err)
-    alert("Delete failed. Check console.")
   }
 }
 
