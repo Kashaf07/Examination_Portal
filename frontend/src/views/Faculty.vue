@@ -882,7 +882,7 @@ const submitExam = async () => {
 const deleteExam = async (examId) => {
   if (!confirm("Delete this exam?")) return
   try {
-    const res = await axios.delete(`/exam/delete/${examId}`)
+    const res = await axios.delete(`/faculty/exam/delete/${examId}`)
     if (res.data.success) fetchExamsAndCategorize()
   } catch (err) {
     console.error("Delete failed", err)
