@@ -140,16 +140,42 @@ def create_admin_routes(mysql):
             data = request.get_json()
             cursor = mysql.connection.cursor()
 
-            # 1️⃣ Duplicate Email Check
+            # Duplicate Email Check
             cursor.execute("SELECT COUNT(*) FROM mst_faculty WHERE F_Email = %s", (data['F_Email'],))
             if cursor.fetchone()[0] > 0:
                 cursor.close()
                 return jsonify({"error": "A faculty member with this email already exists."}), 400
 
-            # 2️⃣ Auto-map Role_Id from Designation_Id
+            # Auto-map Role_Id from Designation_Id
             cursor.execute("SELECT Role_Id FROM mst_designation WHERE Designation_Id = %s", 
                         (data['Designation_Id'],))
             role_row = cursor.fetchone()
+
+            # Check if school is active
+            cursor.execute(
+                "SELECT Is_Active FROM mst_school WHERE School_Id = %s",
+                (data['School_Id'],)
+            )
+            school = cursor.fetchone()
+
+            if not school or school[0] == 0:
+                cursor.close()
+                return jsonify({
+                    "error": "Cannot assign faculty to a disabled school"
+                }), 400
+                
+            # Check if designation is active
+            cursor.execute(
+                "SELECT Is_Active FROM mst_designation WHERE Designation_Id = %s",
+                (data['Designation_Id'],)
+            )
+            designation = cursor.fetchone()
+
+            if not designation or designation[0] == 0:
+                cursor.close()
+                return jsonify({
+                    "error": "Cannot assign disabled designation"
+                }), 400
 
             if not role_row:
                 cursor.close()
@@ -157,7 +183,7 @@ def create_admin_routes(mysql):
 
             role_id = role_row[0]
 
-            # 3️⃣ Insert Faculty using new structure
+            # Insert Faculty using new structure
             cursor.execute("""
                 INSERT INTO mst_faculty 
                 (F_Name, F_Email, School_Id, Designation_Id, Role_Id, Password)
@@ -236,6 +262,27 @@ def create_admin_routes(mysql):
                 "success": False,
                 "error": str(e)
             }), 500
+    
+    @admin_bp.route('/schools/active', methods=['GET'])
+    def get_active_schools():
+        try:
+            cursor = mysql.connection.cursor()
+            cursor.execute("""
+                SELECT School_Id, School_Name, School_Short
+                FROM mst_school
+                WHERE Is_Active = 1
+                ORDER BY School_Name ASC
+            """)
+            rows = cursor.fetchall()
+            columns = [desc[0] for desc in cursor.description]
+            result = [dict(zip(columns, row)) for row in rows]
+            cursor.close()
+
+            return jsonify(result), 200
+
+        except Exception as e:
+            print("Error fetching active schools:", e)
+            return jsonify({"error": "Unable to fetch active schools"}), 500
             
     # ----------------------------------
     # GET ALL GROUPS
@@ -1227,16 +1274,37 @@ def create_admin_routes(mysql):
     @admin_bp.route('/designations', methods=['GET'])
     def get_designations():
         cursor = mysql.connection.cursor()
-        cursor.execute("SELECT Designation_Id, Designation_Name FROM mst_designation ORDER BY Designation_Id ASC")
+        cursor.execute("SELECT Designation_Id, Designation_Name, Is_Active FROM mst_designation ORDER BY Is_Active DESC, Designation_Name ASC")
         rows = cursor.fetchall()
         cursor.close()
 
         data = [
-            {"id": row[0], "name": row[1]}
+            {"id": row[0], "name": row[1],"is_active": row[2]}
         for row in rows]
 
         return jsonify({"status": "success", "data": data})
     
+    @admin_bp.route('/designations/active', methods=['GET'])
+    def get_active_designations():
+        try:
+            cursor = mysql.connection.cursor()
+            cursor.execute("""
+                SELECT Designation_Id, Designation_Name
+                FROM mst_designation
+                WHERE Is_Active = 1
+                ORDER BY Designation_Name ASC
+            """)
+            rows = cursor.fetchall()
+            cursor.close()
+
+            return jsonify([
+                {"id": r[0], "name": r[1]}
+                for r in rows
+            ]), 200
+
+        except Exception as e:
+            return jsonify({"error": str(e)}), 500
+
     # ADD DESIGNATION
     @admin_bp.route('/designations', methods=['POST'])
     def add_designation():
@@ -1281,14 +1349,34 @@ def create_admin_routes(mysql):
 
         return jsonify({"status": "success", "message": "Designation updated"})
     
-    @admin_bp.route('/designations/<int:id>', methods=['DELETE'])
-    def delete_designation(id):
-        cursor = mysql.connection.cursor()
-        cursor.execute("DELETE FROM mst_designation WHERE Designation_Id = %s", (id,))
-        mysql.connection.commit()
-        cursor.close()
+    @admin_bp.route('/designations/toggle-status/<int:designation_id>', methods=['PUT'])
+    def toggle_designation_status(designation_id):
+        try:
+            cursor = mysql.connection.cursor()
 
-        return jsonify({"status": "success", "message": "Designation deleted"})
+            cursor.execute("""
+                UPDATE mst_designation
+                SET Is_Active = CASE
+                    WHEN Is_Active = 1 THEN 0
+                    ELSE 1
+                END
+                WHERE Designation_Id = %s
+            """, (designation_id,))
+
+            mysql.connection.commit()
+            cursor.close()
+
+            return jsonify({
+                "success": True,
+                "message": "Designation status updated successfully"
+            }), 200
+
+        except Exception as e:
+            mysql.connection.rollback()
+            return jsonify({
+                "success": False,
+                "error": str(e)
+            }), 500
     
     # GET-DESIGNATION-ROLE
     @admin_bp.route('/designation-roles', methods=['GET'])
