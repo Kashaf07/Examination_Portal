@@ -1,20 +1,65 @@
 <template>
   <div class="space-y-6">
 
-    <!-- Action Buttons -->
-    <div class="flex gap-4 mb-6">
-      <button @click="toggleAddApplicant"
-        class="bg-blue-500 hover:bg-blue-600 text-white font-semibold px-6 py-3 rounded-full shadow-lg transition-all hover:scale-105"
-      >
-        {{ showAddApplicantPage ? 'Close' : 'Add Students' }}
-      </button>
-      <button
-        @click="navigateUpload"
-        class="bg-purple-500 hover:bg-purple-600 text-white font-semibold px-6 py-3 rounded-full shadow-lg transition-all hover:scale-105"
-      >
-        {{ showUploadPage ? 'Close' : 'Upload Students' }}
-      </button>
+    <!-- TOP ACTION BAR -->
+    <div class="flex items-start gap-6 mb-6">
+
+      <!-- LEFT: Add / Upload Buttons -->
+      <div class="flex gap-4">
+        <button
+          @click="toggleAddApplicant"
+          class="bg-blue-500 hover:bg-blue-600 text-white font-semibold px-6 py-3 rounded-full shadow-lg transition-all hover:scale-105"
+        >
+          {{ showAddApplicantPage ? 'Close' : 'Add Students' }}
+        </button>
+
+        <button
+          @click="navigateUpload"
+          class="bg-purple-500 hover:bg-purple-600 text-white font-semibold px-6 py-3 rounded-full shadow-lg transition-all hover:scale-105"
+        >
+          {{ showUploadPage ? 'Close' : 'Upload Students' }}
+        </button>
+      </div>
+
+      <!-- RIGHT: Active / All Toggle -->
+      <div class="flex flex-col">
+        <div class="flex items-center bg-gray-100 rounded-full p-1 shadow-inner w-fit">
+          <button
+            @click="showDisabled = false"
+            :class="[
+              'px-4 py-2 text-sm font-semibold rounded-full transition-all',
+              !showDisabled
+                ? 'bg-white text-blue-600 shadow'
+                : 'text-gray-600 hover:text-gray-800'
+            ]"
+          >
+            Active Only
+          </button>
+
+          <button
+            @click="showDisabled = true"
+            :class="[
+              'px-4 py-2 text-sm font-semibold rounded-full transition-all',
+              showDisabled
+                ? 'bg-white text-blue-600 shadow'
+                : 'text-gray-600 hover:text-gray-800'
+            ]"
+          >
+            All Students
+          </button>
+        </div>
+
+        <!-- Helper text JUST below toggle -->
+        <p
+          v-if="showDisabled"
+          class="text-xs text-gray-500 mt-1 pl-2"
+        >
+          Disabled students are shown in grey
+        </p>
+      </div>
+
     </div>
+
     <div v-if="showAddApplicantPage" class="mb-8"></div>
 
     <!-- Add Applicant Page -->
@@ -56,7 +101,7 @@
             <tr
               v-for="(a, i) in paginatedApplicants"
               :key="a.Applicant_Id"
-              class="hover:bg-blue-50 transition cursor-pointer"
+              :class="['transition',Number(a.Is_Active) === 0? 'opacity-50 bg-gray-100 cursor-not-allowed': 'hover:bg-blue-50']"
             >
               <td class="px-6 py-5">
                 <input type="checkbox" :value="a.Applicant_Id" v-model="selectedApplicants" />
@@ -76,10 +121,13 @@
                 </button>
 
                 <button
-                  @click="deleteApplicant(a.Applicant_Id)"
-                  class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-md shadow"
+                  @click="toggleApplicantStatus(a)"
+                  :class="a.Is_Active === 1
+                    ? 'bg-red-500 hover:bg-red-600'
+                    : 'bg-green-500 hover:bg-green-600'"
+                  class="text-white px-4 py-2 rounded-md shadow transition hover:scale-105"
                 >
-                  Delete
+                  {{ a.Is_Active === 1 ? 'Disable' : 'Enable' }}
                 </button>
               </td>
             </tr>
@@ -247,20 +295,30 @@ const showViewModal = ref(false);
 const selectedApplicant = ref(null);
 const showAddApplicantPage = ref(false);
 const showUploadPage = ref(false);
+const showDisabled = ref(false);
+
+const filteredApplicants = computed(() => {
+  if (showDisabled.value) {
+    return applicantsList.value;
+  }
+  return applicantsList.value.filter(
+    a => Number(a.Is_Active) === 1
+  );
+});
 
 // ================= PAGINATION STATE =================
 const currentPage = ref(1);
 const itemsPerPage = ref(20);
 
 // ================= PAGINATION COMPUTED =================
-const totalApplicants = computed(() => applicantsList.value.length);
+const totalApplicants = computed(() => filteredApplicants.value.length);
 
 const totalPages = computed(() => Math.ceil(totalApplicants.value / itemsPerPage.value));
 
 const paginatedApplicants = computed(() => {
   const start = (currentPage.value - 1) * itemsPerPage.value;
   const end = start + itemsPerPage.value;
-  return applicantsList.value.slice(start, end);
+  return filteredApplicants.value.slice(start, end);
 });
 
 const startIndex = computed(() => (currentPage.value - 1) * itemsPerPage.value);
@@ -355,13 +413,19 @@ const openViewModal = (a) => {
   showViewModal.value = true;
 };
 
-// Delete
-const deleteApplicant = async (id) => {
-  if (!confirm("Delete applicant?")) return;
-  await axios.delete(`/admin/applicants/${id}`);
-  emit("toast", { message: "Applicant deleted", type: "success" });
+// Enable/Disable
+const toggleApplicantStatus = async (applicant) => {
+  const action = applicant.Is_Active === 1 ? "disable" : "enable";
+  if (!confirm(`Are you sure you want to ${action} this student?`)) return;
+
+  await axios.put(`/admin/applicants/toggle-status/${applicant.Applicant_Id}`);
+  emit("toast", {
+    message: `Student ${action}d successfully`,
+    type: "success"
+  });
   fetchApplicants();
 };
+
 
 const formatDOB = (dob) => {
   if (!dob) return "N/A";

@@ -3,6 +3,16 @@ from datetime import datetime
 import traceback
 import MySQLdb.cursors
 
+def check_student_active(mysql, applicant_id):
+    cursor = mysql.connection.cursor()
+    cursor.execute(
+        "SELECT Is_Active FROM applicants WHERE Applicant_Id = %s",
+        (applicant_id,)
+    )
+    row = cursor.fetchone()
+    cursor.close()
+
+    return row and row[0] == 1
 
 def create_exam_routes(mysql):
     exam_bp = Blueprint('exam', __name__)

@@ -254,9 +254,18 @@ const createGroup = async () => {
 }
 
 /* TOGGLE VIEW */
-const toggleView = (groupId) => {
-  expandedGroup.value =
-    expandedGroup.value === groupId ? null : groupId
+const toggleView = async (groupId) => {
+  if (expandedGroup.value === groupId) {
+    expandedGroup.value = null
+    return
+  }
+  expandedGroup.value = groupId
+
+  // 🔥 ALWAYS FETCH FRESH DATA
+  const res = await axios.get(`/groups/${groupId}/applicants`)
+  applicants.value[groupId] = res.data.success
+    ? res.data.applicants
+    : []
 }
 
 /* REMOVE APPLICANT */

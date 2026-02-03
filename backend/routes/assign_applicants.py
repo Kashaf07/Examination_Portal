@@ -17,6 +17,16 @@ def create_assign_routes(mysql):
             cursor = conn.cursor()
 
             for applicant_id in applicant_ids:
+                # ❌ check active status
+                cursor.execute(
+                    "SELECT Is_Active FROM applicants WHERE Applicant_Id = %s",
+                    (applicant_id,)
+                )
+                row = cursor.fetchone()
+
+                if not row or row[0] == 0:
+                    continue   # skip disabled students
+
                 cursor.execute("""
                     INSERT INTO applicant_exam_assign (Applicant_Id, Exam_Id)
                     VALUES (%s, %s)
