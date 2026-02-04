@@ -267,11 +267,6 @@
   </div>
 </div>
 
-
-
-
-
-
         <!-- Dashboard -->
 <div v-if="activeTab === null" class="space-y-8">
 
@@ -304,7 +299,7 @@
             <h1 class="text-4xl font-bold text-blue-700 leading-tight">{{ currentTabName }}</h1>
             <p class="text-sm text-gray-600 mt-1">Manage your {{ currentTabName.toLowerCase() }} efficiently</p>
           </div>
-          <router-view @toast="handleToast" />
+          <router-view @toast="handleToast" @open-qr-modal="openQRModal" />
         </div>
       </div>
     </main>
@@ -314,6 +309,14 @@
       :message="toast.message"
       :type="toast.type"
       @clear="clearToast"
+    />
+
+    <!-- QR Code Modal -->
+    <QRCodeModal
+      :is-open="showQRModal"
+      :exam-id="selectedExamForQR?.id || ''"
+      :exam-name="selectedExamForQR?.name || ''"
+      @close="closeQRModal"
     />
   </div>
   <div
@@ -337,6 +340,7 @@ import axios from "axios";
 import { ref, computed, onMounted, onUnmounted, watch } from "vue";
 import { useRouter, useRoute } from "vue-router";
 import NotificationToast from "@/components/admin/NotificationToast.vue";
+import QRCodeModal from "@/components/QRCodeModal.vue";
 import { authApi } from "@/services/adminApi.js";
 
 const router = useRouter();
@@ -348,14 +352,10 @@ const getRemainingMinutes = (exam) => {
   return Math.floor((examDateTime - now.value) / 60000)
 }
 
-
-
-
 const isStartingSoon = (exam) => {
   const mins = getRemainingMinutes(exam)
   return mins >= 0 && mins <= 10
 }
-
 
 const formatCountdown = (exam) => {
   const examDateTime = new Date(`${exam.Exam_Date}T${exam.Exam_Time}`)
@@ -369,8 +369,6 @@ const formatCountdown = (exam) => {
   return `${mins}m ${secs}s`
 }
 
-
-
 const adminName = ref(localStorage.getItem("name") || "Admin")
 const adminInitial = computed(() => adminName.value.charAt(0).toUpperCase())
 const adminEmail = localStorage.getItem("email")
@@ -379,6 +377,10 @@ const sidebarOpen = ref(true)
 const showRoleMenu = ref(false)
 const activeTab = ref(null)
 const canSwitch = ref(false)
+
+// QR Code Modal State
+const showQRModal = ref(false)
+const selectedExamForQR = ref(null)
 
 const tooltip = ref({
   text: '',
@@ -451,6 +453,17 @@ let countdownTimer = null
 /* ================= TOGGLE NOTIFICATIONS ================= */
 const toggleNotifications = () => {
   showNotifications.value = !showNotifications.value
+}
+
+/* ================= QR CODE MODAL FUNCTIONS ================= */
+const openQRModal = (examData) => {
+  selectedExamForQR.value = examData
+  showQRModal.value = true
+}
+
+const closeQRModal = () => {
+  showQRModal.value = false
+  selectedExamForQR.value = null
 }
 
 /* ================= CLICK OUTSIDE TO CLOSE NOTIFICATIONS ================= */

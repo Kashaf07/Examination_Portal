@@ -9,10 +9,11 @@ def create_assigned_applicants_routes(mysql):
         try:
             cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
             query = """
-                SELECT a.Applicant_Id, a.Full_Name, a.Email, a.Password
+                SELECT a.Applicant_Id, a.Full_Name, a.Email, a.Password, a.Is_Active
                 FROM applicant_exam_assign ae
                 JOIN applicants a ON ae.Applicant_Id = a.Applicant_Id
                 WHERE ae.Exam_Id = %s
+                ORDER BY a.Is_Active DESC, a.Full_Name
             """
             cursor.execute(query, (exam_id,))
             assigned_applicants = cursor.fetchall()

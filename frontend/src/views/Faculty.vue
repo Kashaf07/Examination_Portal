@@ -484,105 +484,132 @@
                   <table class="min-w-full">
                     <thead class="bg-gradient-to-r from-blue-50 to-indigo-50">
                       <tr>
-                        <th class="px-6 py-4 text-left text-sm font-bold text-gray-700">Exam Name</th>
-                        <th class="px-6 py-4 text-left text-sm font-bold text-gray-700">Date</th>
-                        <th class="px-6 py-4 text-left text-sm font-bold text-gray-700">Time</th>
-                        <th class="px-6 py-4 text-left text-sm font-bold text-gray-700">Duration</th>
-                        <th class="px-6 py-4 text-left text-sm font-bold text-gray-700">Questions</th>
-                        <th class="px-6 py-4 text-left text-sm font-bold text-gray-700">Max Marks</th>
-                        <th class="px-6 py-4 text-center text-sm font-bold text-gray-700">Actions</th>
+                        <th class="px-3 py-4 text-left text-sm font-bold text-gray-700 whitespace-nowrap">Exam Name</th>
+                        <th class="px-3 py-4 text-left text-sm font-bold text-gray-700 whitespace-nowrap">Date</th>
+                        <th class="px-3 py-4 text-left text-sm font-bold text-gray-700 whitespace-nowrap">Time</th>
+                        <th class="px-3 py-4 text-left text-sm font-bold text-gray-700 whitespace-nowrap">Duration</th>
+                        <th class="px-2 py-4 text-left text-sm font-bold text-gray-700">Questions</th>
+                        <th class="px-2 py-4 text-left text-sm font-bold text-gray-700">Max Marks</th>
+                        <th class="px-2 py-4 text-center text-sm font-bold text-gray-700">QR Code</th>
+                        <th class="px-6 py-4 text-center text-sm font-bold text-gray-700 min-w-[420px]">Actions</th>
+                        <th class="px-2 py-4 text-center text-sm font-bold text-gray-700">Delete</th>
                       </tr>
                     </thead>
                     <tbody class="divide-y divide-gray-200">
                       <tr v-for="exam in createdExams" :key="exam.Exam_Id" class="hover:bg-gray-50 transition">
-                        <td class="px-6 py-4 text-sm text-gray-800 font-medium">{{ exam.Exam_Name }}</td>
-                        <td class="px-6 py-4 text-sm text-gray-600">{{ exam.Exam_Date }}</td>
-                        <td class="px-6 py-4 text-sm text-gray-600">{{ exam.Exam_Time }}</td>
-                        <td class="px-6 py-4 text-sm text-gray-600">{{ exam.Duration_Minutes }} min</td>
-                        <td class="px-6 py-4 text-sm text-gray-600">{{ exam.Total_Questions }}</td>
-                        <td class="px-6 py-4 text-sm text-gray-600">{{ exam.Max_Marks }}</td>
+                        <td class="px-3 py-4 text-sm text-gray-800 font-medium">{{ exam.Exam_Name }}</td>
+                        <td class="px-3 py-4 text-sm text-gray-600 whitespace-nowrap">{{ exam.Exam_Date }}</td>
+                        <td class="px-3 py-4 text-sm text-gray-600 whitespace-nowrap">{{ exam.Exam_Time }}</td>
+                        <td class="px-3 py-4 text-sm text-gray-600 whitespace-nowrap">{{ exam.Duration_Minutes }} min</td>
+                        <td class="px-2 py-4 text-sm text-gray-600 text-center">{{ exam.Total_Questions }}</td>
+                        <td class="px-2 py-4 text-sm text-gray-600 text-center">{{ exam.Max_Marks }}</td>
+                        
+                        <!-- QR Code Column -->
+                        <td class="px-2 py-4 text-center">
+                          <button
+                            @click="openQRModal(exam.Exam_Id, exam.Exam_Name)"
+                            class="inline-flex items-center justify-center w-10 h-10 bg-indigo-500 hover:bg-indigo-600 rounded-lg transition-all duration-200 shadow-md hover:shadow-lg hover:scale-110"
+                            title="Generate QR Code"
+                          >
+                            <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z" />
+                            </svg>
+                          </button>
+                        </td>
+                        
+                        <!-- Actions Column -->
                         <td class="px-6 py-4">  
-                          <div class="flex flex-wrap justify-center items-center gap-2">
-
+                          <div class="flex items-center justify-center gap-2.5">
+                            
                             <!-- Add Students -->
-                            <div class="flex items-center gap-1">
+                            <div class="relative">
                               <button
                                 @click.stop="addStudents(exam.Exam_Id)"
-                                class="flex items-center gap-1 bg-blue-400 hover:bg-blue-500 text-white px-3 py-1.5 rounded-full text-xs font-semibold shadow hover:scale-105 transition-all duration-200"
+                                class="bg-blue-400 hover:bg-blue-500 text-white px-3.5 py-2 rounded-lg text-xs font-semibold shadow-md hover:shadow-lg transition-all duration-200 hover:scale-105 whitespace-nowrap"
                               >
                                 Add Students
                               </button>
-
-                              <!-- ✅ STATUS -->
+                              <!-- Status Indicator -->
                               <span
                                 v-if="hasAssignedStudents(exam)"
-                                class="text-green-600 text-lg"
+                                class="absolute -top-0.5 -right-0.5 text-green-600 text-sm bg-white rounded-full w-4 h-4 flex items-center justify-center"
                                 title="Students Assigned"
                               >
                                 ✔
                               </span>
-
                               <span
                                 v-else
-                                class="text-yellow-600 text-lg"
+                                class="absolute -top-0.5 -right-0.5 text-yellow-600 text-sm bg-white rounded-full w-4 h-4 flex items-center justify-center"
                                 title="No Students Assigned"
                               >
                                 ⏳
                               </span>
                             </div>
 
+                            <!-- Question Bank -->
+                            <div class="relative">
+                              <button
+                                @click="navigateTo('AddQuestion', exam.Exam_Id)"
+                                class="bg-green-500 hover:bg-green-600 text-white px-3.5 py-2 rounded-lg text-xs font-semibold shadow-md hover:shadow-lg transition-all duration-200 hover:scale-105 whitespace-nowrap"
+                              >
+                                Question Bank
+                              </button>
+                              <!-- Status Indicator -->
+                              <span
+                                v-if="examStatus[exam.Exam_Id]?.has_question_bank"
+                                class="absolute -top-0.5 -right-0.5 text-green-600 text-sm bg-white rounded-full w-4 h-4 flex items-center justify-center"
+                                title="Completed"
+                              >
+                                ✔
+                              </span>
+                              <span
+                                v-else
+                                class="absolute -top-0.5 -right-0.5 text-yellow-600 text-sm bg-white rounded-full w-4 h-4 flex items-center justify-center"
+                                title="Pending"
+                              >
+                                ⏳
+                              </span>
+                            </div>
 
-                            <button
-                              @click="navigateTo('AddQuestion', exam.Exam_Id)"
-                              class="bg-green-500 text-white px-3 py-1.5 rounded-full text-xs shadow hover:scale-105 transition font-semibold"
-                            >
-                              Question Bank
-                            </button>
+                            <!-- Question Paper -->
+                            <div class="relative">
+                              <button
+                                @click="navigateTo('MakeQuestionPaper', exam.Exam_Id)"
+                                class="bg-purple-500 hover:bg-purple-600 text-white px-3.5 py-2 rounded-lg text-xs font-semibold shadow-md hover:shadow-lg transition-all duration-200 hover:scale-105 whitespace-nowrap"
+                              >
+                                Question Paper
+                              </button>
+                              <!-- Status Indicator -->
+                              <span
+                                v-if="examStatus[exam.Exam_Id]?.has_question_paper"
+                                class="absolute -top-0.5 -right-0.5 text-green-600 text-sm bg-white rounded-full w-4 h-4 flex items-center justify-center"
+                                title="Completed"
+                              >
+                                ✔
+                              </span>
+                              <span
+                                v-else
+                                class="absolute -top-0.5 -right-0.5 text-yellow-600 text-sm bg-white rounded-full w-4 h-4 flex items-center justify-center"
+                                title="Pending"
+                              >
+                                ⏳
+                              </span>
+                            </div>
 
-                            <span
-                              v-if="examStatus[exam.Exam_Id]?.has_question_bank"
-                              class="text-green-600 text-lg"
-                              title="Completed"
-                            >
-                              ✔
-                            </span>
-                            <span
-                              v-else
-                              class="text-yellow-600 text-lg"
-                              title="Pending"
-                            >
-                              ⏳
-                            </span>
-
-                            <button
-                              @click="navigateTo('MakeQuestionPaper', exam.Exam_Id)"
-                              class="bg-purple-500 text-white px-3 py-1.5 rounded-full text-xs shadow hover:scale-105 transition font-semibold"
-                            >
-                              Question Paper
-                            </button>
-
-                            <span
-                              v-if="examStatus[exam.Exam_Id]?.has_question_paper"
-                              class="text-green-600 text-lg"
-                              title="Completed"
-                            >
-                              ✔
-                            </span>
-                            <span
-                              v-else
-                              class="text-yellow-600 text-lg"
-                              title="Pending"
-                            >
-                              ⏳
-                            </span>
-
-                            <button
-                              @click="deleteExam(exam.Exam_Id)"
-                              class="bg-red-500 text-white px-3 py-1.5 rounded-full text-xs shadow hover:scale-105 transition font-semibold"
-                            >
-                              🗑 Delete
-                            </button>
                           </div>
+                        </td>
+
+                        <!-- Delete Column -->
+                        <td class="px-2 py-4 text-center">
+                          <button
+                            @click="deleteExam(exam.Exam_Id)"
+                            class="inline-flex items-center justify-center w-10 h-10 bg-red-500 hover:bg-red-600 rounded-lg transition-all duration-200 shadow-md hover:shadow-lg hover:scale-110"
+                            title="Delete Exam"
+                          >
+                            <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                            </svg>
+                          </button>
                         </td>
                       </tr>
                     </tbody>
@@ -703,6 +730,14 @@
         </div>
       </div>
     </main>
+
+    <!-- QR Code Modal -->
+    <QRCodeModal
+      :is-open="showQRModal"
+      :exam-id="selectedExamForQR?.id || ''"
+      :exam-name="selectedExamForQR?.name || ''"
+      @close="closeQRModal"
+    />
   </div>
   </div>
 </template>
@@ -715,6 +750,7 @@ import FacultyGroups from "../views/Groups.vue"
 import AddApplicantsPage from "../views/AddApplicantsPage.vue"
 import UploadStudents from './UploadStudents.vue'
 import Groups from './Groups.vue'
+import QRCodeModal from '../components/QRCodeModal.vue'
 
 const now = ref(new Date())
 let countdownTimer = null
@@ -735,6 +771,10 @@ const facultyEmail = email
 const showNotifications = ref(false)
 const dismissedExamIds = ref(new Set())
 const notificationContainer = ref(null)
+
+// QR Code Modal State
+const showQRModal = ref(false)
+const selectedExamForQR = ref(null)
 
 const toggleNotifications = () => {
   showNotifications.value = !showNotifications.value
@@ -774,6 +814,20 @@ const formatCountdown = (exam) => {
   const m = Math.floor(secs / 60)
   const s = secs % 60
   return `${m}m ${s}s`
+}
+
+/* ================= QR CODE MODAL FUNCTIONS ================= */
+const openQRModal = (examId, examName) => {
+  selectedExamForQR.value = {
+    id: examId,
+    name: examName
+  }
+  showQRModal.value = true
+}
+
+const closeQRModal = () => {
+  showQRModal.value = false
+  selectedExamForQR.value = null
 }
 
 /* ================= CLICK OUTSIDE TO CLOSE NOTIFICATIONS ================= */

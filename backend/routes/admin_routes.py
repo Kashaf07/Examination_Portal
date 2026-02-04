@@ -484,9 +484,9 @@ def create_admin_routes(mysql):
         try:
             cursor = mysql.connection.cursor()
             cursor.execute("""
-                SELECT Applicant_Id, Full_Name, Email, Phone, DOB, Gender, Address, Registration_Date
+                SELECT Applicant_Id, Full_Name, Email, Phone, DOB, Gender, Address, Registration_Date, Is_Active
                 FROM applicants 
-                ORDER BY Applicant_Id
+                ORDER BY Is_Active DESC,Applicant_Id
             """)
             applicants = cursor.fetchall()
             columns = [desc[0] for desc in cursor.description]
@@ -497,88 +497,28 @@ def create_admin_routes(mysql):
             print("Error fetching applicants:", e)
             return jsonify({"error": "Unable to fetch applicants"}), 500
 
-    @admin_bp.route('/applicants/<int:applicant_id>', methods=['DELETE'])
-    def delete_applicant(applicant_id):
+    @admin_bp.route('/applicants/toggle-status/<int:applicant_id>', methods=['PUT'])
+    def toggle_applicant_status(applicant_id):
         try:
             cursor = mysql.connection.cursor()
-        
-            # Get all attempt IDs for this applicant
-            cursor.execute("SELECT Attempt_Id FROM applicant_attempt WHERE Applicant_Id = %s", (applicant_id,))
-            attempt_ids = [row[0] for row in cursor.fetchall()]
-        
-            # Delete from applicant_answers table first
-            answers_deleted = 0
-            if attempt_ids:
-                for attempt_id in attempt_ids:
-                    cursor.execute("SELECT COUNT(*) FROM applicant_answers WHERE Attempt_Id = %s", (attempt_id,))
-                    answer_count = cursor.fetchone()[0]
-                    if answer_count > 0:
-                        cursor.execute("DELETE FROM applicant_answers WHERE Attempt_Id = %s", (attempt_id,))
-                        answers_deleted += answer_count
-        
-            # Delete related records
-            cursor.execute("SELECT COUNT(*) FROM applicant_attempt WHERE Applicant_Id = %s", (applicant_id,))
-            attempt_count = cursor.fetchone()[0]
-        
-            if attempt_count > 0:
-                cursor.execute("DELETE FROM applicant_attempt WHERE Applicant_Id = %s", (applicant_id,))
-                print(f"Deleted {attempt_count} exam attempts for applicant {applicant_id}")
-        
-            # Delete from auto_grading table (if exists)
-            try:
-                cursor.execute("SELECT COUNT(*) FROM auto_grading WHERE Attempt_Id IN (%s)" % ','.join(['%s'] * len(attempt_ids)) if attempt_ids else "SELECT 0", attempt_ids if attempt_ids else [])
-                grading_count = cursor.fetchone()[0] if attempt_ids else 0
-                if grading_count > 0:
-                    cursor.execute("DELETE FROM auto_grading WHERE Attempt_Id IN (%s)" % ','.join(['%s'] * len(attempt_ids)), attempt_ids)
-            except Exception as e:
-                print(f"Note: auto_grading table handling: {e}")
-        
-            # Delete from applicant_exam_assign table (if exists)
-            try:
-                cursor.execute("SELECT COUNT(*) FROM applicant_exam_assign WHERE Applicant_Id = %s", (applicant_id,))
-                assign_count = cursor.fetchone()[0]
-                if assign_count > 0:
-                    cursor.execute("DELETE FROM applicant_exam_assign WHERE Applicant_Id = %s", (applicant_id,))
-            except Exception as e:
-                print(f"Note: applicant_exam_assign table handling: {e}")
-        
-            # Delete from login_log table by User_Email
-            cursor.execute("SELECT Email FROM applicants WHERE Applicant_Id = %s", (applicant_id,))
-            row = cursor.fetchone()
-            applicant_email = row[0] if row else None
-
-            if applicant_email:
-                cursor.execute("SELECT COUNT(*) FROM login_log WHERE User_Email = %s", (applicant_email,))
-                log_count = cursor.fetchone()[0]
-                if log_count > 0:
-                    cursor.execute("DELETE FROM login_log WHERE User_Email = %s", (applicant_email,))
-                    print(f"Deleted {log_count} login logs for applicant {applicant_id}")
-            else:
-                log_count = 0
-        
-            # Finally delete the applicant
-            cursor.execute("DELETE FROM applicants WHERE Applicant_Id = %s", (applicant_id,))
-        
+            cursor.execute("""
+                UPDATE applicants
+                SET Is_Active = CASE
+                    WHEN Is_Active = 1 THEN 0
+                    ELSE 1
+                END
+                WHERE Applicant_Id = %s
+            """, (applicant_id,))
             mysql.connection.commit()
             cursor.close()
-        
-            message = f"Applicant deleted successfully"
-            details = []
-            if answers_deleted > 0:
-                details.append(f"{answers_deleted} exam answers")
-            if attempt_count > 0:
-                details.append(f"{attempt_count} exam attempts")
-            if log_count > 0:
-                details.append(f"{log_count} login logs")
-        
-            if details:
-                message += f" (also removed {', '.join(details)})"
-        
-            return jsonify({"message": message}), 200
+
+            return jsonify({
+                "success": True,
+                "message": "Applicant status updated"
+            }), 200
         except Exception as e:
-            print("Error deleting applicant:", e)
             mysql.connection.rollback()
-            return jsonify({"error": f"Unable to delete applicant: {str(e)}"}), 500
+            return jsonify({"error": str(e)}), 500
 
     # Exam Attempts Routes
     @admin_bp.route('/attempts', methods=['GET'])
