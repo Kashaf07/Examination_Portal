@@ -85,7 +85,8 @@ Examination Management Cell
 """
 
                 msg = MIMEMultipart()
-                msg['From'] = sender_email
+                msg['From'] = f"Examination Portal <{sender_email}>"
+
                 msg['To'] = receiver_email
                 msg['Subject'] = subject
                 msg.attach(MIMEText(body, 'plain', 'utf-8'))

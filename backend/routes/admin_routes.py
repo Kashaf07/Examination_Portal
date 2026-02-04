@@ -284,9 +284,8 @@ def create_admin_routes(mysql):
             print("Error fetching active schools:", e)
             return jsonify({"error": "Unable to fetch active schools"}), 500
             
-    # ----------------------------------
     # GET ALL GROUPS
-    # ----------------------------------
+   
     @admin_bp.route('/groups', methods=['GET'])
     def get_groups():
         cursor = mysql.connection.cursor()
@@ -299,9 +298,7 @@ def create_admin_routes(mysql):
             for r in rows
         ]), 200
 
-    # ----------------------------------
     # ADD GROUP
-    # ----------------------------------
     @admin_bp.route('/groups/add', methods=['POST'])
     def add_group():
         data = request.json
@@ -320,9 +317,7 @@ def create_admin_routes(mysql):
 
         return jsonify({'message': 'Group added successfully'}), 201
 
-    # ----------------------------------
     # UPDATE GROUP
-    # ----------------------------------
     @admin_bp.route('/groups/<int:group_id>', methods=['PUT'])
     def update_group(group_id):
         data = request.json
@@ -341,9 +336,7 @@ def create_admin_routes(mysql):
 
         return jsonify({'message': 'Group updated successfully'}), 200
 
-    # ----------------------------------
     # DELETE GROUP
-    # ----------------------------------
     @admin_bp.route('/groups/<int:group_id>', methods=['DELETE'])
     def delete_group(group_id):
         cursor = mysql.connection.cursor()
@@ -364,9 +357,7 @@ def create_admin_routes(mysql):
 
         return jsonify({'message': 'Group deleted successfully'}), 200
 
-    # ----------------------------------
     # VIEW APPLICANTS OF A GROUP
-    # ----------------------------------
     @admin_bp.route('/groups/<int:group_id>/applicants', methods=['GET'])
     def get_group_applicants(group_id):
         cursor = mysql.connection.cursor()
@@ -409,7 +400,7 @@ def create_admin_routes(mysql):
             data = request.get_json()
             cursor = mysql.connection.cursor()
             
-            # --- START CHANGE: Check for duplicate School_Name or School_Short ---
+            # Check for duplicate School_Name or School_Short ---
             cursor.execute("SELECT School_Name, School_Short FROM mst_school WHERE School_Name = %s OR School_Short = %s", 
                            (data['School_Name'], data['School_Short']))
             existing = cursor.fetchone()
@@ -418,9 +409,7 @@ def create_admin_routes(mysql):
                 if existing[0] == data['School_Name']:
                     return jsonify({"error": "A school with this name already exists."}), 400
                 if existing[1] == data['School_Short']:
-                    return jsonify({"error": "A school with this short name already exists."}), 400
-            # --- END CHANGE ---
-            
+                    return jsonify({"error": "A school with this short name already exists."}), 400            
             cursor.execute("""
                 INSERT INTO mst_school (School_Name, School_Short)
                 VALUES (%s, %s)
@@ -432,14 +421,13 @@ def create_admin_routes(mysql):
             return jsonify({"message": "School added successfully", "School_Id": school_id}), 201
         except Exception as e:
             print("Error adding school:", e)
-            # --- START CHANGE: Catch DB-level duplicate errors ---
+            #  Catch DB-level duplicate errors ---
             if 'Duplicate entry' in str(e):
                 if 'School_Name' in str(e):
                      return jsonify({"error": "A school with this name already exists."}), 400
                 if 'School_Short' in str(e):
                      return jsonify({"error": "A school with this short name already exists."}), 400
                 return jsonify({"error": "A school with this name or short name already exists."}), 400
-            # --- END CHANGE ---            
             return jsonify({"error": "Unable to add school"}), 500
 
     @admin_bp.route('/schools/<int:school_id>', methods=['PUT'])
@@ -1227,32 +1215,32 @@ def create_admin_routes(mysql):
         try:
             cursor = mysql.connection.cursor()
 
-            # 1️⃣ DELETE QUESTION BANK FIRST (🔥 REQUIRED)
+            # DELETE QUESTION BANK FIRST (🔥 REQUIRED)
             cursor.execute("DELETE FROM entrance_question_bank WHERE Exam_Id = %s",(exam_id,))
 
-            # 2️⃣ Get all exam paper IDs
+            #  Get all exam paper IDs
             cursor.execute("SELECT Exam_Paper_Id FROM exam_paper WHERE Exam_Id = %s",(exam_id,))
             paper_ids = [row[0] for row in cursor.fetchall()]
 
             if paper_ids:
-                # 3️⃣ Get all attempt IDs
+                #  Get all attempt IDs
                 cursor.execute(f"""SELECT Attempt_Id FROM applicant_attempt WHERE Exam_Paper_Id IN ({','.join(['%s'] * len(paper_ids))})""",paper_ids)
                 attempt_ids = [row[0] for row in cursor.fetchall()]
 
-                # 4️⃣ Delete answers
+                #  Delete answers
                 if attempt_ids:
                     cursor.execute(f"""DELETE FROM applicant_answers WHERE Attempt_Id IN ({','.join(['%s'] * len(attempt_ids))})""",attempt_ids)
 
-                # 5️⃣ Delete attempts
+                #  Delete attempts
                 cursor.execute(f"""DELETE FROM applicant_attempt WHERE Exam_Paper_Id IN ({','.join(['%s'] * len(paper_ids))})""",paper_ids)
 
-            # 6️⃣ Delete exam assignments
+            #  Delete exam assignments
             cursor.execute("DELETE FROM applicant_exam_assign WHERE Exam_Id = %s",(exam_id,))
 
-            # 7️⃣ Delete exam papers
+            #  Delete exam papers
             cursor.execute("DELETE FROM exam_paper WHERE Exam_Id = %s",(exam_id,))
 
-            # 8️⃣ FINALLY delete exam
+            #  FINALLY delete exam
             cursor.execute("DELETE FROM Entrance_Exam WHERE Exam_Id = %s",(exam_id,))
 
             mysql.connection.commit()
@@ -1313,7 +1301,7 @@ def create_admin_routes(mysql):
 
         cursor = mysql.connection.cursor()
 
-        # 🔍 Check if designation already exists
+        #  Check if designation already exists
         cursor.execute("SELECT COUNT(*) FROM mst_designation WHERE Designation_Name = %s", (name,))
         exists = cursor.fetchone()[0]
 
@@ -1324,7 +1312,7 @@ def create_admin_routes(mysql):
                 "message": "Designation already exists"
             }), 400
 
-        # ➕ Insert new designation
+        #  Insert new designation
         cursor.execute(
             "INSERT INTO mst_designation (Designation_Name) VALUES (%s)",
             (name,)

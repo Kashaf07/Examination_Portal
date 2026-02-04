@@ -4,18 +4,12 @@ import MySQLdb.cursors
 def create_add_applicants_exam_bp(mysql):
     bp = Blueprint('add_applicants_exam', __name__)
 
-    # ==================================================
-    # ✅ GET APPLICANTS OF A GROUP (SAFE + BACKWARD COMPATIBLE)
-    # ==================================================
+   
     @bp.route('/groups/<int:group_id>/applicants', methods=['GET'])
     def get_group_applicants(group_id):
         try:
             exam_id = request.args.get("exam_id")  # OPTIONAL
             cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
-
-            # --------------------------------------------------
-            # If exam_id is provided → mark already assigned
-            # --------------------------------------------------
             if exam_id:
                 cursor.execute("""
                     SELECT 
@@ -33,9 +27,7 @@ def create_add_applicants_exam_bp(mysql):
                     WHERE a.group_id = %s
                 """, (exam_id, group_id))
             else:
-                # --------------------------------------------------
-                # OLD BEHAVIOR (unchanged)
-                # --------------------------------------------------
+                
                 cursor.execute("""
                     SELECT 
                         Applicant_Id,
@@ -60,10 +52,9 @@ def create_add_applicants_exam_bp(mysql):
                 success=False,
                 message="Failed to load applicants"
             ), 500
-
-    # ==================================================
-    # ✅ ASSIGN SELECTED APPLICANTS TO EXAM (FINAL CONFIRM)
-    # ==================================================
+        
+    # ✅ ASSIGN SELECTED APPLICANTS TO EXAM 
+    
     @bp.route('/assign_applicants', methods=['POST'])
     def assign_applicants():
         try:
@@ -78,10 +69,8 @@ def create_add_applicants_exam_bp(mysql):
                 ), 400
 
             cursor = mysql.connection.cursor()
-
-            # --------------------------------------------------
             # Fetch already assigned applicants
-            # --------------------------------------------------
+           
             cursor.execute("""
                 SELECT Applicant_Id
                 FROM applicant_exam_assign
@@ -91,9 +80,7 @@ def create_add_applicants_exam_bp(mysql):
 
             inserted_count = 0
 
-            # --------------------------------------------------
             # Insert only NEW applicants
-            # --------------------------------------------------
             for applicant_id in applicant_ids:
                 if applicant_id not in already_assigned:
                     cursor.execute("""
@@ -117,9 +104,7 @@ def create_add_applicants_exam_bp(mysql):
                 message="Failed to assign applicants"
             ), 500
 
-    # ==================================================
-    # ⚠️ OLD GROUP ASSIGN API (UNCHANGED – OPTIONAL)
-    # ==================================================
+    # GROUP ASSIGN API (UNCHANGED – OPTIONAL)
     @bp.route('/exam/assign-group', methods=['POST'])
     def assign_group_to_exam():
         try:

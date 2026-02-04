@@ -7,9 +7,7 @@ import MySQLdb.cursors
 def create_exam_routes(mysql):
     exam_bp = Blueprint('exam', __name__)
 
-    # =====================================================
     # CREATE EXAM
-    # =====================================================
     @exam_bp.route('/create', methods=['POST'])
     def create_exam():
         data = request.json
@@ -23,9 +21,10 @@ def create_exam_routes(mysql):
         faculty_email = data.get('faculty_email')
 
         if not all([
-            exam_name, exam_date, exam_time,
-            duration, total_questions, max_marks, faculty_email
-        ]):
+    exam_name, exam_date, exam_time,
+    duration, total_questions, max_marks
+]):
+
             return jsonify(success=False, message="Missing required fields"), 400
 
         try:
@@ -61,9 +60,7 @@ def create_exam_routes(mysql):
             traceback.print_exc()
             return jsonify(success=False, message="Database error"), 500
 
-    # =====================================================
     # GET EXAMS (WITH APPLICANT COUNTS)
-    # =====================================================
     @exam_bp.route('/get_exams/<faculty_email>', methods=['GET'])
     def get_exams(faculty_email):
         try:
@@ -118,9 +115,7 @@ def create_exam_routes(mysql):
             traceback.print_exc()
             return jsonify(success=False, message="Server error"), 500
 
-    # =====================================================
     # ✅ GET EXAM BY ID (FIXED)
-    # =====================================================
     @exam_bp.route('/get_exam_by_id/<int:exam_id>', methods=['GET'])
     def get_exam_by_id(exam_id):
         try:
@@ -152,9 +147,7 @@ def create_exam_routes(mysql):
             traceback.print_exc()
             return jsonify(success=False, message="Server error"), 500
 
-    # =====================================================
     # EXAM STATUS
-    # =====================================================
     @exam_bp.route('/status/<int:exam_id>', methods=['GET'])
     def get_exam_status(exam_id):
         try:
@@ -187,11 +180,8 @@ def create_exam_routes(mysql):
             traceback.print_exc()
             return jsonify(success=False), 500
 
-        # =====================================================
-    # 🔔 EXAM REMINDERS (DASHBOARD NOTIFICATION)
-    # =====================================================
-       # =====================================================
-    # 🔔 EXAM REMINDERS (ADMIN + FACULTY)
+    # EXAM REMINDERS (DASHBOARD NOTIFICATION)
+    #  EXAM REMINDERS (ADMIN + FACULTY)
     # =====================================================
     @exam_bp.route('/reminders', methods=['GET'])
     def exam_reminders():
@@ -259,7 +249,5 @@ def create_exam_routes(mysql):
             traceback.print_exc()
             return jsonify(success=False, message="Server error"), 500
 
-    # =====================================================
-    # RETURN BLUEPRINT
-    # =====================================================
+   
     return exam_bp

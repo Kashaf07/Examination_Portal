@@ -4,9 +4,7 @@ import MySQLdb.cursors
 def create_faculty_groups_routes(mysql):
     bp = Blueprint('faculty_groups', __name__)
 
-    # ==================================================
     # GET ALL FACULTY GROUPS
-    # ==================================================
     @bp.route('/faculty-groups', methods=['GET'])
     def get_faculty_groups():
         cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
@@ -22,9 +20,9 @@ def create_faculty_groups_routes(mysql):
         cursor.close()
         return jsonify(success=True, groups=groups)
 
-    # ==================================================
+    
     # CREATE FACULTY GROUP (ADMIN ONLY)
-    # ==================================================
+   
     @bp.route('/faculty-groups/create', methods=['POST'])
     def create_faculty_group():
         data = request.get_json()
@@ -55,9 +53,8 @@ def create_faculty_groups_routes(mysql):
 
         return jsonify(success=True, message="Faculty group created")
 
-    # ==================================================
+   
     # VIEW FACULTY IN A GROUP
-    # ==================================================
     @bp.route('/faculty-groups/<int:group_id>/faculty', methods=['GET'])
     def view_group_faculty(group_id):
         cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
@@ -77,9 +74,8 @@ def create_faculty_groups_routes(mysql):
         cursor.close()
         return jsonify(success=True, faculty=faculty)
 
-    # ==================================================
-    # GET AVAILABLE FACULTY (NOT IN GROUP)  🔥 NEW
-    # ==================================================
+    # GET AVAILABLE FACULTY (NOT IN GROUP) 
+
     @bp.route('/faculty-groups/<int:group_id>/available-faculty', methods=['GET'])
     def available_faculty(group_id):
         cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
@@ -100,9 +96,7 @@ def create_faculty_groups_routes(mysql):
         cursor.close()
         return jsonify(success=True, faculty=faculty)
 
-    # ==================================================
-    # ADD SINGLE FACULTY TO GROUP  🔥 NEW
-    # ==================================================
+    # ADD SINGLE FACULTY TO GROUP  
     @bp.route('/faculty-groups/add-faculty', methods=['POST'])
     def add_faculty_to_group():
         data = request.get_json()
@@ -122,9 +116,7 @@ def create_faculty_groups_routes(mysql):
 
         return jsonify(success=True, message="Faculty added")
 
-    # ==================================================
     # REMOVE FACULTY FROM GROUP
-    # ==================================================
     @bp.route('/faculty-groups/remove-faculty', methods=['POST'])
     def remove_faculty():
         data = request.get_json()
@@ -144,9 +136,7 @@ def create_faculty_groups_routes(mysql):
 
         return jsonify(success=True, message="Faculty removed")
 
-    # ==================================================
     # DELETE FACULTY GROUP (ADMIN ONLY)
-    # ==================================================
     @bp.route('/faculty-groups/<int:group_id>', methods=['DELETE'])
     def delete_group(group_id):
         cursor = mysql.connection.cursor()

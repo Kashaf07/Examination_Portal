@@ -5,9 +5,7 @@ import MySQLdb.cursors
 
 exam_notify_bp = Blueprint("exam_notify_bp", __name__)
 
-# ==========================================================
-# 📧 SEND EMAIL TO APPLICANTS
-# ==========================================================
+#  SEND EMAIL TO APPLICANTS
 @exam_notify_bp.route("/api/send_exam_notification", methods=["POST"])
 def send_exam_notification():
     mysql = current_app.config["MYSQL"]
@@ -50,9 +48,7 @@ Best of luck!
     return jsonify(success=True)
 
 
-# ==========================================================
 # 🔔 FACULTY 10-MINUTE REMINDER (DB-SUPPORTED)
-# ==========================================================
 def notify_faculty_internal():
     mysql = current_app.config["MYSQL"]
     mail = current_app.extensions["mail"]
@@ -101,7 +97,7 @@ Examination Management Cell
                 )
                 mail.send(msg)
 
-                # 🔔 DASHBOARD NOTIFICATION (WITH EXAM + FACULTY INFO)
+                #  DASHBOARD NOTIFICATION (WITH EXAM + FACULTY INFO)
                 cur.execute("""
     INSERT INTO notification
     (Title, Message, Target_Role, Exam_Id, Faculty_Email)
@@ -132,9 +128,7 @@ Examination Management Cell
 exam_notify_bp.notify_faculty_internal = notify_faculty_internal
 
 
-# ==========================================================
-# 🔔 ADMIN – GET ALL FACULTY NOTIFICATIONS (WITH FACULTY NAME)
-# ==========================================================
+#  ADMIN – GET ALL FACULTY NOTIFICATIONS (WITH FACULTY NAME)
 @exam_notify_bp.route("/api/admin/notifications", methods=["GET"])
 def get_admin_notifications():
     mysql = current_app.config["MYSQL"]
@@ -170,7 +164,7 @@ def get_admin_notifications():
     rows = cur.fetchall()
     cur.close()
 
-    # ✅ FIX: convert timedelta to string
+    #convert timedelta to string
     reminders = []
     for r in rows:
         exam_time = r["Exam_Time"]
@@ -193,9 +187,6 @@ def get_admin_notifications():
 
     return jsonify(success=True, reminders=reminders)
 
-# ==========================================================
-# 🔁 MANUAL TEST ENDPOINT
-# ==========================================================
 @exam_notify_bp.route("/api/notify/faculty-exams", methods=["GET"])
 def manual_trigger():
     notify_faculty_internal()
