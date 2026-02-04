@@ -1,6 +1,15 @@
 from flask import Blueprint, request, jsonify
 from datetime import datetime, timedelta
 
+def is_student_active(mysql, applicant_id):
+    cur = mysql.connection.cursor()
+    cur.execute(
+        "SELECT Is_Active FROM applicants WHERE Applicant_Id = %s",
+        (applicant_id,)
+    )
+    row = cur.fetchone()
+    cur.close()
+    return row and row[0] == 1
 
 def create_student_routes(mysql):
     student_routes = Blueprint('student_routes', __name__)
@@ -17,6 +26,12 @@ def create_student_routes(mysql):
     # Get next upcoming exam
     @student_routes.route('/exam', methods=['GET'])
     def get_exam_data():
+        applicant_id = request.args.get("applicant_id")
+
+        if applicant_id and not is_student_active(mysql, applicant_id):
+            return jsonify({
+                "message": "Your account is disabled. You cannot access exams."
+            }), 403
         try:
             cur = mysql.connection.cursor()
 
@@ -101,6 +116,11 @@ def create_student_routes(mysql):
 
             if not applicant_id or not exam_id:
                 return jsonify({"message": "Applicant ID and Exam ID are required"}), 400
+
+            if not is_student_active(mysql, applicant_id):
+                return jsonify({
+                    "message": "Your account is disabled. Exam access denied."
+                }), 403
 
             cur = mysql.connection.cursor()
 
@@ -191,6 +211,11 @@ def create_student_routes(mysql):
             
             if not applicant_id:
                 return jsonify({"message": "Applicant ID is required"}), 400
+
+            if not is_student_active(mysql, applicant_id):
+                return jsonify({
+                    "error": "Your account is disabled. You cannot enter this exam."
+                }), 403
 
             cur = mysql.connection.cursor()
             
@@ -353,6 +378,10 @@ def create_student_routes(mysql):
     # Get assigned exams - WITH RESTRICTION STATUS
     @student_routes.route('/assigned-exams/<int:applicant_id>', methods=['GET'])
     def get_assigned_exams(applicant_id):
+        if not is_student_active(mysql, applicant_id):
+            return jsonify({
+                "error": "Your account is disabled. You cannot access exams."
+            }), 403
         try:
             cur = mysql.connection.cursor()
             cur.execute("""
@@ -493,6 +522,14 @@ def create_student_routes(mysql):
     # Submit answers with optional restriction flag
     @student_routes.route('/submit', methods=['POST'])
     def submit_answers():
+        data = request.json
+        applicant_id = data['applicant_id']
+
+        if not is_student_active(mysql, applicant_id):
+            return jsonify({
+                "error": "Your account is disabled. Submission blocked."
+            }), 403
+
         try:
             data = request.json
             applicant_id = data['applicant_id']
@@ -710,6 +747,12 @@ def create_student_routes(mysql):
     # Exam status helper
     @student_routes.route('/exam-status/<int:exam_id>/<int:applicant_id>', methods=['GET'])
     def get_exam_status(exam_id, applicant_id):
+        if not is_student_active(mysql, applicant_id):
+            return jsonify({
+                "status": "DISABLED",
+                "message": "Your account is disabled. Please contact admin."
+            }), 403
+
         try:
             cur = mysql.connection.cursor()
             cur.execute("SELECT * FROM entrance_exam WHERE Exam_Id = %s", (exam_id,))

@@ -84,12 +84,25 @@ def create_auth_routes(mysql):
                 user_name = a_name
 
         # ---- CHECK STUDENT ----
-        cursor.execute("SELECT Full_Name, Email, Password, Applicant_Id FROM applicants WHERE Email=%s", (email,))
+        cursor.execute("""
+            SELECT Full_Name, Email, Password, Applicant_Id, Is_Active
+            FROM applicants
+            WHERE Email=%s
+        """, (email,))
         student = cursor.fetchone()
 
         if student:
-            s_name, s_email, s_pass, sid = student
+            s_name, s_email, s_pass, sid, is_active = student
             roles.append("Student")
+
+            # 🚫 Student exists but is DISABLED
+            if is_active == 0:
+                return jsonify({
+                    "status": "fail",
+                    "message": "Your student account is disabled. Please contact the administrator."
+                }), 403
+
+            # ✅ Student active → check password
             if s_pass == password:
                 password_matched = True
                 selected_role = "Student"

@@ -300,14 +300,14 @@ const fetchFaculty = async () => {
 
 // Fetch Schools
 const fetchSchools = async () => {
-  const res = await axios.get(`${API}/admin/schools`);
+  const res = await axios.get(`${API}/admin/schools/active`);
   schoolsList.value = res.data;
 };
 
 // Fetch Designations
 const fetchDesignations = async () => {
-  const res = await axios.get(`${API}/admin/designations`);
-  designationsList.value = res.data.data;
+  const res = await axios.get(`${API}/admin/designations/active`);
+  designationsList.value = res.data;
 };
 
 

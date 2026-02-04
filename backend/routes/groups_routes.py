@@ -68,7 +68,7 @@ def get_groups():
                 g.Created_At,
                 COUNT(a.Applicant_Id) AS applicant_count
             FROM applicant_groups g
-            LEFT JOIN applicants a ON a.group_id = g.group_id
+            LEFT JOIN applicants a ON a.group_id = g.group_id AND a.Is_Active = 1
             WHERE g.group_name != '__UNASSIGNED__'
             GROUP BY g.group_id
             ORDER BY g.Created_At DESC
@@ -82,7 +82,7 @@ def get_groups():
                 g.Created_At,
                 COUNT(a.Applicant_Id) AS applicant_count
             FROM applicant_groups g
-            LEFT JOIN applicants a ON a.group_id = g.group_id
+            LEFT JOIN applicants a ON a.group_id = g.group_id AND a.Is_Active = 1
             WHERE g.Faculty_Email=%s
               AND g.group_name != '__UNASSIGNED__'
             GROUP BY g.group_id
@@ -117,6 +117,7 @@ def get_group_applicants(group_id):
         SELECT Applicant_Id, Full_Name, Email
         FROM applicants
         WHERE group_id=%s
+        AND Is_Active = 1
     """, (group_id,))
 
     rows = cur.fetchall()
