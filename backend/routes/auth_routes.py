@@ -72,12 +72,21 @@ def create_auth_routes(mysql):
 
 
         # ---- CHECK ADMIN ----
-        cursor.execute("SELECT Name, Email, Password FROM mst_admin WHERE Email=%s", (email,))
+        cursor.execute("SELECT Name, Email, Password, Is_Active FROM mst_admin WHERE Email=%s", (email,))
         admin = cursor.fetchone()
 
         if admin:
-            a_name, a_email, a_pass = admin
-            roles.append("Admin")    # add role even if password doesn't match
+            a_name, a_email, a_pass, is_active = admin
+            roles.append("Admin")
+
+            # 🚫 Admin exists but is DISABLED
+            if is_active == 0:
+                return jsonify({
+                    "status": "fail",
+                    "message": "Your admin account is disabled. Please contact the system administrator."
+                }), 403
+
+            # ✅ Admin active → check password
             if a_pass == password:
                 password_matched = True
                 selected_role = "Admin"

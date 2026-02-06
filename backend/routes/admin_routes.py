@@ -631,7 +631,7 @@ def create_admin_routes(mysql):
     def get_admins():
         try:
             cursor = mysql.connection.cursor()
-            cursor.execute("SELECT Admin_ID, Name, Email FROM mst_admin ORDER BY Admin_ID")
+            cursor.execute("SELECT Admin_ID, Name, Email, Is_Active FROM mst_admin ORDER BY Is_Active DESC, Name ASC")
             admins = cursor.fetchall()
             columns = [desc[0] for desc in cursor.description]
             result = [dict(zip(columns, row)) for row in admins]
@@ -640,6 +640,45 @@ def create_admin_routes(mysql):
         except Exception as e:
             print("Error fetching admins:", e)
             return jsonify({"error": "Unable to fetch admins"}), 500
+
+    @admin_bp.route('/admins/toggle-status/<int:admin_id>', methods=['PUT'])
+    def toggle_admin_status(admin_id):
+        try:
+            cursor = mysql.connection.cursor()
+
+            # ❗ Prevent disabling last active admin
+            cursor.execute("SELECT COUNT(*) FROM mst_admin WHERE Is_Active = 1")
+            active_count = cursor.fetchone()[0]
+
+            cursor.execute("SELECT Is_Active FROM mst_admin WHERE Admin_ID = %s", (admin_id,))
+            current = cursor.fetchone()
+
+            if current and current[0] == 1 and active_count <= 1:
+                cursor.close()
+                return jsonify({
+                    "error": "Cannot disable the last active admin"
+                }), 400
+
+            cursor.execute("""
+                UPDATE mst_admin
+                SET Is_Active = CASE
+                    WHEN Is_Active = 1 THEN 0
+                    ELSE 1
+                END
+                WHERE Admin_ID = %s
+            """, (admin_id,))
+
+            mysql.connection.commit()
+            cursor.close()
+
+            return jsonify({
+                "success": True,
+                "message": "Admin status updated"
+            }), 200
+
+        except Exception as e:
+            mysql.connection.rollback()
+            return jsonify({"error": str(e)}), 500
 
     # ✅ CORRECT - Add it HERE with 4 spaces indentation
     @admin_bp.route('/check-faculty-role/<email>', methods=['GET'])
