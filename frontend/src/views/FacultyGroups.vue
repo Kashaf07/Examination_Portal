@@ -26,14 +26,54 @@
           Faculty Groups Management
         </h2>
 
-        <button
-          v-if="isAdmin"
-          @click="createFacultyGroup"
-          class="bg-purple-600 hover:bg-purple-700 text-white font-semibold 
-                 px-6 py-3 rounded-full shadow-lg transition hover:scale-105">
-          Create Group
-        </button>
+        <div class="flex items-center gap-4">
+          <!-- CREATE GROUP -->
+          <button
+            v-if="isAdmin"
+            @click="createFacultyGroup"
+            class="bg-purple-600 hover:bg-purple-700 text-white font-semibold 
+                  px-6 py-3 rounded-full shadow-lg transition hover:scale-105"
+          >
+            Create Group
+          </button>
+
+          <!-- ACTIVE / ALL TOGGLE -->
+          <div class="flex items-center bg-gray-100 rounded-full p-1 shadow-inner">
+            <button
+              @click="showDisabled = false"
+              :class="[
+                'px-4 py-2 text-sm font-semibold rounded-full transition-all',
+                !showDisabled
+                  ? 'bg-white text-purple-600 shadow'
+                  : 'text-gray-600 hover:text-gray-800'
+              ]"
+            >
+              Active Only
+            </button>
+
+            <button
+              @click="showDisabled = true"
+              :class="[
+                'px-4 py-2 text-sm font-semibold rounded-full transition-all',
+                showDisabled
+                  ? 'bg-white text-purple-600 shadow'
+                  : 'text-gray-600 hover:text-gray-800'
+              ]"
+            >
+              All Groups
+            </button>
+          </div>
+        </div>
       </div>
+      <transition name="fade">
+        <p
+          v-if="showDisabled"
+          class="text-xs text-gray-500 mb-2 text-right"
+        >
+          Disabled groups are shown in grey
+        </p>
+      </transition>
+
 
       <!-- INNER CARD -->
       <div class="bg-white rounded-2xl shadow-lg overflow-hidden border border-gray-200 p-6">
@@ -59,10 +99,10 @@
           </thead>
 
           <tbody class="bg-white divide-y divide-gray-100">
-            <template v-for="g in groups" :key="g.Group_Id">
+            <template v-for="g in filteredGroups" :key="g.Group_Id">
 
               <!-- GROUP ROW -->
-              <tr class="hover:bg-gray-50 transition">
+              <tr :class="['transition-colors',g.Is_Active === 0? 'opacity-50 bg-gray-100': 'hover:bg-gray-50']">
                 <td class="px-4 py-4 font-medium text-gray-800">
                   {{ g.Group_Name }}
                 </td>
@@ -89,18 +129,22 @@
                   <button
                     v-if="isAdmin"
                     @click="toggleAddFaculty(g.Group_Id)"
-                    class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg 
-                           shadow hover:scale-105 transition">
+                    :disabled="g.Is_Active === 0"
+                    class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg shadow
+                          disabled:opacity-50 disabled:cursor-not-allowed">
                     {{ showAddFaculty === g.Group_Id ? 'Close Faculty' : 'Add Faculty' }}
 
                   </button>
 
                   <button
                     v-if="isAdmin"
-                    @click="deleteGroup(g.Group_Id)"
-                    class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg 
-                           shadow hover:scale-105 transition">
-                    Delete
+                    @click="toggleGroupStatus(g)"
+                    :class="g.Is_Active === 1
+                      ? 'bg-red-500 hover:bg-red-600'
+                      : 'bg-green-500 hover:bg-green-600'"
+                    class="text-white px-4 py-2 rounded-lg shadow hover:scale-105 transition"
+                  >
+                    {{ g.Is_Active === 1 ? 'Disable' : 'Enable' }}
                   </button>
                 </td>
               </tr>
@@ -130,7 +174,7 @@
                         <tr
                           v-for="f in facultyMap[g.Group_Id]"
                           :key="f.Faculty_Id"
-                          class="hover:bg-purple-50 transition cursor-pointer"
+                          :class="['transition',g.Is_Active === 0 ? 'opacity-50 bg-gray-100' : 'hover:bg-gray-50']"
                         >
                           <td class="px-4 py-3 font-medium text-gray-800">
                             {{ f.Faculty_Name }}
@@ -144,8 +188,8 @@
                             <button
                               v-if="isAdmin"
                               @click="removeFaculty(g.Group_Id, f.Faculty_Id)"
-                              class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-full text-sm shadow hover:scale-105 transition"
-                            >
+                              :disabled="g.Is_Active === 0"
+                              :class="['px-4 py-2 rounded-full text-sm shadow transition',g.Is_Active === 0? 'bg-red-300 cursor-not-allowed': 'bg-red-500 hover:bg-red-600 hover:scale-105 text-white']">
                               Remove
                             </button>
                           </td>
@@ -189,7 +233,7 @@
                           <td class="px-4 py-3 text-center">
                           <button
                             @click="addFaculty(g.Group_Id, f.Faculty_Id)"
-                            :disabled="addingFaculty[f.Faculty_Id]"
+                            :disabled="addingFaculty[f.Faculty_Id] || g.Is_Active === 0"
                             class="px-4 py-2 rounded-full text-sm shadow transition flex items-center justify-center gap-2
                                   text-white
                                   disabled:opacity-60 disabled:cursor-not-allowed
@@ -249,6 +293,7 @@ const expandedGroup = ref(null)
 const facultyMap = ref({})
 const availableFacultyMap = ref({})
 const showAddFaculty = ref(null)
+const showDisabled = ref(false)
 
 const isAdmin = computed(() =>
   localStorage.getItem('active_role') === 'Admin'
@@ -259,13 +304,27 @@ const facultyCount = (groupId) => {
   return facultyMap.value[groupId]?.length || 0
 }
 
+const filteredGroups = computed(() => {
+  const list = showDisabled.value
+    ? groups.value
+    : groups.value.filter(g => Number(g.Is_Active) === 1)
+
+  return [...list].sort((a, b) => b.Is_Active - a.Is_Active)
+})
+
 /* FETCH GROUPS */
 const fetchGroups = async () => {
-  const res = await axios.get('/faculty-groups')
-  groups.value = res.data.groups || []
-
-  // 🔥 PRELOAD FACULTY COUNTS
-  await preloadFacultyCounts()
+  try {
+    const res = await axios.get('/faculty-groups')
+    groups.value = res.data.groups || []
+    await preloadFacultyCounts()
+  } catch (err) {
+    console.error('Faculty group fetch failed:', err)
+    emit('toast', {
+      message: 'Failed to load faculty groups',
+      type: 'error'
+    })
+  }
 }
 
 /* 🔥 PRELOAD COUNTS WITHOUT CLICKING VIEW */
@@ -418,26 +477,23 @@ const removeFaculty = async (groupId, facultyId) => {
   }
 }
 
-/* DELETE GROUP */
-const deleteGroup = async (groupId) => {
-  if (!confirm('Delete this faculty group?')) return
+/* Disabled GROUP */
+const toggleGroupStatus = async (group) => {
+  const action = group.Is_Active === 1 ? 'disable' : 'enable'
+
+  if (!confirm(`Are you sure you want to ${action} this group?`)) return
 
   try {
-    await axios.delete(`/faculty-groups/${groupId}`)
-
-    expandedGroup.value = null
-    showAddFaculty.value = null
+    await axios.put(`/faculty-groups/toggle-status/${group.Group_Id}`)
     await fetchGroups()
 
-    // ✅ SUCCESS TOAST
     emit('toast', {
-      message: 'Faculty group deleted successfully!',
+      message: `Group ${action}d successfully`,
       type: 'success'
     })
-
   } catch (err) {
     emit('toast', {
-      message: err.response?.data?.error || 'Error deleting faculty group',
+      message: 'Failed to update group status',
       type: 'error'
     })
   }
