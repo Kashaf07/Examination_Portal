@@ -6,12 +6,44 @@
       <div class="flex justify-between items-center mb-6">
         <h2 class="text-2xl font-bold text-gray-800">Admins Management</h2>
 
-        <button
-          @click="openAddModal"
-          class="bg-blue-500 hover:bg-blue-600 text-white font-semibold px-6 py-3 rounded-full shadow-lg transition-all hover:scale-105"
-        >
-          Add Admin
-        </button>
+        <div class="flex items-center gap-4">
+          <button
+            @click="openAddModal"
+            class="bg-blue-500 hover:bg-blue-600 text-white font-semibold px-6 py-3 rounded-full shadow-lg transition hover:scale-105">
+            Add Admin
+          </button>
+
+          <!-- Toggle + helper grouped together -->
+          <div class="flex flex-col items-start">
+            <div class="flex items-center bg-gray-100 rounded-full p-1 shadow-inner">
+              <button
+                @click="showDisabled = false"
+                :class="[
+                  'px-4 py-2 text-sm font-semibold rounded-full transition-all',
+                  !showDisabled ? 'bg-white text-blue-600 shadow' : 'text-gray-600'
+                ]">
+                Active Only
+              </button>
+
+              <button
+                @click="showDisabled = true"
+                :class="[
+                  'px-4 py-2 text-sm font-semibold rounded-full transition-all',
+                  showDisabled ? 'bg-white text-blue-600 shadow' : 'text-gray-600'
+                ]">
+                All Admins
+              </button>
+            </div>
+
+            <!-- ✅ Helper text exactly below toggle -->
+            <p
+              v-if="showDisabled"
+              class="mt-1 text-xs text-gray-500 pl-2">
+              Disabled admins are shown in grey
+            </p>
+          </div>
+        </div>
+
       </div>
 
       <!-- ----------- Admins Table ----------- -->
@@ -29,9 +61,9 @@
 
             <tbody class="bg-white divide-y divide-gray-100">
               <tr
-                v-for="(admin, i) in admins"
+                v-for="(admin, i) in filteredAdmins"
                 :key="admin.Admin_ID"
-                class="hover:bg-gray-50 transition"
+                :class="['hover:bg-gray-50 transition',admin.Is_Active === 0 ? 'opacity-50 bg-gray-100' : '']"
               >
                 <td class="py-4 px-6">{{ i + 1 }}</td>
                 <td class="py-4 px-6">{{ admin.Name }}</td>
@@ -44,17 +76,17 @@
                   >
                     Edit
                   </button>
-
-                    <button
-                    @click="deleteAdmin(admin.Admin_ID)"
-                    class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg text-sm transition hover:scale-105 shadow-md"
-                  >
-                    Delete
+                  <button
+                    @click="toggleAdminStatus(admin)"
+                    :class="Number(admin.Is_Active) === 1
+                      ? 'bg-red-500 hover:bg-red-600'
+                      : 'bg-green-500 hover:bg-green-600'"
+                    class="text-white px-4 py-2 rounded-lg text-sm shadow transition hover:scale-105">
+                    {{ Number(admin.Is_Active) === 1 ? 'Disable' : 'Enable' }}
                   </button>
                 </td>
               </tr>
             </tbody>
-
           </table>
         </div>
       </div>
@@ -127,11 +159,18 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from "vue";
+import { ref, computed, onMounted } from "vue";
 import axios from "axios";
 
 // Parent toast emitter
 const emit = defineEmits(["toast"]);
+
+const showDisabled = ref(false)
+
+const filteredAdmins = computed(() => {
+  if (showDisabled.value) return admins.value
+  return admins.value.filter(a => Number(a.Is_Active) === 1)
+})
 
 // Simple reusable input component
 const InputField = {
@@ -221,20 +260,26 @@ const updateAdmin = async () => {
   }
 };
 
-const deleteAdmin = async (id) => {
-  if (!confirm("Are you sure you want to delete this admin?")) return;
+const toggleAdminStatus = async (admin) => {
+  const action = admin.Is_Active ? "disable" : "enable"
+
+  if (!confirm(`Are you sure you want to ${action} this admin?`)) return
 
   try {
-    await axios.delete(`${API}/admin/admins/${id}`);
-    emit("toast", { message: "Admin deleted successfully!", type: "success" });
-    await fetchAdmins();
+    await axios.put(`${API}/admin/admins/toggle-status/${admin.Admin_ID}`)
+    await fetchAdmins()
+
+    emit("toast", {
+      message: `Admin ${action}d successfully`,
+      type: "success"
+    })
   } catch (err) {
     emit("toast", {
-      message: err.response?.data?.error || "Error deleting admin",
-      type: "error",
-    });
+      message: err.response?.data?.error || "Failed to update admin status",
+      type: "error"
+    })
   }
-};
+}
 
 // ---------------- INIT ----------------
 onMounted(fetchAdmins);

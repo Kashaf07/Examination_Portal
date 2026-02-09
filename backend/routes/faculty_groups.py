@@ -12,15 +12,32 @@ def create_faculty_groups_routes(mysql):
             SELECT 
                 Group_Id,
                 Group_Name,
-                Created_On
+                Created_On,
+                Is_Active
             FROM faculty_groups
-            ORDER BY Group_Name
+            ORDER BY Is_Active DESC, Group_Name
         """)
         groups = cursor.fetchall()
         cursor.close()
         return jsonify(success=True, groups=groups)
 
     
+    @bp.route('/faculty-groups/toggle-status/<int:group_id>', methods=['PUT'])
+    def toggle_group_status(group_id):
+        cursor = mysql.connection.cursor()
+        cursor.execute("""
+            UPDATE faculty_groups
+            SET Is_Active = CASE
+                WHEN Is_Active = 1 THEN 0
+                ELSE 1
+            END
+            WHERE Group_Id = %s
+        """, (group_id,))
+        mysql.connection.commit()
+        cursor.close()
+
+        return jsonify(success=True, message="Group status updated")
+
     # CREATE FACULTY GROUP (ADMIN ONLY)
    
     @bp.route('/faculty-groups/create', methods=['POST'])
@@ -107,14 +124,36 @@ def create_faculty_groups_routes(mysql):
             return jsonify(success=False, message="Missing data"), 400
 
         cursor = mysql.connection.cursor()
+
+        # 🔒 CHECK IF GROUP IS ACTIVE
+        cursor.execute("""
+            SELECT Is_Active
+            FROM faculty_groups
+            WHERE Group_Id = %s
+        """, (group_id,))
+        row = cursor.fetchone()
+
+        if not row:
+            cursor.close()
+            return jsonify(success=False, message="Group not found"), 404
+
+        if row[0] == 0:
+            cursor.close()
+            return jsonify(
+                success=False,
+                message="This faculty group is disabled"
+            ), 403
+
+        # ✅ GROUP IS ACTIVE → ADD FACULTY
         cursor.execute("""
             INSERT IGNORE INTO faculty_group_assign (Faculty_Id, Group_Id)
             VALUES (%s, %s)
         """, (faculty_id, group_id))
+
         mysql.connection.commit()
         cursor.close()
 
-        return jsonify(success=True, message="Faculty added")
+        return jsonify(success=True, message="Faculty added successfully")
 
     # REMOVE FACULTY FROM GROUP
     @bp.route('/faculty-groups/remove-faculty', methods=['POST'])
@@ -127,10 +166,27 @@ def create_faculty_groups_routes(mysql):
             return jsonify(success=False, message="Missing data"), 400
 
         cursor = mysql.connection.cursor()
+
+        # 🔒 CHECK GROUP STATUS
+        cursor.execute("""
+            SELECT Is_Active
+            FROM faculty_groups
+            WHERE Group_Id = %s
+        """, (group_id,))
+        row = cursor.fetchone()
+
+        if not row or row[0] == 0:
+            cursor.close()
+            return jsonify(
+                success=False,
+                message="This faculty group is disabled"
+            ), 403
+
         cursor.execute("""
             DELETE FROM faculty_group_assign
             WHERE Group_Id = %s AND Faculty_Id = %s
         """, (group_id, faculty_id))
+
         mysql.connection.commit()
         cursor.close()
 
