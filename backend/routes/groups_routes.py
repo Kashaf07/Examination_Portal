@@ -49,7 +49,7 @@ def create_group():
     return jsonify(success=True, message="Group created successfully")
 
 # ==================================================
-# GET GROUPS WITH APPLICANT COUNT ✅ FIXED
+# GET GROUPS WITH APPLICANT COUNT
 # ==================================================
 @group_bp.route("", methods=["GET"])
 def get_groups():
@@ -66,9 +66,9 @@ def get_groups():
                 g.group_name,
                 g.Faculty_Email,
                 g.Created_At,
-                COUNT(a.Applicant_Id) AS applicant_count
+                COUNT(CASE WHEN a.Is_Active = 1 THEN 1 END) AS applicant_count
             FROM applicant_groups g
-            LEFT JOIN applicants a ON a.group_id = g.group_id AND a.Is_Active = 1
+            LEFT JOIN applicants a ON a.group_id = g.group_id
             WHERE g.group_name != '__UNASSIGNED__'
             GROUP BY g.group_id
             ORDER BY g.Created_At DESC
@@ -80,9 +80,9 @@ def get_groups():
                 g.group_name,
                 g.Faculty_Email,
                 g.Created_At,
-                COUNT(a.Applicant_Id) AS applicant_count
+                COUNT(CASE WHEN a.Is_Active = 1 THEN 1 END) AS applicant_count
             FROM applicant_groups g
-            LEFT JOIN applicants a ON a.group_id = g.group_id AND a.Is_Active = 1
+            LEFT JOIN applicants a ON a.group_id = g.group_id
             WHERE g.Faculty_Email=%s
               AND g.group_name != '__UNASSIGNED__'
             GROUP BY g.group_id
@@ -106,33 +106,61 @@ def get_groups():
     )
 
 # ==================================================
-# GET APPLICANTS OF GROUP
+# GET APPLICANTS OF GROUP - ✅ ONLY ACTIVE STUDENTS
 # ==================================================
 @group_bp.route("/<int:group_id>/applicants", methods=["GET"])
 def get_group_applicants(group_id):
+    """
+    Returns ONLY active students (Is_Active = 1) for a specific group
+    """
     mysql = get_mysql()
     cur = mysql.connection.cursor()
 
+    print(f"\n{'='*70}")
+    print(f"🔍 [GROUP_BP] GET APPLICANTS FOR GROUP {group_id}")
+    print(f"{'='*70}")
+    
+    # Get only active students
+    cur.execute("""
+        SELECT Applicant_Id, Full_Name, Email, Is_Active
+        FROM applicants
+        WHERE group_id = %s
+        ORDER BY Full_Name ASC
+    """, (group_id,))
+    
+    all_rows = cur.fetchall()
+    print(f"\n📋 ALL STUDENTS IN GROUP {group_id}:")
+    for row in all_rows:
+        status = "✅ ACTIVE" if row[3] == 1 else "❌ DISABLED"
+        print(f"  {status} - ID: {row[0]}, Name: {row[1]}, Is_Active: {row[3]}")
+    
+    # Filter for active only
     cur.execute("""
         SELECT Applicant_Id, Full_Name, Email
         FROM applicants
-        WHERE group_id=%s
-        AND Is_Active = 1
+        WHERE group_id = %s
+          AND Is_Active = 1
+        ORDER BY Full_Name ASC
     """, (group_id,))
 
-    rows = cur.fetchall()
+    active_rows = cur.fetchall()
+    
+    print(f"\n✅ RETURNING {len(active_rows)} ACTIVE STUDENTS:")
+    for row in active_rows:
+        print(f"  - ID: {row[0]}, Name: {row[1]}, Email: {row[2]}")
+    print(f"{'='*70}\n")
+    
     cur.close()
 
-    return jsonify(
-        success=True,
-        applicants=[
-            {
-                "Applicant_Id": r[0],
-                "Full_Name": r[1],
-                "Email": r[2]
-            } for r in rows
-        ]
-    )
+    result = [
+        {
+            "Applicant_Id": r[0],
+            "Full_Name": r[1],
+            "Email": r[2]
+        } for r in active_rows
+    ]
+    
+    return jsonify(success=True, applicants=result)
 
 # ==================================================
 # REMOVE APPLICANT FROM GROUP
@@ -174,7 +202,7 @@ def remove_applicant():
     return jsonify(success=True)
 
 # ==================================================
-# DELETE GROUP (ONE CLICK)
+# DELETE GROUP
 # ==================================================
 @group_bp.route("/<int:group_id>", methods=["DELETE"])
 def delete_group(group_id):

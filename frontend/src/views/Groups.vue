@@ -17,7 +17,7 @@
       </button>
     </div>
 
-    <!-- OUTER WRAPPER CARD (LIKE SCHOOLS PAGE) -->
+    <!-- OUTER WRAPPER CARD -->
     <div class="bg-white/80 backdrop-blur-sm shadow-xl rounded-2xl p-8 border border-white/20">
 
       <!-- HEADER -->
@@ -34,7 +34,7 @@
         </button>
       </div>
 
-      <!-- INNER CARD (LIKE TABLE WRAPPER) -->
+      <!-- INNER CARD -->
       <div class="bg-white rounded-2xl shadow-lg overflow-hidden border border-gray-200 p-6">
 
         <!-- CREATE INPUT -->
@@ -63,27 +63,23 @@
 
               <!-- MAIN GROUP ROW -->                      
               <tr class="hover:bg-gray-50 transition cursor-pointer">
-                <!-- GROUP ID -->
                 <td class="px-4 py-4 font-medium text-gray-600">
                   {{ g.Group_Id }}
                 </td>
-                <!-- GROUP NAME -->
                 <td class="px-4 py-4 font-medium text-gray-800">
                   {{ g.Group_Name }}
                 </td> 
-                <!-- STUDENT COUNT -->
                 <td class="px-4 py-4 text-center">
                   <span
                     class="px-3 py-1 rounded-full text-sm font-semibold"
-                    :class="(applicants[g.Group_Id]?.length || 0)
+                    :class="g.Applicant_Count > 0
                       ? 'bg-green-100 text-green-700'
                       : 'bg-gray-200 text-gray-600'"
                   >
-                    👥 {{ applicants[g.Group_Id]?.length || 0 }}
+                    👥 {{ g.Applicant_Count }}
                   </span>
                 </td>
 
-                <!-- ACTIONS -->
                 <td class="px-4 py-4 flex justify-center gap-2">
                   <button
                     @click="toggleView(g.Group_Id)"
@@ -101,19 +97,22 @@
                 </td>
               </tr>
 
-              <!-- EXPANDED STUDENT LIST UNDER SAME GROUP -->
-              <tr v-if="expandedGroup === g.Group_Id" class="bg-gray-50">
+              <!-- EXPANDED STUDENT LIST - Fixed key to force re-render -->
+              <tr
+                v-if="expandedGroup === g.Group_Id && applicants[g.Group_Id]"
+                :key="`expanded-${g.Group_Id}-${fetchTimestamp}`"
+                class="bg-gray-50"
+              >
                 <td colspan="4" class="p-6">
 
                   <h3 class="text-lg font-bold mb-4 text-gray-700">
                     Students in {{ g.Group_Name }}
                   </h3>
 
-                  <!-- EXPANDED STUDENT LIST -->
                   <div class="mt-4">
 
-                    <!-- IF STUDENTS EXIST -->
-                    <div v-if="applicants[g.Group_Id]?.length" class="rounded-2xl shadow-md border bg-white overflow-hidden">
+                    <!-- STUDENT LIST -->
+                    <div v-if="applicants[g.Group_Id]?.length > 0" class="rounded-2xl shadow-md border bg-white overflow-hidden">
 
                       <table class="w-full">
                         <thead class="bg-gradient-to-r from-blue-50 to-blue-100 text-blue-900">
@@ -127,8 +126,7 @@
                         <tbody class="bg-white divide-y divide-gray-100">
                           <tr
                             v-for="a in applicants[g.Group_Id]"
-                            :key="a.Applicant_Id"
-                            class="hover:bg-blue-50 transition cursor-pointer"
+                            :key="`applicant-${a.Applicant_Id}-${fetchTimestamp}`"
                           >
                             <td class="px-4 py-3 font-medium text-gray-800">
                               {{ a.Full_Name }}
@@ -151,13 +149,12 @@
 
                     </div>
 
-                    <!-- IF EMPTY -->
+                    <!-- EMPTY STATE -->
                     <p v-else class="text-gray-500 italic text-center py-4">
                       No students in this group
                     </p>
 
                   </div>
-
 
                 </td>
               </tr>
@@ -166,8 +163,6 @@
           </tbody>
 
         </table>
-
-        
 
       </div>
     </div>
@@ -184,38 +179,38 @@ const groupName = ref("")
 const groups = ref([])
 const applicants = ref({})
 const expandedGroup = ref(null)
+const fetchTimestamp = ref(Date.now()) // ✅ Force re-render when data changes
 
-
-/* 🔐 ROLE */
 const role =
   (localStorage.getItem("active_role") || "").toLowerCase() === "admin"
     ? "Admin"
     : "Faculty"
 
-/* ✅ ADMIN CHECK */
 const isAdmin = computed(() => role === "Admin")
 
 const email = localStorage.getItem("email")
 
-/* LOAD GROUPS + COUNTS */
+/* LOAD GROUPS */
 const loadGroups = async () => {
-  const res = await axios.get("/groups", {
-    params: { role, email }
-  })
+  try {
+    const res = await axios.get("/groups", {
+      params: { role, email }
+    })
 
-  if (res.data.success) {
-    groups.value = res.data.groups
-    preloadApplicantCounts()
-  }
-}
-
-/* PRELOAD COUNTS */
-const preloadApplicantCounts = async () => {
-  for (const g of groups.value) {
-    const res = await axios.get(`/groups/${g.Group_Id}/applicants`)
-    applicants.value[g.Group_Id] = res.data.success
-      ? res.data.applicants
-      : []
+    if (res.data.success) {
+      groups.value = res.data.groups
+      
+      // ✅ Clear ALL applicant data
+      applicants.value = {}
+      expandedGroup.value = null
+      fetchTimestamp.value = Date.now()
+    }
+  } catch (err) {
+    console.error("Error loading groups:", err)
+    emit("toast", {
+      message: "Error loading groups",
+      type: "error"
+    })
   }
 }
 
@@ -239,7 +234,6 @@ const createGroup = async () => {
     groupName.value = ""
     await loadGroups()
 
-    // ✅ SUCCESS TOAST
     emit("toast", {
       message: "Student group created successfully!",
       type: "success"
@@ -259,28 +253,71 @@ const toggleView = async (groupId) => {
     expandedGroup.value = null
     return
   }
+
   expandedGroup.value = groupId
 
-  // 🔥 ALWAYS FETCH FRESH DATA
-  const res = await axios.get(`/groups/${groupId}/applicants`)
-  applicants.value[groupId] = res.data.success
-    ? res.data.applicants
-    : []
+  try {
+    console.log(`🔍 Fetching applicants for group ${groupId}`)
+    
+    // ✅ Force fresh fetch with cache buster
+    const res = await axios.get(`/groups/${groupId}/applicants`, {
+      params: { _t: Date.now() }
+    })
+    
+    console.log("📥 Received from API:", res.data.applicants)
+    
+    // ✅ Update data and force re-render
+    applicants.value = {
+      ...applicants.value,
+      [groupId]: res.data.success ? res.data.applicants : []
+    }
+    
+    // ✅ Update timestamp to force Vue to re-render
+    fetchTimestamp.value = Date.now()
+    
+    console.log("💾 Stored applicants:", applicants.value[groupId])
+      
+  } catch (err) {
+    console.error("Error fetching applicants:", err)
+    applicants.value[groupId] = []
+    
+    emit("toast", {
+      message: "Error loading students",
+      type: "error"
+    })
+  }
 }
 
 /* REMOVE APPLICANT */
 const removeApplicant = async (groupId, applicantId) => {
   if (!confirm("Remove applicant from this group?")) return
 
-  await axios.post("/groups/remove-applicant", {
-    group_id: groupId,
-    applicant_id: applicantId
-  })
+  try {
+    await axios.post("/groups/remove-applicant", {
+      group_id: groupId,
+      applicant_id: applicantId
+    })
 
-  applicants.value[groupId] =
-    applicants.value[groupId].filter(
-      a => a.Applicant_Id !== applicantId
-    )
+    // ✅ Close the view first
+    expandedGroup.value = null
+    
+    // ✅ Reload groups to update count
+    await loadGroups()
+    
+    // ✅ Re-open with fresh data
+    await toggleView(groupId)
+
+    emit("toast", {
+      message: "Student removed from group successfully!",
+      type: "success"
+    })
+
+  } catch (err) {
+    emit("toast", {
+      message: err.response?.data?.error || "Error removing student",
+      type: "error"
+    })
+  }
 }
 
 /* DELETE GROUP */
@@ -293,7 +330,6 @@ const deleteGroup = async (groupId) => {
     expandedGroup.value = null
     await loadGroups()
 
-    // ✅ SUCCESS TOAST
     emit("toast", {
       message: "Student group deleted successfully!",
       type: "success"

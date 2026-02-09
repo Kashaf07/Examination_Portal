@@ -5,12 +5,25 @@ def create_add_applicants_exam_bp(mysql):
     bp = Blueprint('add_applicants_exam', __name__)
 
    
-    @bp.route('/groups/<int:group_id>/applicants', methods=['GET'])
+    @bp.route('/<int:group_id>/applicants', methods=['GET'])
     def get_group_applicants(group_id):
+        """
+        This route is for EXAM ASSIGNMENT - returns applicants with is_assigned field
+        With url_prefix="/api/exam-groups", this becomes:
+        /api/exam-groups/<int:group_id>/applicants
+        """
         try:
             exam_id = request.args.get("exam_id")  # OPTIONAL
             cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+            
+            print(f"\n{'='*70}")
+            print(f"🎯 [EXAM-GROUPS] GET APPLICANTS FOR GROUP {group_id}")
+            print(f"📍 ENDPOINT: /api/exam-groups/{group_id}/applicants")
+            print(f"🔍 Exam ID: {exam_id}")
+            print(f"{'='*70}")
+            
             if exam_id:
+                # ✅ Filter for active students only
                 cursor.execute("""
                     SELECT 
                         a.Applicant_Id,
@@ -25,9 +38,11 @@ def create_add_applicants_exam_bp(mysql):
                       ON a.Applicant_Id = ae.Applicant_Id
                       AND ae.Exam_Id = %s
                     WHERE a.group_id = %s
+                      AND a.Is_Active = 1
+                    ORDER BY a.Full_Name ASC
                 """, (exam_id, group_id))
             else:
-                
+                # ✅ Filter for active students only
                 cursor.execute("""
                     SELECT 
                         Applicant_Id,
@@ -36,9 +51,18 @@ def create_add_applicants_exam_bp(mysql):
                         0 AS is_assigned
                     FROM applicants
                     WHERE group_id = %s
+                      AND Is_Active = 1
+                    ORDER BY Full_Name ASC
                 """, (group_id,))
 
             applicants = cursor.fetchall()
+            
+            print(f"\n✅ RETURNING {len(applicants)} ACTIVE APPLICANTS")
+            for app in applicants:
+                status = "✔ ASSIGNED" if app.get('is_assigned') == 1 else "○ NEW"
+                print(f"  {status} - ID: {app['Applicant_Id']}, Name: {app['Full_Name']}")
+            print(f"{'='*70}\n")
+            
             cursor.close()
 
             return jsonify(
@@ -53,14 +77,21 @@ def create_add_applicants_exam_bp(mysql):
                 message="Failed to load applicants"
             ), 500
         
-    # ✅ ASSIGN SELECTED APPLICANTS TO EXAM 
-    
-    @bp.route('/assign_applicants', methods=['POST'])
+    # ✅ ASSIGN SELECTED APPLICANTS TO EXAM
+    # Route becomes: /api/exam-groups/assign
+    @bp.route('/assign', methods=['POST'])
     def assign_applicants():
         try:
             data = request.get_json()
             exam_id = data.get("exam_id")
             applicant_ids = data.get("applicant_ids", [])
+
+            print(f"\n{'='*70}")
+            print(f"📝 [EXAM-GROUPS] ASSIGN APPLICANTS")
+            print(f"📍 ENDPOINT: /api/exam-groups/assign")
+            print(f"🔍 Exam ID: {exam_id}")
+            print(f"👥 Applicant IDs: {applicant_ids}")
+            print(f"{'='*70}")
 
             if not exam_id or not applicant_ids:
                 return jsonify(
@@ -92,6 +123,9 @@ def create_add_applicants_exam_bp(mysql):
             mysql.connection.commit()
             cursor.close()
 
+            print(f"✅ ASSIGNED {inserted_count} NEW APPLICANTS")
+            print(f"{'='*70}\n")
+
             return jsonify(
                 success=True,
                 assigned_count=inserted_count
@@ -120,17 +154,19 @@ def create_add_applicants_exam_bp(mysql):
 
             cursor = mysql.connection.cursor()
 
+            # ✅ Only get active applicants
             cursor.execute("""
                 SELECT Applicant_Id
                 FROM applicants
                 WHERE group_id = %s
+                  AND Is_Active = 1
             """, (group_id,))
             applicant_ids = [row[0] for row in cursor.fetchall()]
 
             if not applicant_ids:
                 return jsonify(
                     success=False,
-                    message="Group has no applicants"
+                    message="Group has no active applicants"
                 ), 400
 
             cursor.execute("""

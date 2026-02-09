@@ -67,7 +67,7 @@ app.register_blueprint(create_exam_routes(mysql), url_prefix="/api/exam")
 app.register_blueprint(create_add_students_bp(mysql), url_prefix="/api")
 
 app.register_blueprint(create_faculty_routes(mysql), url_prefix="/api/faculty")
-app.register_blueprint(create_view_responses_bp(mysql), url_prefix="/responses")
+app.register_blueprint(create_view_responses_bp(mysql), url_prefix="/api/responses")
 app.register_blueprint(create_faculty_groups_routes(mysql), url_prefix="/api/faculty-groups")
 
 # 🔔 FACULTY NOTIFICATION BLUEPRINT
@@ -79,13 +79,18 @@ app.register_blueprint(exam_paper_bp, url_prefix="/api/paper")
 # ✅ STUDENT EMAIL ROUTES (UNCHANGED)
 app.register_blueprint(create_send_email_routes(mysql))
 
-app.register_blueprint(create_add_applicants_exam_bp(mysql), url_prefix="/api")
+# 🔥 REGISTER WITH DIFFERENT URL PREFIXES TO AVOID CONFLICTS
+# Exam applicants: /api/exam-groups/<id>/applicants  
+app.register_blueprint(create_add_applicants_exam_bp(mysql), url_prefix="/api/exam-groups")
+
+# Group management: /api/groups/<id>/applicants
+app.register_blueprint(group_bp, url_prefix="/api/groups")
+
 app.register_blueprint(create_assign_routes(mysql))
 app.register_blueprint(create_applicants_bp(mysql))
 app.register_blueprint(create_assigned_applicants_routes(mysql))
 app.register_blueprint(create_view_answers_bp(mysql))
 app.register_blueprint(create_admin_routes(mysql), url_prefix="/api/admin")
-app.register_blueprint(group_bp, url_prefix="/api/groups")
 
 student_bp = create_student_routes(mysql)
 app.register_blueprint(student_bp, url_prefix="/api/student")
