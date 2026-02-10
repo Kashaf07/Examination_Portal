@@ -77,23 +77,25 @@
                 <td class="py-4 px-6">{{ faculty.F_Email }}</td>
                 <td class="py-4 px-6">{{ getSchoolName(faculty.School_Id) }}</td>
                 <td class="py-4 px-6">{{ faculty.Designation_Name }}</td>
-                <td class="py-4 px-6 space-x-2">
-                  <button
-                    @click="openEditModal(faculty)"
-                    class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg text-sm shadow transition hover:scale-105"
-                  >
-                    Edit
-                  </button>
+                <td class="py-4 px-6">
+                  <div class="flex items-center gap-2">
+                    <button
+                      @click="openEditModal(faculty)"
+                      class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg text-sm shadow transition hover:scale-105"
+                    >
+                      Edit
+                    </button>
 
-                  <button
-                    @click="toggleFacultyStatus(faculty)"
-                    :class="Number(faculty.Is_Active) === 1
-                      ? 'bg-red-500 hover:bg-red-600'
-                      : 'bg-green-500 hover:bg-green-600'"
-                    class="text-white px-4 py-2 rounded-lg text-sm shadow transition hover:scale-105"
-                  >
-                    {{ Number(faculty.Is_Active) === 1 ? 'Disable' : 'Enable' }}
-                  </button>
+                    <button
+                      @click="toggleFacultyStatus(faculty)"
+                      :class="Number(faculty.Is_Active) === 1
+                        ? 'bg-red-500 hover:bg-red-600'
+                        : 'bg-green-500 hover:bg-green-600'"
+                      class="text-white px-4 py-2 rounded-lg text-sm shadow transition hover:scale-105"
+                    >
+                      {{ Number(faculty.Is_Active) === 1 ? 'Disable' : 'Enable' }}
+                    </button>
+                  </div>
                 </td>
               </tr>
             </tbody>
