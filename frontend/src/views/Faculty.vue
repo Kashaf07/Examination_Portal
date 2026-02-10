@@ -529,18 +529,24 @@
                               >
                                 Add Students
                               </button>
-                              <!-- Status Indicator -->
+                              <!-- Status Indicator for Students -->
                               <span
                                 v-if="hasAssignedStudents(exam)"
-                                class="absolute -top-0.5 -right-0.5 text-green-600 text-sm bg-white rounded-full w-4 h-4 flex items-center justify-center"
-                                title="Students Assigned"
+                                class="absolute -top-0.5 -right-0.5 
+                                      text-green-600 text-xs font-bold
+                                      border-2 border-green-500 
+                                      bg-white
+                                      rounded-full w-[18px] h-[18px]
+                                      flex items-center justify-center
+                                      shadow"
                               >
                                 ✔
                               </span>
                               <span
                                 v-else
-                                class="absolute -top-0.5 -right-0.5 text-yellow-600 text-sm bg-white rounded-full w-4 h-4 flex items-center justify-center"
-                                title="No Students Assigned"
+                                class="absolute -top-0.5 -right-0.5 
+                                      text-yellow-600 text-sm 
+                                      leading-none flip-vertical"
                               >
                                 ⏳
                               </span>
@@ -554,18 +560,24 @@
                               >
                                 Question Bank
                               </button>
-                              <!-- Status Indicator -->
+                              <!-- Status Indicator for Question Bank -->
                               <span
-                                v-if="examStatus[exam.Exam_Id]?.has_question_bank"
-                                class="absolute -top-0.5 -right-0.5 text-green-600 text-sm bg-white rounded-full w-4 h-4 flex items-center justify-center"
-                                title="Completed"
+                                v-if="hasQuestionBank(exam)"
+                                class="absolute -top-0.5 -right-0.5 
+                                      text-green-600 text-xs font-bold
+                                      border-2 border-green-500 
+                                      bg-white
+                                      rounded-full w-[18px] h-[18px]
+                                      flex items-center justify-center
+                                      shadow"
                               >
                                 ✔
                               </span>
                               <span
                                 v-else
-                                class="absolute -top-0.5 -right-0.5 text-yellow-600 text-sm bg-white rounded-full w-4 h-4 flex items-center justify-center"
-                                title="Pending"
+                                class="absolute -top-0.5 -right-0.5 
+                                      text-yellow-600 text-sm 
+                                      leading-none flip-vertical"
                               >
                                 ⏳
                               </span>
@@ -579,18 +591,24 @@
                               >
                                 Question Paper
                               </button>
-                              <!-- Status Indicator -->
+                              <!-- Status Indicator for Question Paper -->
                               <span
-                                v-if="examStatus[exam.Exam_Id]?.has_question_paper"
-                                class="absolute -top-0.5 -right-0.5 text-green-600 text-sm bg-white rounded-full w-4 h-4 flex items-center justify-center"
-                                title="Completed"
+                                v-if="hasQuestionPaper(exam)"
+                                class="absolute -top-0.5 -right-0.5 
+                                      text-green-600 text-xs font-bold
+                                      border-2 border-green-500 
+                                      bg-white
+                                      rounded-full w-[18px] h-[18px]
+                                      flex items-center justify-center
+                                      shadow"
                               >
                                 ✔
                               </span>
                               <span
                                 v-else
-                                class="absolute -top-0.5 -right-0.5 text-yellow-600 text-sm bg-white rounded-full w-4 h-4 flex items-center justify-center"
-                                title="Pending"
+                                class="absolute -top-0.5 -right-0.5 
+                                      text-yellow-600 text-sm 
+                                      leading-none flip-vertical"
                               >
                                 ⏳
                               </span>
@@ -784,8 +802,19 @@ const dismissExam = (examId) => {
   dismissedExamIds.value.add(examId)
 }
 
+/* ================= STATUS CHECK FUNCTIONS ================= */
 const hasAssignedStudents = (exam) => {
   return exam.total_applicants && exam.total_applicants > 0
+}
+
+const hasQuestionBank = (exam) => {
+  const status = examStatus.value[exam.Exam_Id]
+  return status && status.has_question_bank === true
+}
+
+const hasQuestionPaper = (exam) => {
+  const status = examStatus.value[exam.Exam_Id]
+  return status && status.has_question_paper === true
 }
 
 const upcomingFacultyExams = computed(() => {
@@ -1188,4 +1217,15 @@ button:hover:not(:disabled) {
 button:active:not(:disabled) {
   transform: translateY(0);
 }
+
+@keyframes flipVertical {
+  0%   { transform: rotate(0deg); }
+  50%  { transform: rotate(180deg); }
+  100% { transform: rotate(0deg); }
+}
+
+.flip-vertical {
+  animation: flipVertical 1.2s infinite ease-in-out;
+}
+
 </style>

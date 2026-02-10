@@ -27,14 +27,14 @@
       <div class="flex justify-center mb-6 bg-gradient-to-br from-blue-50 to-indigo-50 p-6 rounded-xl">
         <div
           ref="qrContainer"
-          class="bg-white p-4 rounded-lg shadow-lg"
+          class="bg-transparent p-2 rounded-lg"
         ></div>
       </div>
 
       <!-- Exam Link Display -->
       <div class="mb-6">
         <label class="block text-sm font-semibold text-gray-700 mb-2">
-          Exam Link:
+          Login Link:
         </label>
         <div class="flex items-center gap-2">
           <input
@@ -102,9 +102,9 @@ const qrContainer = ref(null)
 const successMessage = ref('')
 const qrCodeInstance = ref(null)
 
-// Automatically detect the base URL (localhost or production)
+// Automatically detect the base URL and link to LOGIN PAGE
 const baseUrl = window.location.origin
-const examLink = ref(`${baseUrl}/student?examId=${props.examId}`)
+const examLink = ref(`${baseUrl}/`)
 
 // Load QRCode.js from CDN
 const loadQRCodeLibrary = () => {
@@ -131,13 +131,13 @@ const generateQRCode = async () => {
       // Clear previous QR code
       qrContainer.value.innerHTML = ''
       
-      // Generate new QR code
+      // Generate new QR code with BLACK color and NO white background
       qrCodeInstance.value = new window.QRCode(qrContainer.value, {
         text: examLink.value,
         width: 256,
         height: 256,
-        colorDark: '#1e40af',
-        colorLight: '#ffffff',
+        colorDark: '#000000',  // BLACK QR code
+        colorLight: 'rgba(0,0,0,0)',  // TRANSPARENT background
         correctLevel: window.QRCode.CorrectLevel.H
       })
     }
