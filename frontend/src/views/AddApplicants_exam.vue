@@ -58,12 +58,11 @@
           class="flex justify-between items-center py-2 border-b"
         >
           <span>
-  {{ app.Full_Name }} ({{ app.Email }})
-  <span class="text-sm text-gray-500 ml-2">
-    • {{ app.Group_Name }}
-  </span>
-</span>
-
+            {{ app.Full_Name }} ({{ app.Email }})
+            <span class="text-sm text-gray-500 ml-2">
+              • {{ app.Group_Name }}
+            </span>
+          </span>
 
           <!-- Assigned -->
           <span
@@ -177,7 +176,7 @@ const fetchGroups = async () => {
   if (data.success) groups.value = data.groups
 }
 
-/* ADD GROUP */
+/* ADD GROUP - ✅ FIXED: Use /api/exam-groups endpoint */
 const addGroupApplicants = async () => {
   infoMessage.value = ''
   if (!selectedGroupId.value) {
@@ -185,8 +184,9 @@ const addGroupApplicants = async () => {
     return
   }
 
+  // ✅ CHANGED: /api/exam-groups instead of /api/groups
   const res = await fetch(
-    `http://localhost:5000/api/groups/${selectedGroupId.value}/applicants?exam_id=${examId}`
+    `http://localhost:5000/api/exam-groups/${selectedGroupId.value}/applicants?exam_id=${examId}`
   )
   const data = await res.json()
 
@@ -195,12 +195,12 @@ const addGroupApplicants = async () => {
   data.applicants.forEach(app => {
     if (assignedApplicants.value.some(a => a.Applicant_Id === app.Applicant_Id)) return
 
-assignedApplicants.value.push({
-  ...app,
-  Group_Name: groups.value.find(
-    g => g.Group_Id === selectedGroupId.value
-  )?.Group_Name || 'Unknown Group'
-})
+    assignedApplicants.value.push({
+      ...app,
+      Group_Name: groups.value.find(
+        g => g.Group_Id === selectedGroupId.value
+      )?.Group_Name || 'Unknown Group'
+    })
 
     if (
       app.is_assigned === 0 &&
@@ -228,8 +228,10 @@ const removeApplicant = (id) => {
 }
 
 /* CONFIRM */
+/* CONFIRM - ✅ UPDATED ENDPOINT */
 const confirmAdd = async () => {
-  const res = await fetch('http://localhost:5000/api/assign_applicants', {
+  // ✅ CHANGED: /api/exam-groups/assign instead of /api/assign_applicants
+  const res = await fetch('http://localhost:5000/api/exam-groups/assign', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
@@ -241,7 +243,7 @@ const confirmAdd = async () => {
   const data = await res.json()
 
   if (data.success) {
-    message.value = 'Applicants assigned successfully'
+    message.value = `${data.assigned_count} applicant(s) assigned successfully!`
 
     assignedApplicants.value.forEach(app => {
       if (selectedApplicants.value.includes(app.Applicant_Id)) {
@@ -250,6 +252,8 @@ const confirmAdd = async () => {
     })
 
     selectedApplicants.value = []
+  } else {
+    message.value = `Error: ${data.message || 'Failed to assign applicants'}`
   }
 }
 

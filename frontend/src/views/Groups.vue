@@ -17,7 +17,7 @@
       </button>
     </div>
 
-    <!-- OUTER WRAPPER CARD (LIKE SCHOOLS PAGE) -->
+    <!-- OUTER WRAPPER CARD -->
     <div class="bg-white/80 backdrop-blur-sm shadow-xl rounded-2xl p-8 border border-white/20">
 
       <!-- HEADER -->
@@ -26,15 +26,55 @@
           Student Groups Management
         </h2>
 
-        <button
-          @click="createGroup"
-          class="bg-blue-500 hover:bg-blue-600 text-white font-semibold px-6 py-3 
-                 rounded-full shadow-lg transition hover:scale-105">
-          Create Group
-        </button>
-      </div>
+        <div class="flex items-center gap-4">
+          <!-- CREATE GROUP -->
+          <button
+            v-if="isAdmin"
+            @click="createGroup"
+            class="bg-blue-500 hover:bg-blue-600 text-white font-semibold px-6 py-3 
+                  rounded-full shadow-lg transition hover:scale-105"
+          >
+            Create Group
+          </button>
 
-      <!-- INNER CARD (LIKE TABLE WRAPPER) -->
+          <!-- ACTIVE / ALL TOGGLE -->
+          <div class="flex items-center bg-gray-100 rounded-full p-1 shadow-inner">
+            <button
+              @click="showDisabled = false"
+              :class="[
+                'px-4 py-2 text-sm font-semibold rounded-full transition-all',
+                !showDisabled
+                  ? 'bg-white text-blue-600 shadow'
+                  : 'text-gray-600 hover:text-gray-800'
+              ]"
+            >
+              Active Only
+            </button>
+
+            <button
+              @click="showDisabled = true"
+              :class="[
+                'px-4 py-2 text-sm font-semibold rounded-full transition-all',
+                showDisabled
+                  ? 'bg-white text-blue-600 shadow'
+                  : 'text-gray-600 hover:text-gray-800'
+              ]"
+            >
+              All Groups
+            </button>
+          </div>
+        </div>
+      </div>
+      <transition name="fade">
+        <p
+          v-if="showDisabled"
+          class="text-xs text-gray-500 mb-2 text-right"
+        >
+          Disabled groups are shown in grey
+        </p>
+      </transition>
+
+      <!-- INNER CARD -->
       <div class="bg-white rounded-2xl shadow-lg overflow-hidden border border-gray-200 p-6">
 
         <!-- CREATE INPUT -->
@@ -59,61 +99,64 @@
           </thead>
 
           <tbody class="bg-white divide-y divide-gray-100">
-            <template v-for="g in groups" :key="g.Group_Id">
+            <template v-for="g in filteredGroups" :key="g.Group_Id">
 
               <!-- MAIN GROUP ROW -->                      
-              <tr class="hover:bg-gray-50 transition cursor-pointer">
-                <!-- GROUP ID -->
+              <tr :class="['transition-colors',g.Is_Active === 0 ? 'opacity-50 bg-gray-100' : 'hover:bg-gray-50']">
                 <td class="px-4 py-4 font-medium text-gray-600">
                   {{ g.Group_Id }}
                 </td>
-                <!-- GROUP NAME -->
                 <td class="px-4 py-4 font-medium text-gray-800">
                   {{ g.Group_Name }}
                 </td> 
-                <!-- STUDENT COUNT -->
                 <td class="px-4 py-4 text-center">
                   <span
                     class="px-3 py-1 rounded-full text-sm font-semibold"
-                    :class="(applicants[g.Group_Id]?.length || 0)
+                    :class="g.Applicant_Count > 0
                       ? 'bg-green-100 text-green-700'
                       : 'bg-gray-200 text-gray-600'"
                   >
-                    👥 {{ applicants[g.Group_Id]?.length || 0 }}
+                    👥 {{ g.Applicant_Count }}
                   </span>
                 </td>
 
-                <!-- ACTIONS -->
                 <td class="px-4 py-4 flex justify-center gap-2">
                   <button
                     @click="toggleView(g.Group_Id)"
-                    class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg shadow hover:scale-105 transition"
+                    :disabled="g.Is_Active === 0"
+                    class="disabled:cursor-not-allowed disabled:opacity-50 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg shadow hover:scale-105 transition"
                   >
                     {{ expandedGroup === g.Group_Id ? "Hide" : "View" }}
                   </button>
 
                   <button
-                    @click="deleteGroup(g.Group_Id)"
-                    class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg shadow hover:scale-105 transition"
+                    @click="toggleGroupStatus(g)"
+                    :class="g.Is_Active === 1
+                      ? 'bg-red-500 hover:bg-red-600'
+                      : 'bg-green-500 hover:bg-green-600'"
+                    class="text-white px-4 py-2 rounded-lg shadow hover:scale-105 transition"
                   >
-                    Delete
+                    {{ g.Is_Active === 1 ? 'Disable' : 'Enable' }}
                   </button>
                 </td>
               </tr>
 
-              <!-- EXPANDED STUDENT LIST UNDER SAME GROUP -->
-              <tr v-if="expandedGroup === g.Group_Id" class="bg-gray-50">
+              <!-- EXPANDED STUDENT LIST - Fixed key to force re-render -->
+              <tr
+                v-if="expandedGroup === g.Group_Id && applicants[g.Group_Id]"
+                :key="`expanded-${g.Group_Id}-${fetchTimestamp}`"
+                class="bg-gray-50"
+              >
                 <td colspan="4" class="p-6">
 
                   <h3 class="text-lg font-bold mb-4 text-gray-700">
                     Students in {{ g.Group_Name }}
                   </h3>
 
-                  <!-- EXPANDED STUDENT LIST -->
                   <div class="mt-4">
 
-                    <!-- IF STUDENTS EXIST -->
-                    <div v-if="applicants[g.Group_Id]?.length" class="rounded-2xl shadow-md border bg-white overflow-hidden">
+                    <!-- STUDENT LIST -->
+                    <div v-if="applicants[g.Group_Id]?.length > 0" class="rounded-2xl shadow-md border bg-white overflow-hidden">
 
                       <table class="w-full">
                         <thead class="bg-gradient-to-r from-blue-50 to-blue-100 text-blue-900">
@@ -127,8 +170,7 @@
                         <tbody class="bg-white divide-y divide-gray-100">
                           <tr
                             v-for="a in applicants[g.Group_Id]"
-                            :key="a.Applicant_Id"
-                            class="hover:bg-blue-50 transition cursor-pointer"
+                            :key="`applicant-${a.Applicant_Id}-${fetchTimestamp}`"
                           >
                             <td class="px-4 py-3 font-medium text-gray-800">
                               {{ a.Full_Name }}
@@ -141,7 +183,10 @@
                             <td class="px-4 py-3 text-center">
                               <button
                                 @click="removeApplicant(g.Group_Id, a.Applicant_Id)"
-                                class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-full text-sm shadow hover:scale-105 transition">
+                                :disabled="g.Is_Active === 0"  
+                                :class="g.Is_Active === 0    ? 
+                                'bg-red-300 cursor-not-allowed'    
+                                : 'bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-full text-sm shadow hover:scale-105 transition'">
                                 Remove
                               </button>
                             </td>
@@ -151,13 +196,12 @@
 
                     </div>
 
-                    <!-- IF EMPTY -->
+                    <!-- EMPTY STATE -->
                     <p v-else class="text-gray-500 italic text-center py-4">
                       No students in this group
                     </p>
 
                   </div>
-
 
                 </td>
               </tr>
@@ -167,8 +211,6 @@
 
         </table>
 
-        
-
       </div>
     </div>
   </div>
@@ -177,45 +219,86 @@
 <script setup>
 import { ref, onMounted, computed } from "vue"
 import axios from "@/utils/axiosInstance"
+import { watch } from "vue"
 
 const emit = defineEmits(["toast"])
 
+const showDisabled = ref(false)
 const groupName = ref("")
 const groups = ref([])
 const applicants = ref({})
 const expandedGroup = ref(null)
+const fetchTimestamp = ref(Date.now()) // ✅ Force re-render when data changes
 
-
-/* 🔐 ROLE */
 const role =
   (localStorage.getItem("active_role") || "").toLowerCase() === "admin"
     ? "Admin"
     : "Faculty"
 
-/* ✅ ADMIN CHECK */
 const isAdmin = computed(() => role === "Admin")
 
 const email = localStorage.getItem("email")
 
-/* LOAD GROUPS + COUNTS */
-const loadGroups = async () => {
-  const res = await axios.get("/groups", {
-    params: { role, email }
-  })
+watch(showDisabled, () => {
+  loadGroups()
+})
 
-  if (res.data.success) {
-    groups.value = res.data.groups
-    preloadApplicantCounts()
+const filteredGroups = computed(() => {
+  const list = showDisabled.value
+    ? groups.value
+    : groups.value.filter(g => g.Is_Active === 1)
+
+  return [...list].sort((a, b) => b.Is_Active - a.Is_Active)
+})
+
+/* ENABLE / DISABLE GROUP */
+const toggleGroupStatus = async (group) => {
+  const action = group.Is_Active === 1 ? 'disable' : 'enable'
+
+  if (!confirm(`Are you sure you want to ${action} this group?`)) return
+
+  try {
+    await axios.put(`/groups/toggle-status/${group.Group_Id}`)
+
+    emit("toast", {
+      message: `Group ${action}d successfully`,
+      type: "success"
+    })
+
+    // 🔄 reload groups so UI updates
+    await loadGroups()
+
+  } catch (err) {
+    console.error("Toggle group status failed:", err)
+    emit("toast", {
+      message: "Failed to update group status",
+      type: "error"
+    })
   }
 }
 
-/* PRELOAD COUNTS */
-const preloadApplicantCounts = async () => {
-  for (const g of groups.value) {
-    const res = await axios.get(`/groups/${g.Group_Id}/applicants`)
-    applicants.value[g.Group_Id] = res.data.success
-      ? res.data.applicants
-      : []
+/* LOAD GROUPS */
+const loadGroups = async () => {
+  try {
+    const res = await axios.get("/groups", {
+      params: { role, email, show_all: showDisabled.value }
+    })
+
+    if (res.data.success) {
+      groups.value = res.data.groups
+      expandedGroup.value = null
+      
+      // ✅ Clear ALL applicant data
+      applicants.value = {}
+      expandedGroup.value = null
+      fetchTimestamp.value = Date.now()
+    }
+  } catch (err) {
+    console.error("Error loading groups:", err)
+    emit("toast", {
+      message: "Error loading groups",
+      type: "error"
+    })
   }
 }
 
@@ -239,7 +322,6 @@ const createGroup = async () => {
     groupName.value = ""
     await loadGroups()
 
-    // ✅ SUCCESS TOAST
     emit("toast", {
       message: "Student group created successfully!",
       type: "success"
@@ -259,28 +341,71 @@ const toggleView = async (groupId) => {
     expandedGroup.value = null
     return
   }
+
   expandedGroup.value = groupId
 
-  // 🔥 ALWAYS FETCH FRESH DATA
-  const res = await axios.get(`/groups/${groupId}/applicants`)
-  applicants.value[groupId] = res.data.success
-    ? res.data.applicants
-    : []
+  try {
+    console.log(`🔍 Fetching applicants for group ${groupId}`)
+    
+    // ✅ Force fresh fetch with cache buster
+    const res = await axios.get(`/groups/${groupId}/applicants`, {
+      params: { _t: Date.now() }
+    })
+    
+    console.log("📥 Received from API:", res.data.applicants)
+    
+    // ✅ Update data and force re-render
+    applicants.value = {
+      ...applicants.value,
+      [groupId]: res.data.success ? res.data.applicants : []
+    }
+    
+    // ✅ Update timestamp to force Vue to re-render
+    fetchTimestamp.value = Date.now()
+    
+    console.log("💾 Stored applicants:", applicants.value[groupId])
+      
+  } catch (err) {
+    console.error("Error fetching applicants:", err)
+    applicants.value[groupId] = []
+    
+    emit("toast", {
+      message: "Error loading students",
+      type: "error"
+    })
+  }
 }
 
 /* REMOVE APPLICANT */
 const removeApplicant = async (groupId, applicantId) => {
   if (!confirm("Remove applicant from this group?")) return
 
-  await axios.post("/groups/remove-applicant", {
-    group_id: groupId,
-    applicant_id: applicantId
-  })
+  try {
+    await axios.post("/groups/remove-applicant", {
+      group_id: groupId,
+      applicant_id: applicantId
+    })
 
-  applicants.value[groupId] =
-    applicants.value[groupId].filter(
-      a => a.Applicant_Id !== applicantId
-    )
+    // ✅ Close the view first
+    expandedGroup.value = null
+    
+    // ✅ Reload groups to update count
+    await loadGroups()
+    
+    // ✅ Re-open with fresh data
+    await toggleView(groupId)
+
+    emit("toast", {
+      message: "Student removed from group successfully!",
+      type: "success"
+    })
+
+  } catch (err) {
+    emit("toast", {
+      message: err.response?.data?.error || "Error removing student",
+      type: "error"
+    })
+  }
 }
 
 /* DELETE GROUP */
@@ -293,7 +418,6 @@ const deleteGroup = async (groupId) => {
     expandedGroup.value = null
     await loadGroups()
 
-    // ✅ SUCCESS TOAST
     emit("toast", {
       message: "Student group deleted successfully!",
       type: "success"
