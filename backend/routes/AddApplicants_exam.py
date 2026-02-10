@@ -22,6 +22,21 @@ def create_add_applicants_exam_bp(mysql):
             print(f"🔍 Exam ID: {exam_id}")
             print(f"{'='*70}")
             
+            # 🔒 CHECK IF GROUP IS ACTIVE
+            cursor.execute("""
+                SELECT Is_Active
+                FROM applicant_groups
+                WHERE group_id = %s
+            """, (group_id,))
+            group = cursor.fetchone()
+
+            if not group or group['Is_Active'] == 0:
+                cursor.close()
+                return jsonify(
+                    success=False,
+                    message="This student group is disabled"
+                ), 403
+            
             if exam_id:
                 # ✅ Filter for active students only
                 cursor.execute("""
