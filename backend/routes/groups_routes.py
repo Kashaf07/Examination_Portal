@@ -55,55 +55,72 @@ def create_group():
 def get_groups():
     role = request.args.get("role")
     email = request.args.get("email")
+    show_all = request.args.get("show_all") == "true"
 
     mysql = get_mysql()
     cur = mysql.connection.cursor()
 
-    if role == "Admin":
-        cur.execute("""
-            SELECT 
-                g.group_id,
-                g.group_name,
-                g.Faculty_Email,
-                g.Created_At,
-                COUNT(CASE WHEN a.Is_Active = 1 THEN 1 END) AS applicant_count
-            FROM applicant_groups g
-            LEFT JOIN applicants a ON a.group_id = g.group_id
-            WHERE g.group_name != '__UNASSIGNED__'
-            GROUP BY g.group_id
-            ORDER BY g.Created_At DESC
-        """)
-    else:
-        cur.execute("""
-            SELECT 
-                g.group_id,
-                g.group_name,
-                g.Faculty_Email,
-                g.Created_At,
-                COUNT(CASE WHEN a.Is_Active = 1 THEN 1 END) AS applicant_count
-            FROM applicant_groups g
-            LEFT JOIN applicants a ON a.group_id = g.group_id
-            WHERE g.Faculty_Email=%s
-              AND g.group_name != '__UNASSIGNED__'
-            GROUP BY g.group_id
-            ORDER BY g.Created_At DESC
-        """, (email,))
+    base_query = """
+        SELECT 
+            g.group_id,
+            g.group_name,
+            g.Faculty_Email,
+            g.Created_At,
+            g.Is_Active,
+            COUNT(CASE WHEN a.Is_Active = 1 THEN 1 END) AS applicant_count
+        FROM applicant_groups g
+        LEFT JOIN applicants a ON a.group_id = g.group_id
+        WHERE g.group_name != '__UNASSIGNED__'
+    """
 
+    params = []
+
+    if role != "Admin":
+        base_query += " AND g.Faculty_Email=%s"
+        params.append(email)
+
+    if not show_all:
+        base_query += " AND g.Is_Active = 1"
+
+    base_query += """
+        GROUP BY g.group_id
+        ORDER BY g.Is_Active DESC, g.Created_At DESC
+    """
+
+    cur.execute(base_query, params)
     rows = cur.fetchall()
     cur.close()
 
     return jsonify(
         success=True,
-        groups=[
-            {
-                "Group_Id": r[0],
-                "Group_Name": r[1],
-                "Faculty_Email": r[2],
-                "Created_At": r[3],
-                "Applicant_Count": r[4]
-            } for r in rows
-        ]
+        groups=[{
+            "Group_Id": r[0],
+            "Group_Name": r[1],
+            "Faculty_Email": r[2],
+            "Created_At": r[3],
+            "Is_Active": r[4],
+            "Applicant_Count": r[5]
+        } for r in rows]
     )
+
+@group_bp.route("/toggle-status/<int:group_id>", methods=["PUT"])
+def toggle_group_status(group_id):
+    mysql = get_mysql()
+    cur = mysql.connection.cursor()
+
+    cur.execute("""
+        UPDATE applicant_groups
+        SET Is_Active = CASE
+            WHEN Is_Active = 1 THEN 0
+            ELSE 1
+        END
+        WHERE group_id = %s
+    """, (group_id,))
+
+    mysql.connection.commit()
+    cur.close()
+
+    return jsonify(success=True, message="Group status updated")
 
 # ==================================================
 # GET APPLICANTS OF GROUP - ✅ ONLY ACTIVE STUDENTS
