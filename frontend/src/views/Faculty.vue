@@ -720,7 +720,10 @@
 
           <!-- Add Applicants View -->
           <div v-else-if="activeTab === 'add-applicants'" class="w-full min-h-[85vh]">
-            <AddApplicantsPage />
+            <AddApplicantsPage
+              @saved="handleApplicantSaved"
+              @close="showApplicantForm = false"
+            />
           </div>
 
           <!-- Upload Students View -->
@@ -740,6 +743,13 @@
     />
   </div>
   </div>
+  <NotificationToast
+    v-if="toast.message"
+    :message="toast.message"
+    :type="toast.type"
+    @clear="clearToast"
+  />
+
 </template>
 
 <script setup>
@@ -751,6 +761,7 @@ import AddApplicantsPage from "../views/AddApplicantsPage.vue"
 import UploadStudents from './UploadStudents.vue'
 import Groups from './Groups.vue'
 import QRCodeModal from '../components/QRCodeModal.vue'
+import NotificationToast from "@/components/admin/NotificationToast.vue"
 
 const now = ref(new Date())
 let countdownTimer = null
@@ -771,6 +782,24 @@ const facultyEmail = email
 const showNotifications = ref(false)
 const dismissedExamIds = ref(new Set())
 const notificationContainer = ref(null)
+const toast = ref({ message: "", type: "" })
+let timer
+
+const showToast = (message, type = "success") => {
+  toast.value = { message, type }
+  clearTimeout(timer)
+  timer = setTimeout(() => {
+    toast.value = { message: "", type: "" }
+  }, 3000)
+}
+
+const clearToast = () => {
+  toast.value = { message: "", type: "" }
+}
+
+const handleApplicantSaved = () => {
+  showToast("Student added successfully!", "success")
+}
 
 // QR Code Modal State
 const showQRModal = ref(false)
