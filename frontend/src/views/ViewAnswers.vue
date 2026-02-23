@@ -65,31 +65,38 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
 const route = useRoute()
 const router = useRouter()
 
-const attemptId = ref(route.params.attemptId)
+const attemptId = ref(null)
 const answers = ref([])
 const error = ref('')
 const examId = ref(null)
 
+onMounted(() => {
+  attemptId.value = route.params.attemptId
+  fetchAnswers()
+})
 const fetchAnswers = async () => {
   error.value = ''
   try {
     const response = await fetch(`http://localhost:5000/api/answers/${attemptId.value}`)
     const data = await response.json()
+
     if (!response.ok) {
       error.value = data.error || 'Failed to load answers'
-    } else {
-      answers.value = data.answers
-      // Get exam_id from the first answer if available
-      if (data.answers && data.answers.length > 0 && data.answers[0].Exam_Id) {
-        examId.value = data.answers[0].Exam_Id
-      }
+      return
     }
+
+    answers.value = data.answers
+
+    if (data.answers?.length > 0 && data.answers[0].Exam_Id) {
+      examId.value = data.answers[0].Exam_Id
+    }
+
   } catch (e) {
     error.value = 'Error fetching answers: ' + e.message
   }
@@ -97,19 +104,18 @@ const fetchAnswers = async () => {
 
 const isCorrect = (answer) => {
   if (!answer.Correct_Answer) return false
-  return (answer.Answer_Text || '').trim().toLowerCase() === (answer.Correct_Answer || '').trim().toLowerCase()
+  return (answer.Answer_Text || '').trim().toLowerCase() === 
+         (answer.Correct_Answer || '').trim().toLowerCase()
 }
 
 const goBack = () => {
-  // Navigate back to ViewResponses for this exam
   const activeRole = localStorage.getItem('active_role')
-  
+
   if (!examId.value) {
-    // Fallback: if we don't have exam_id, just go back using browser history
     router.back()
     return
   }
-  
+
   if (activeRole === 'Admin') {
     router.push({ name: 'ViewResponsesAdmin', params: { examId: examId.value } })
   } else if (activeRole === 'Faculty') {
@@ -119,9 +125,10 @@ const goBack = () => {
   }
 }
 
-onMounted(fetchAnswers)
-</script>
 
+
+
+</script>
 <style scoped>
 /* Tailwind handles styling */
 </style>

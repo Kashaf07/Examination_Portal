@@ -134,13 +134,23 @@ const routes = [
     component: AddApplicantsPage,
     meta: { requiresAuth: true, role: ['Admin', 'Faculty'] }
   },
-  {
-    path: '/view-answers/:attemptId',
-    name: 'ViewAnswers',
-    component: ViewAnswers,
-    props: true,
-    meta: { requiresAuth: true, role: ['Admin', 'Faculty'] }
-  },
+ {
+  path: '/view-answers/:attemptId',
+  name: 'ViewAnswers',
+  component: ViewAnswers,
+  meta: { requiresAuth: true, role: ['Admin', 'Faculty'] },
+  beforeEnter: (to, from, next) => {
+    // Only allow navigation from responses pages
+    if (
+      from.name === 'ViewResponsesAdmin' ||
+      from.name === 'ViewResponsesFaculty'
+    ) {
+      next()
+    } else {
+      next('/admin/exams')
+    }
+  }
+},
 
   // ---------------- RESPONSES ----------------
   {

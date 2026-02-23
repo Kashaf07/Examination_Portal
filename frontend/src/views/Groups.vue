@@ -29,7 +29,7 @@
         <div class="flex items-center gap-4">
           <!-- CREATE GROUP -->
           <button
-            v-if="isAdmin"
+
             @click="createGroup"
             class="bg-blue-500 hover:bg-blue-600 text-white font-semibold px-6 py-3 
                   rounded-full shadow-lg transition hover:scale-105"

@@ -283,11 +283,14 @@ const fetchAttempts = async () => {
     error.value = 'Error fetching attempts: ' + e.message
   }
 }
-
 const viewAnswers = (attemptId) => {
-  router.push({ name: 'ViewAnswers', params: { attemptId } })
-}
+  sessionStorage.setItem("viewAnswersLock", String(attemptId))
 
+  router.push({
+    name: 'ViewAnswers',
+    params: { attemptId }
+  })
+}
 const goBack = () => {
   // Navigate based on active role
   const activeRole = localStorage.getItem('active_role')
