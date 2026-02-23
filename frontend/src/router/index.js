@@ -1,4 +1,5 @@
 import { createRouter, createWebHistory } from 'vue-router'
+import axios from '@/utils/axiosInstance'
 
 // Core views
 import Login from '../views/Login.vue'
@@ -148,14 +149,50 @@ const routes = [
     name: 'ViewResponsesAdmin',
     component: ViewResponsesAdmin,
     props: true,
-    meta: { requiresAuth: true, role: 'Admin' }
+    meta: { requiresAuth: true, role: 'Admin' },
+    beforeEnter: async (to, from, next) => {
+      try {
+        const examId = to.params.examId
+        const email = localStorage.getItem('email')
+        const role = 'Admin'
+
+        console.log("Checking access for:", examId, email, role)
+
+        const res = await axios.get('/exam/can-view-responses', {
+          params: { exam_id: examId, email, role }
+        })
+
+        console.log("Backend response:", res.data)
+
+        // Always allow route to load
+        next()
+
+      } catch (err) {
+        next()
+      }
+    }
   },
   {
     path: '/faculty/view-responses/:examId',
     name: 'ViewResponsesFaculty',
     component: ViewResponsesFaculty,
     props: true,
-    meta: { requiresAuth: true, role: 'Faculty' }
+    meta: { requiresAuth: true, role: 'Faculty' },
+    beforeEnter: async (to, from, next) => {
+      try {
+        const examId = to.params.examId
+        const email = localStorage.getItem('email')
+        const role = 'Faculty'
+
+        const res = await axios.get('/exam/can-view-responses', {
+          params: { exam_id: examId, email, role }
+        })
+
+        next()
+      } catch {
+        next()
+      }
+    }
   },
 
   // ---------------- FALLBACK ----------------
