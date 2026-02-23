@@ -27,10 +27,10 @@
         </h2>
 
         <div class="flex items-center gap-4">
-          <!-- CREATE GROUP -->
+          <!-- CREATE GROUP BUTTON -->
           <button
             v-if="isAdmin"
-            @click="createGroup"
+            @click="showCreateModal = true"
             class="bg-blue-500 hover:bg-blue-600 text-white font-semibold px-6 py-3 
                   rounded-full shadow-lg transition hover:scale-105"
           >
@@ -77,11 +77,11 @@
       <!-- INNER CARD -->
       <div class="bg-white rounded-2xl shadow-lg overflow-hidden border border-gray-200 p-6">
 
-        <!-- CREATE INPUT -->
+        <!-- SEARCH FILTER INPUT -->
         <div class="mb-6 flex gap-3">
           <input
-            v-model="groupName"
-            placeholder="Enter Group Name"
+            v-model="searchQuery"
+            placeholder="🔍 Search groups..."
             class="w-full max-w-xs px-4 py-3 rounded-xl border bg-purple-50 focus:bg-white 
                    focus:ring-2 focus:ring-blue-400 transition"
           />
@@ -99,7 +99,7 @@
           </thead>
 
           <tbody class="bg-white divide-y divide-gray-100">
-            <template v-for="g in filteredGroups" :key="g.Group_Id">
+            <template v-for="g in searchedGroups" :key="g.Group_Id">
 
               <!-- MAIN GROUP ROW -->                      
               <tr :class="['transition-colors',g.Is_Active === 0 ? 'opacity-50 bg-gray-100' : 'hover:bg-gray-50']">
@@ -141,7 +141,7 @@
                 </td>
               </tr>
 
-              <!-- EXPANDED STUDENT LIST - Fixed key to force re-render -->
+              <!-- EXPANDED STUDENT LIST -->
               <tr
                 v-if="expandedGroup === g.Group_Id && applicants[g.Group_Id]"
                 :key="`expanded-${g.Group_Id}-${fetchTimestamp}`"
@@ -207,12 +207,74 @@
               </tr>
 
             </template>
+
+            <!-- NO RESULTS STATE -->
+            <tr v-if="searchedGroups.length === 0">
+              <td colspan="4" class="text-center py-8 text-gray-500 italic">
+                No groups found matching "{{ searchQuery }}"
+              </td>
+            </tr>
+
           </tbody>
 
         </table>
 
       </div>
     </div>
+
+    <!-- ===================== CREATE GROUP MODAL ===================== -->
+    <div
+      v-if="showCreateModal"
+      class="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-[9999] p-4"
+      @click.self="showCreateModal = false"
+    >
+      <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md p-8 animate-fadeIn">
+        
+        <!-- Modal Header -->
+        <div class="flex items-center justify-between mb-6">
+          <h3 class="text-2xl font-bold text-gray-800">Create Student Group</h3>
+          <button
+            @click="showCreateModal = false"
+            class="w-8 h-8 flex items-center justify-center rounded-full bg-gray-100 hover:bg-gray-200 transition text-gray-500 text-lg font-bold"
+          >
+            ×
+          </button>
+        </div>
+
+        <!-- Group Name Input -->
+        <div class="mb-6">
+          <label class="block text-sm font-semibold text-gray-700 mb-2">Group Name</label>
+          <input
+            v-model="newGroupName"
+            placeholder="Enter group name..."
+            @keyup.enter="createGroup"
+            class="w-full px-4 py-3 rounded-xl border border-gray-300 bg-purple-50 focus:bg-white 
+                   focus:ring-2 focus:ring-blue-400 focus:border-blue-400 transition outline-none text-gray-800"
+            autofocus
+          />
+        </div>
+
+        <!-- Buttons -->
+        <div class="flex justify-end gap-3">
+          <button
+            @click="showCreateModal = false; newGroupName = ''"
+            class="px-6 py-2.5 rounded-full bg-gray-200 text-gray-700 font-semibold hover:bg-gray-300 transition"
+          >
+            Cancel
+          </button>
+          <button
+            @click="createGroup"
+            :disabled="!newGroupName.trim()"
+            class="px-6 py-2.5 rounded-full bg-blue-600 text-white font-semibold 
+                   hover:bg-blue-700 transition disabled:opacity-50 disabled:cursor-not-allowed shadow-md"
+          >
+            Create Group
+          </button>
+        </div>
+      </div>
+    </div>
+    <!-- ============================================================== -->
+
   </div>
 </template>
 
@@ -224,11 +286,13 @@ import { watch } from "vue"
 const emit = defineEmits(["toast"])
 
 const showDisabled = ref(false)
-const groupName = ref("")
+const newGroupName = ref("")
+const searchQuery = ref("")
+const showCreateModal = ref(false)
 const groups = ref([])
 const applicants = ref({})
 const expandedGroup = ref(null)
-const fetchTimestamp = ref(Date.now()) // ✅ Force re-render when data changes
+const fetchTimestamp = ref(Date.now())
 
 const role =
   (localStorage.getItem("active_role") || "").toLowerCase() === "admin"
@@ -251,6 +315,15 @@ const filteredGroups = computed(() => {
   return [...list].sort((a, b) => b.Is_Active - a.Is_Active)
 })
 
+const searchedGroups = computed(() => {
+  if (!searchQuery.value.trim()) return filteredGroups.value
+  const q = searchQuery.value.toLowerCase()
+  return filteredGroups.value.filter(g =>
+    g.Group_Name.toLowerCase().includes(q) ||
+    String(g.Group_Id).includes(q)
+  )
+})
+
 /* ENABLE / DISABLE GROUP */
 const toggleGroupStatus = async (group) => {
   const action = group.Is_Active === 1 ? 'disable' : 'enable'
@@ -265,7 +338,6 @@ const toggleGroupStatus = async (group) => {
       type: "success"
     })
 
-    // 🔄 reload groups so UI updates
     await loadGroups()
 
   } catch (err) {
@@ -287,8 +359,6 @@ const loadGroups = async () => {
     if (res.data.success) {
       groups.value = res.data.groups
       expandedGroup.value = null
-      
-      // ✅ Clear ALL applicant data
       applicants.value = {}
       expandedGroup.value = null
       fetchTimestamp.value = Date.now()
@@ -304,7 +374,7 @@ const loadGroups = async () => {
 
 /* CREATE GROUP */
 const createGroup = async () => {
-  if (!groupName.value.trim()) {
+  if (!newGroupName.value.trim()) {
     emit("toast", {
       message: "Group name is required",
       type: "error"
@@ -314,12 +384,13 @@ const createGroup = async () => {
 
   try {
     await axios.post("/groups/create", {
-      group_name: groupName.value,
+      group_name: newGroupName.value,
       role,
       email
     })
 
-    groupName.value = ""
+    newGroupName.value = ""
+    showCreateModal.value = false
     await loadGroups()
 
     emit("toast", {
@@ -345,25 +416,16 @@ const toggleView = async (groupId) => {
   expandedGroup.value = groupId
 
   try {
-    console.log(`🔍 Fetching applicants for group ${groupId}`)
-    
-    // ✅ Force fresh fetch with cache buster
     const res = await axios.get(`/groups/${groupId}/applicants`, {
       params: { _t: Date.now() }
     })
     
-    console.log("📥 Received from API:", res.data.applicants)
-    
-    // ✅ Update data and force re-render
     applicants.value = {
       ...applicants.value,
       [groupId]: res.data.success ? res.data.applicants : []
     }
     
-    // ✅ Update timestamp to force Vue to re-render
     fetchTimestamp.value = Date.now()
-    
-    console.log("💾 Stored applicants:", applicants.value[groupId])
       
   } catch (err) {
     console.error("Error fetching applicants:", err)
@@ -386,13 +448,8 @@ const removeApplicant = async (groupId, applicantId) => {
       applicant_id: applicantId
     })
 
-    // ✅ Close the view first
     expandedGroup.value = null
-    
-    // ✅ Reload groups to update count
     await loadGroups()
-    
-    // ✅ Re-open with fresh data
     await toggleView(groupId)
 
     emit("toast", {
@@ -433,3 +490,13 @@ const deleteGroup = async (groupId) => {
 
 onMounted(loadGroups)
 </script>
+
+<style scoped>
+@keyframes fadeIn {
+  from { transform: translateY(16px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+.animate-fadeIn {
+  animation: fadeIn 0.2s ease-out;
+}
+</style>
