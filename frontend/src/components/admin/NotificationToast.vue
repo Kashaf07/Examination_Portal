@@ -2,9 +2,10 @@
   <div
     v-if="visible"
     :class="[
-      'fixed top-4 right-4 z-[9999] max-w-md transition-opacity duration-300',
+      'fixed right-4 z-[9999] max-w-md transition-opacity duration-300',
       fadingOut ? 'opacity-0' : 'opacity-100'
     ]"
+    style="top: 80px;"
   >
     <div
       :class="[
@@ -48,7 +49,7 @@
 
         <button
           @click="closeToast"
-          class="text-gray-400 hover:text-gray-600"
+          class="text-gray-400 hover:text-gray-600 ml-4"
         >
           <svg class="h-4 w-4" fill="currentColor" viewBox="0 0 20 20">
             <path
@@ -72,29 +73,21 @@ const props = defineProps({
 
 const emit = defineEmits(["clear"]);
 
-// Controls fade-out animation
 const fadingOut = ref(false);
-
-// Controls v-if visibility
 const visible = ref(true);
 
-// Watch for message appearing / disappearing
 watch(
   () => props.message,
   (msg) => {
     if (msg) {
-      // Reset to visible when new toast comes
       visible.value = true;
       fadingOut.value = false;
     }
   }
 );
 
-// Close handler
 const closeToast = () => {
   fadingOut.value = true;
-
-  // Wait for fade-out animation then clear
   setTimeout(() => {
     visible.value = false;
     emit("clear");

@@ -30,7 +30,7 @@
           <!-- CREATE GROUP -->
           <button
             v-if="isAdmin"
-            @click="createFacultyGroup"
+            @click="showCreateModal = true"
             class="bg-purple-600 hover:bg-purple-700 text-white font-semibold 
                   px-6 py-3 rounded-full shadow-lg transition hover:scale-105"
           >
@@ -78,13 +78,13 @@
       <!-- INNER CARD -->
       <div class="bg-white rounded-2xl shadow-lg overflow-hidden border border-gray-200 p-6">
 
-        <!-- CREATE INPUT -->
-        <div v-if="isAdmin" class="mb-6 flex gap-3">
+        <!-- SEARCH FILTER INPUT -->
+        <div class="mb-6 flex gap-3">
           <input
-            v-model="groupName"
-            placeholder="Enter Faculty Group Name"
+            v-model="searchQuery"
+            placeholder="🔍 Search groups..."
             class="w-full max-w-xs px-4 py-3 rounded-xl border bg-purple-50 
-                   focus:bg-white focus:ring-2 focus:ring-purple-400 transition"
+                   focus:bg-white focus:ring-2 focus:ring-purple-400 transition outline-none"
           />
         </div>
 
@@ -99,7 +99,7 @@
           </thead>
 
           <tbody class="bg-white divide-y divide-gray-100">
-            <template v-for="g in filteredGroups" :key="g.Group_Id">
+            <template v-for="g in searchedGroups" :key="g.Group_Id">
 
               <!-- GROUP ROW -->
               <tr :class="['transition-colors',g.Is_Active === 0? 'opacity-50 bg-gray-100': 'hover:bg-gray-50']">
@@ -272,10 +272,71 @@
                 </td>
               </tr>
             </template>
+
+            <!-- NO RESULTS STATE -->
+            <tr v-if="searchedGroups.length === 0">
+              <td colspan="3" class="text-center py-8 text-gray-500 italic">
+                No groups found matching "{{ searchQuery }}"
+              </td>
+            </tr>
           </tbody>
         </table>
       </div>
     </div>
+
+    <!-- ===================== CREATE GROUP MODAL ===================== -->
+    <div
+      v-if="showCreateModal"
+      class="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-[9999] p-4"
+      @click.self="showCreateModal = false"
+    >
+      <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md p-8 animate-fadeIn">
+        
+        <!-- Modal Header -->
+        <div class="flex items-center justify-between mb-6">
+          <h3 class="text-2xl font-bold text-gray-800">Create Faculty Group</h3>
+          <button
+            @click="showCreateModal = false"
+            class="w-8 h-8 flex items-center justify-center rounded-full bg-gray-100 hover:bg-gray-200 transition text-gray-500 text-lg font-bold"
+          >
+            ×
+          </button>
+        </div>
+
+        <!-- Group Name Input -->
+        <div class="mb-6">
+          <label class="block text-sm font-semibold text-gray-700 mb-2">Group Name</label>
+          <input
+            v-model="newGroupName"
+            placeholder="Enter group name..."
+            @keyup.enter="createFacultyGroup"
+            class="w-full px-4 py-3 rounded-xl border border-gray-300 bg-purple-50 focus:bg-white 
+                   focus:ring-2 focus:ring-purple-400 focus:border-purple-400 transition outline-none text-gray-800"
+            autofocus
+          />
+        </div>
+
+        <!-- Buttons -->
+        <div class="flex justify-end gap-3">
+          <button
+            @click="showCreateModal = false; newGroupName = ''"
+            class="px-6 py-2.5 rounded-full bg-gray-200 text-gray-700 font-semibold hover:bg-gray-300 transition"
+          >
+            Cancel
+          </button>
+          <button
+            @click="createFacultyGroup"
+            :disabled="!newGroupName.trim()"
+            class="px-6 py-2.5 rounded-full bg-purple-600 text-white font-semibold 
+                   hover:bg-purple-700 transition disabled:opacity-50 disabled:cursor-not-allowed shadow-md"
+          >
+            Create Group
+          </button>
+        </div>
+      </div>
+    </div>
+    <!-- ============================================================== -->
+
   </div>
 </template>
 
@@ -288,7 +349,9 @@ const emit = defineEmits(['toast'])
 
 const addingFaculty = ref({})
 const groups = ref([])
-const groupName = ref('')
+const newGroupName = ref('')
+const searchQuery = ref('')
+const showCreateModal = ref(false)
 const expandedGroup = ref(null)
 const facultyMap = ref({})
 const availableFacultyMap = ref({})
@@ -310,6 +373,14 @@ const filteredGroups = computed(() => {
     : groups.value.filter(g => Number(g.Is_Active) === 1)
 
   return [...list].sort((a, b) => b.Is_Active - a.Is_Active)
+})
+
+const searchedGroups = computed(() => {
+  if (!searchQuery.value.trim()) return filteredGroups.value
+  const q = searchQuery.value.toLowerCase()
+  return filteredGroups.value.filter(g =>
+    g.Group_Name.toLowerCase().includes(q)
+  )
 })
 
 /* FETCH GROUPS */
@@ -341,7 +412,7 @@ const preloadFacultyCounts = async () => {
 
 /* CREATE GROUP */
 const createFacultyGroup = async () => {
-  if (!groupName.value.trim()) {
+  if (!newGroupName.value.trim()) {
     emit('toast', {
       message: 'Group name is required',
       type: 'error'
@@ -351,14 +422,14 @@ const createFacultyGroup = async () => {
 
   try {
     await axios.post('/faculty-groups/create', {
-      group_name: groupName.value,
+      group_name: newGroupName.value,
       role: 'Admin'
     })
 
-    groupName.value = ''
+    newGroupName.value = ''
+    showCreateModal.value = false
     await fetchGroups()
 
-    // ✅ SUCCESS TOAST
     emit('toast', {
       message: 'Faculty group created successfully!',
       type: 'success'
@@ -441,16 +512,13 @@ const removeFaculty = async (groupId, facultyId) => {
       faculty_id: facultyId
     })
 
-    // 🔹 find removed faculty object
     const removedFaculty = facultyMap.value[groupId].find(
       f => f.Faculty_Id === facultyId
     )
 
-    // 🔹 remove from assigned table
     facultyMap.value[groupId] =
       facultyMap.value[groupId].filter(f => f.Faculty_Id !== facultyId)
 
-    // 🔹 instantly add to available faculty table
     if (removedFaculty) {
       if (!availableFacultyMap.value[groupId]) {
         availableFacultyMap.value[groupId] = []
@@ -458,7 +526,6 @@ const removeFaculty = async (groupId, facultyId) => {
 
       availableFacultyMap.value[groupId].push(removedFaculty)
 
-      // 🔤 sort alphabetically by Faculty_Name
       availableFacultyMap.value[groupId].sort((a, b) =>
         a.Faculty_Name.localeCompare(b.Faculty_Name)
       )
@@ -501,3 +568,13 @@ const toggleGroupStatus = async (group) => {
 
 onMounted(fetchGroups)
 </script>
+
+<style scoped>
+@keyframes fadeIn {
+  from { transform: translateY(16px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+.animate-fadeIn {
+  animation: fadeIn 0.2s ease-out;
+}
+</style>

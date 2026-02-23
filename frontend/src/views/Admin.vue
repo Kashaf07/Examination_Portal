@@ -67,8 +67,6 @@
           </div>
           <span v-if="sidebarOpen" class="font-semibold text-sm">{{ tab.name }}</span>
           
-          <!-- Tooltip (shows on hover for both collapsed and expanded states) -->
-          
         </button>
       </nav>
 
@@ -80,8 +78,9 @@
           <button
             @click="toggleRoleMenu"
             :class="[
+
               'w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl transition-all duration-200 group relative',
-              'bg-green-500 hover:bg-green-600 text-white shadow-md hover:shadow-lg'
+              'bg-white hover:bg-green-50 text-green-500 border-2 border-green-500 shadow-md hover:shadow-lg'
             ]"
           >
             <!-- Icon (shows in both states) -->
@@ -129,7 +128,7 @@
           @click="logout"
           :class="[
             'w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl transition-all duration-200 group relative',
-            'bg-red-500 hover:bg-red-600 text-white shadow-md hover:shadow-lg'
+            'bg-white hover:bg-blue-50 text-blue-500 border-2 border-blue-500 shadow-md hover:shadow-lg '
           ]"
         >
           <!-- Icon (shows in both states) -->
@@ -138,7 +137,7 @@
           </svg>
           
           <!-- Text (only shows when expanded) -->
-          <span v-if="sidebarOpen" class="font-semibold text-sm">Logout</span>
+          <span v-if="sidebarOpen" class="font-bold text-sm">Logout</span>
 
           <!-- Tooltip (shows on hover for both states) -->
           <div
@@ -153,119 +152,6 @@
     <!-- Main -->
     <main :class="['flex-1 transition-all duration-300', sidebarOpen ? 'ml-64' : 'ml-20']">
       <div class="px-8 py-6">
-     <!-- 🔔 Notification Bell -->
-<div class="flex justify-end mb-4">
-  <div class="relative" ref="notificationContainer">
-
-    <!-- 🔔 Bell Button -->
-    <button
-      @click="toggleNotifications"
-      aria-label="Admin Notifications"
-      class="w-11 h-11 bg-white rounded-full shadow-md
-             flex items-center justify-center
-             hover:bg-gray-100 relative
-             outline-none border-none cursor-pointer"
-    >
-      🔔
-      <span
-        v-if="examReminders.length"
-        class="absolute -top-1 -right-1 bg-red-600 text-white
-               text-xs font-bold rounded-full px-1.5"
-      >
-        {{ examReminders.length }}
-      </span>
-    </button>
-
-    <!-- Dropdown -->
-    <div
-      v-if="showNotifications"
-      class="absolute right-0 mt-3 w-[420px]
-             bg-white rounded-2xl
-             shadow-xl z-[9999]
-             overflow-hidden border-none outline-none"
-    >
-      <!-- Header -->
-      <div class="px-6 py-4 bg-gradient-to-r from-indigo-50 to-blue-50
-                  flex justify-between items-center">
-        <div class="flex items-center gap-2">
-          <span class="text-lg">🔔</span>
-          <span class="font-bold text-gray-800">
-            Admin Exam Notifications
-          </span>
-        </div>
-        <span class="text-sm text-gray-500">
-          {{ examReminders.length }}
-        </span>
-      </div>
-
-      <!-- Notifications -->
-      <div
-        v-if="examReminders.length"
-        class="p-4 space-y-3 max-h-[420px] overflow-y-auto bg-white"
-      >
-        <div
-          v-for="(exam, index) in examReminders"
-          :key="exam.Notification_ID"
-          class="rounded-xl p-4 bg-gray-50
-                 hover:bg-indigo-50 transition
-                 relative cursor-default"
-        >
-          <!-- ❌ Remove -->
-          <button
-            @click.stop="removeNotification(index)"
-            class="absolute top-3 right-3 text-gray-400
-                   hover:text-red-500 text-lg font-bold"
-            title="Dismiss"
-          >
-            ×
-          </button>
-
-          <!-- Exam Name -->
-          <p class="font-semibold text-sm text-gray-800">
-            {{ exam.Exam_Name }}
-          </p>
-
-          <!-- Meta -->
-          <div class="flex flex-wrap gap-3 text-xs text-gray-500 mt-1">
-  <span>📅 {{ exam.Exam_Date }}</span>
-  <span>⏰ {{ exam.Exam_Time }}</span>
-
-  <span
-    v-if="exam.Faculty_Name"
-    class="text-indigo-600 font-medium"
-  >
-    👨‍🏫 {{ exam.Faculty_Name }}
-  </span>
-
-  <!-- 🔴 STARTING SOON TAG -->
-  <span
-    v-if="isStartingSoon(exam)"
-    class="bg-red-100 text-red-600 px-2 py-0.5 rounded-full font-semibold"
-  >
-    ⏳ Starting Soon
-  </span>
-
-  <!-- 🟢 COUNTDOWN -->
-  <span
-    v-if="isStartingSoon(exam)"
-    class="text-green-600 font-semibold"
-  >
-    ⏱ {{ formatCountdown(exam) }}
-  </span>
-</div>
-
-        </div>
-      </div>
-
-      <!-- Empty -->
-      <div v-else class="px-6 py-8 text-center text-gray-500">
-        <div class="text-3xl mb-2">📭</div>
-        No upcoming exams
-      </div>
-    </div>
-
-  </div>
-</div>
 
         <!-- Dashboard -->
 <div v-if="activeTab === null" class="space-y-8">
@@ -319,6 +205,126 @@
       @close="closeQRModal"
     />
   </div>
+
+  <!-- ============================================================ -->
+  <!-- 🔔 NOTIFICATION BELL — Fixed outside website, top-right      -->
+  <!-- Stays perfectly still; never scrolls with page content       -->
+  <!-- ============================================================ -->
+  <div
+    class="fixed top-5 right-5 z-[99999]"
+    ref="notificationContainer"
+  >
+    <!-- Bell Button -->
+    <button
+      @click="toggleNotifications"
+      aria-label="Admin Notifications"
+      class="w-12 h-12 bg-white rounded-full shadow-lg
+             flex items-center justify-center
+             hover:bg-gray-50 relative
+             outline-none border-none cursor-pointer
+             transition-transform hover:scale-110"
+    >
+      🔔
+      <span
+        v-if="examReminders.length"
+        class="absolute -top-1 -right-1 bg-red-600 text-white
+               text-xs font-bold rounded-full px-1.5 min-w-[20px] h-5
+               flex items-center justify-center"
+      >
+        {{ examReminders.length }}
+      </span>
+    </button>
+
+    <!-- Dropdown — opens to the LEFT so it doesn't overflow viewport -->
+    <div
+      v-if="showNotifications"
+      class="absolute top-14 right-0 w-[420px]
+             bg-white rounded-2xl
+             shadow-2xl z-[99999]
+             overflow-hidden border border-gray-100"
+    >
+      <!-- Header -->
+      <div class="px-6 py-4 bg-gradient-to-r from-indigo-50 to-blue-50
+                  flex justify-between items-center">
+        <div class="flex items-center gap-2">
+          <span class="text-lg">🔔</span>
+          <span class="font-bold text-gray-800">
+            Admin Exam Notifications
+          </span>
+        </div>
+        <span class="text-sm text-gray-500">
+          {{ examReminders.length }}
+        </span>
+      </div>
+
+      <!-- Notifications list -->
+      <div
+        v-if="examReminders.length"
+        class="p-4 space-y-3 max-h-[420px] overflow-y-auto bg-white"
+      >
+        <div
+          v-for="(exam, index) in examReminders"
+          :key="exam.Notification_ID"
+          class="rounded-xl p-4 bg-gray-50
+                 hover:bg-indigo-50 transition
+                 relative cursor-default"
+        >
+          <!-- ❌ Remove -->
+          <button
+            @click.stop="removeNotification(index)"
+            class="absolute top-3 right-3 text-gray-400
+                   hover:text-red-500 text-lg font-bold"
+            title="Dismiss"
+          >
+            ×
+          </button>
+
+          <!-- Exam Name -->
+          <p class="font-semibold text-sm text-gray-800">
+            {{ exam.Exam_Name }}
+          </p>
+
+          <!-- Meta -->
+          <div class="flex flex-wrap gap-3 text-xs text-gray-500 mt-1">
+            <span>📅 {{ exam.Exam_Date }}</span>
+            <span>⏰ {{ exam.Exam_Time }}</span>
+
+            <span
+              v-if="exam.Faculty_Name"
+              class="text-indigo-600 font-medium"
+            >
+              👨‍🏫 {{ exam.Faculty_Name }}
+            </span>
+
+            <!-- 🔴 STARTING SOON TAG -->
+            <span
+              v-if="isStartingSoon(exam)"
+              class="bg-red-100 text-red-600 px-2 py-0.5 rounded-full font-semibold"
+            >
+              ⏳ Starting Soon
+            </span>
+
+            <!-- 🟢 COUNTDOWN -->
+            <span
+              v-if="isStartingSoon(exam)"
+              class="text-green-600 font-semibold"
+            >
+              ⏱ {{ formatCountdown(exam) }}
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Empty -->
+      <div v-else class="px-6 py-8 text-center text-gray-500">
+        <div class="text-3xl mb-2">📭</div>
+        No upcoming exams
+      </div>
+    </div>
+  </div>
+  <!-- ============================================================ -->
+
+  <!-- Sidebar tooltip (fixed, outside scroll) -->
   <div
   v-if="tooltip.visible && !sidebarOpen"
   class="fixed px-3 py-2 bg-gray-900 text-white text-sm rounded-lg
@@ -476,7 +482,6 @@ const handleClickOutside = (event) => {
 onUnmounted(() => {
   if (notificationTimer) clearInterval(notificationTimer)
   if (countdownTimer) clearInterval(countdownTimer)
-  // Remove click outside listener
   document.removeEventListener('click', handleClickOutside)
 })
 

@@ -124,21 +124,9 @@
 import { reactive, ref, onMounted } from "vue"
 import { useRouter } from "vue-router"
 import axios from "../utils/axiosInstance"
-import NotificationToast from "@/components/admin/NotificationToast.vue"
 
 const router = useRouter()
-
-/* ---------------- TOAST ---------------- */
-const toast = ref({ message: "", type: "" })
-let toastTimer = null
-
-const showToast = (message, type = "success") => {
-  toast.value = { message, type }
-  clearTimeout(toastTimer)
-  toastTimer = setTimeout(() => {
-    toast.value = { message: "", type: "" }
-  }, 3000)
-}
+const emit = defineEmits(["saved", "close"])
 
 /* ---------------- FORM DATA ---------------- */
 const applicant = reactive({
@@ -224,7 +212,8 @@ const submitApplicant = async () => {
   // ✅ API CALL
   try {
     await axios.post("/applicants/add", applicant)
-    showToast("Applicant added successfully!", "success")
+    emit("saved")        // 🔥 notify parent
+    emit("close")        // 🔥 close Add form
     clearForm()
     router.push(activeRole === "Admin" ? "/admin/applicants" : "/faculty")
   } catch (err) {

@@ -128,8 +128,8 @@
             v-if="canSwitch"
             @click="toggleRoleMenu"
             :class="[
-              'w-full flex items-center gap-3 px-4 py-2.5 rounded-xl transition-all duration-200 group',
-              'bg-green-500 hover:bg-green-600 text-white shadow-md hover:shadow-lg'
+              'w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl transition-all duration-200 group relative',
+              'bg-white hover:bg-green-50 text-green-500 border-2 border-green-500 shadow-md hover:shadow-lg'
             ]"
           >
             <div class="icon-container">
@@ -171,15 +171,15 @@
         <!-- Logout Button -->
         <button
           @click="logout"
-          :class="[
-            'w-full flex items-center gap-3 px-4 py-2.5 rounded-xl transition-all duration-200 group',
-            'bg-red-500 hover:bg-red-600 text-white shadow-md hover:shadow-lg relative'
+           :class="[
+            'w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl transition-all duration-200 group relative',
+            'bg-white hover:bg-blue-50 text-blue-500 border-2 border-blue-500 shadow-md hover:shadow-lg '
           ]"
         >
           <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
           </svg>
-          <span v-if="sidebarOpen" class="font-semibold text-sm">Logout</span>
+          <span v-if="sidebarOpen" class="font-bold text-sm">Logout</span>
 
           <!-- Tooltip for collapsed state -->
           <div
@@ -201,102 +201,6 @@
     >
       <!-- Main Content Area -->
       <div class="p-8 pt-1 max-w-full overflow-x-hidden"> 
-        <!-- 🔔 Faculty Notification Bell -->
-        <div class="flex justify-end mb-4">
-          <div class="relative" ref="notificationContainer">
-
-            <!-- 🔔 Bell Button -->
-            <button
-              @click="toggleNotifications"
-              class="w-11 h-11 bg-white rounded-full shadow-md
-                     flex items-center justify-center hover:bg-gray-100 relative"
-            >
-              🔔
-              <span
-                v-if="upcomingFacultyExams.length"
-                class="absolute -top-1 -right-1 bg-red-600 text-white
-                       text-xs font-bold rounded-full px-1.5"
-              >
-                {{ upcomingFacultyExams.length }}
-              </span>
-            </button>
-
-            <!-- Dropdown -->
-            <div
-              v-if="showNotifications"
-              class="absolute right-0 mt-3 w-96 bg-white rounded-2xl
-                     shadow-2xl z-[9999] overflow-hidden"
-            >
-              <!-- Header -->
-              <div class="px-6 py-4 bg-gradient-to-r from-blue-50 to-indigo-50
-                          flex justify-between items-center">
-                <span class="font-bold text-gray-800">
-                  🔔 Your Upcoming Exams
-                </span>
-                <span class="text-sm text-gray-500">
-                  {{ upcomingFacultyExams.length }}
-                </span>
-              </div>
-
-              <!-- Notifications -->
-              <div
-                v-if="upcomingFacultyExams.length"
-                class="p-4 space-y-3 max-h-[420px] overflow-y-auto"
-              >
-                <div
-                  v-for="exam in upcomingFacultyExams"
-                  :key="exam.Exam_Id"
-                  class="bg-gray-50 rounded-xl p-4
-                         hover:bg-indigo-50 transition relative shadow-sm"
-                >
-                  <!-- Exam Name -->
-                  <p class="font-semibold text-gray-800">
-                    {{ exam.Exam_Name }}
-                  </p>
-                  <!-- ❌ Dismiss -->
-                  <button
-                    @click.stop="dismissExam(exam.Exam_Id)"
-                    class="absolute top-3 right-3 text-gray-400
-                           hover:text-red-600 text-lg font-bold"
-                    title="Dismiss"
-                  >
-                    ×
-                  </button>
-
-                  <!-- Date & Time -->
-                  <p class="text-sm text-gray-500 mt-1">
-                    📅 {{ exam.Exam_Date }} • ⏰ {{ exam.Exam_Time }}
-                  </p>
-
-                  <!-- 🔴 Starting Soon -->
-                  <span
-                    v-if="isStartingSoon(exam)"
-                    class="inline-block mt-2 bg-red-100 text-red-600
-                           px-3 py-1 rounded-full text-xs font-semibold"
-                  >
-                    ⏳ Starting in {{ formatCountdown(exam) }}
-                  </span>
-
-                  <!-- 🟢 Upcoming -->
-                  <span
-                    v-else
-                    class="inline-block mt-2 bg-green-100 text-green-600
-                           px-3 py-1 rounded-full text-xs font-semibold"
-                  >
-                    📌 Upcoming
-                  </span>
-                </div>
-              </div>
-
-              <!-- Empty -->
-              <div v-else class="px-6 py-8 text-sm text-gray-500 text-center">
-                <div class="text-3xl mb-2">🎉</div>
-                No upcoming exams
-              </div>
-            </div>
-
-          </div>
-        </div>
 
         <!-- Welcome Screen (shown when activeTab is null) -->
         <div
@@ -529,18 +433,24 @@
                               >
                                 Add Students
                               </button>
-                              <!-- Status Indicator -->
+                              <!-- Status Indicator for Students -->
                               <span
                                 v-if="hasAssignedStudents(exam)"
-                                class="absolute -top-0.5 -right-0.5 text-green-600 text-sm bg-white rounded-full w-4 h-4 flex items-center justify-center"
-                                title="Students Assigned"
+                                class="absolute -top-0.5 -right-0.5 
+                                      text-green-600 text-xs font-bold
+                                      border-2 border-green-500 
+                                      bg-white
+                                      rounded-full w-[18px] h-[18px]
+                                      flex items-center justify-center
+                                      shadow"
                               >
                                 ✔
                               </span>
                               <span
                                 v-else
-                                class="absolute -top-0.5 -right-0.5 text-yellow-600 text-sm bg-white rounded-full w-4 h-4 flex items-center justify-center"
-                                title="No Students Assigned"
+                                class="absolute -top-0.5 -right-0.5 
+                                      text-yellow-600 text-sm 
+                                      leading-none flip-vertical"
                               >
                                 ⏳
                               </span>
@@ -554,18 +464,24 @@
                               >
                                 Question Bank
                               </button>
-                              <!-- Status Indicator -->
+                              <!-- Status Indicator for Question Bank -->
                               <span
-                                v-if="examStatus[exam.Exam_Id]?.has_question_bank"
-                                class="absolute -top-0.5 -right-0.5 text-green-600 text-sm bg-white rounded-full w-4 h-4 flex items-center justify-center"
-                                title="Completed"
+                                v-if="hasQuestionBank(exam)"
+                                class="absolute -top-0.5 -right-0.5 
+                                      text-green-600 text-xs font-bold
+                                      border-2 border-green-500 
+                                      bg-white
+                                      rounded-full w-[18px] h-[18px]
+                                      flex items-center justify-center
+                                      shadow"
                               >
                                 ✔
                               </span>
                               <span
                                 v-else
-                                class="absolute -top-0.5 -right-0.5 text-yellow-600 text-sm bg-white rounded-full w-4 h-4 flex items-center justify-center"
-                                title="Pending"
+                                class="absolute -top-0.5 -right-0.5 
+                                      text-yellow-600 text-sm 
+                                      leading-none flip-vertical"
                               >
                                 ⏳
                               </span>
@@ -579,18 +495,24 @@
                               >
                                 Question Paper
                               </button>
-                              <!-- Status Indicator -->
+                              <!-- Status Indicator for Question Paper -->
                               <span
-                                v-if="examStatus[exam.Exam_Id]?.has_question_paper"
-                                class="absolute -top-0.5 -right-0.5 text-green-600 text-sm bg-white rounded-full w-4 h-4 flex items-center justify-center"
-                                title="Completed"
+                                v-if="hasQuestionPaper(exam)"
+                                class="absolute -top-0.5 -right-0.5 
+                                      text-green-600 text-xs font-bold
+                                      border-2 border-green-500 
+                                      bg-white
+                                      rounded-full w-[18px] h-[18px]
+                                      flex items-center justify-center
+                                      shadow"
                               >
                                 ✔
                               </span>
                               <span
                                 v-else
-                                class="absolute -top-0.5 -right-0.5 text-yellow-600 text-sm bg-white rounded-full w-4 h-4 flex items-center justify-center"
-                                title="Pending"
+                                class="absolute -top-0.5 -right-0.5 
+                                      text-yellow-600 text-sm 
+                                      leading-none flip-vertical"
                               >
                                 ⏳
                               </span>
@@ -720,7 +642,10 @@
 
           <!-- Add Applicants View -->
           <div v-else-if="activeTab === 'add-applicants'" class="w-full min-h-[85vh]">
-            <AddApplicantsPage />
+            <AddApplicantsPage
+              @saved="handleApplicantSaved"
+              @close="showApplicantForm = false"
+            />
           </div>
 
           <!-- Upload Students View -->
@@ -740,6 +665,117 @@
     />
   </div>
   </div>
+
+  <!-- ============================================================ -->
+  <!-- 🔔 NOTIFICATION BELL — Fixed outside website, top-right      -->
+  <!-- Stays perfectly still; never scrolls with page content       -->
+  <!-- ============================================================ -->
+  <div
+    class="fixed top-5 right-5 z-[99999]"
+    ref="notificationContainer"
+  >
+    <!-- Bell Button -->
+    <button
+      @click="toggleNotifications"
+      class="w-12 h-12 bg-white rounded-full shadow-lg
+             flex items-center justify-center hover:bg-gray-50 relative
+             outline-none border-none cursor-pointer
+             transition-transform hover:scale-110"
+    >
+      🔔
+      <span
+        v-if="upcomingFacultyExams.length"
+        class="absolute -top-1 -right-1 bg-red-600 text-white
+               text-xs font-bold rounded-full px-1.5 min-w-[20px] h-5
+               flex items-center justify-center"
+      >
+        {{ upcomingFacultyExams.length }}
+      </span>
+    </button>
+
+    <!-- Dropdown — opens downward, aligned to right -->
+    <div
+      v-if="showNotifications"
+      class="absolute top-14 right-0 w-96 bg-white rounded-2xl
+             shadow-2xl z-[99999] overflow-hidden border border-gray-100"
+    >
+      <!-- Header -->
+      <div class="px-6 py-4 bg-gradient-to-r from-blue-50 to-indigo-50
+                  flex justify-between items-center">
+        <span class="font-bold text-gray-800">
+          🔔 Your Upcoming Exams
+        </span>
+        <span class="text-sm text-gray-500">
+          {{ upcomingFacultyExams.length }}
+        </span>
+      </div>
+
+      <!-- Notifications -->
+      <div
+        v-if="upcomingFacultyExams.length"
+        class="p-4 space-y-3 max-h-[420px] overflow-y-auto"
+      >
+        <div
+          v-for="exam in upcomingFacultyExams"
+          :key="exam.Exam_Id"
+          class="bg-gray-50 rounded-xl p-4
+                 hover:bg-indigo-50 transition relative shadow-sm"
+        >
+          <!-- Exam Name -->
+          <p class="font-semibold text-gray-800">
+            {{ exam.Exam_Name }}
+          </p>
+          <!-- ❌ Dismiss -->
+          <button
+            @click.stop="dismissExam(exam.Exam_Id)"
+            class="absolute top-3 right-3 text-gray-400
+                   hover:text-red-600 text-lg font-bold"
+            title="Dismiss"
+          >
+            ×
+          </button>
+
+          <!-- Date & Time -->
+          <p class="text-sm text-gray-500 mt-1">
+            📅 {{ exam.Exam_Date }} • ⏰ {{ exam.Exam_Time }}
+          </p>
+
+          <!-- 🔴 Starting Soon -->
+          <span
+            v-if="isStartingSoon(exam)"
+            class="inline-block mt-2 bg-red-100 text-red-600
+                   px-3 py-1 rounded-full text-xs font-semibold"
+          >
+            ⏳ Starting in {{ formatCountdown(exam) }}
+          </span>
+
+          <!-- 🟢 Upcoming -->
+          <span
+            v-else
+            class="inline-block mt-2 bg-green-100 text-green-600
+                   px-3 py-1 rounded-full text-xs font-semibold"
+          >
+            📌 Upcoming
+          </span>
+        </div>
+      </div>
+
+      <!-- Empty -->
+      <div v-else class="px-6 py-8 text-sm text-gray-500 text-center">
+        <div class="text-3xl mb-2">🎉</div>
+        No upcoming exams
+      </div>
+    </div>
+  </div>
+  <!-- ============================================================ -->
+
+  <NotificationToast
+    v-if="toast.message"
+    :message="toast.message"
+    :type="toast.type"
+    @clear="clearToast"
+  />
+
 </template>
 
 <script setup>
@@ -751,6 +787,7 @@ import AddApplicantsPage from "../views/AddApplicantsPage.vue"
 import UploadStudents from './UploadStudents.vue'
 import Groups from './Groups.vue'
 import QRCodeModal from '../components/QRCodeModal.vue'
+import NotificationToast from "@/components/admin/NotificationToast.vue"
 
 const now = ref(new Date())
 let countdownTimer = null
@@ -771,6 +808,24 @@ const facultyEmail = email
 const showNotifications = ref(false)
 const dismissedExamIds = ref(new Set())
 const notificationContainer = ref(null)
+const toast = ref({ message: "", type: "" })
+let timer
+
+const showToast = (message, type = "success") => {
+  toast.value = { message, type }
+  clearTimeout(timer)
+  timer = setTimeout(() => {
+    toast.value = { message: "", type: "" }
+  }, 3000)
+}
+
+const clearToast = () => {
+  toast.value = { message: "", type: "" }
+}
+
+const handleApplicantSaved = () => {
+  showToast("Student added successfully!", "success")
+}
 
 // QR Code Modal State
 const showQRModal = ref(false)
@@ -784,8 +839,19 @@ const dismissExam = (examId) => {
   dismissedExamIds.value.add(examId)
 }
 
+/* ================= STATUS CHECK FUNCTIONS ================= */
 const hasAssignedStudents = (exam) => {
   return exam.total_applicants && exam.total_applicants > 0
+}
+
+const hasQuestionBank = (exam) => {
+  const status = examStatus.value[exam.Exam_Id]
+  return status && status.has_question_bank === true
+}
+
+const hasQuestionPaper = (exam) => {
+  const status = examStatus.value[exam.Exam_Id]
+  return status && status.has_question_paper === true
 }
 
 const upcomingFacultyExams = computed(() => {
@@ -941,7 +1007,6 @@ onMounted(() => {
 
 onUnmounted(() => {
   if (countdownTimer) clearInterval(countdownTimer)
-  // Remove click outside listener
   document.removeEventListener('click', handleClickOutside)
 })
 
@@ -1188,4 +1253,15 @@ button:hover:not(:disabled) {
 button:active:not(:disabled) {
   transform: translateY(0);
 }
+
+@keyframes flipVertical {
+  0%   { transform: rotate(0deg); }
+  50%  { transform: rotate(180deg); }
+  100% { transform: rotate(0deg); }
+}
+
+.flip-vertical {
+  animation: flipVertical 1.2s infinite ease-in-out;
+}
+
 </style>

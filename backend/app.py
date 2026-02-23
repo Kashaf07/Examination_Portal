@@ -67,7 +67,7 @@ app.register_blueprint(create_exam_routes(mysql), url_prefix="/api/exam")
 app.register_blueprint(create_add_students_bp(mysql), url_prefix="/api")
 
 app.register_blueprint(create_faculty_routes(mysql), url_prefix="/api/faculty")
-app.register_blueprint(create_view_responses_bp(mysql), url_prefix="/responses")
+app.register_blueprint(create_view_responses_bp(mysql), url_prefix="/api")
 app.register_blueprint(create_faculty_groups_routes(mysql), url_prefix="/api")
 
 # 🔔 FACULTY NOTIFICATION BLUEPRINT
