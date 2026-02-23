@@ -173,18 +173,25 @@
                     >
                       Add Students
                     </button>
-                    <!-- Status Indicator -->
+                    <!-- Status Indicator for Students -->
                     <span
                       v-if="hasAssignedStudents(exam)"
-                      class="absolute -top-0.5 -right-0.5 text-green-600 text-sm bg-white rounded-full w-4 h-4 flex items-center justify-center"
-                      title="Students Assigned"
+                      class="absolute -top-0.5 -right-0.5 
+                            border-2 border-green-500 
+                            bg-white
+                            rounded-full w-[18px] h-[18px]
+                            flex items-center justify-center
+                            shadow"
                     >
-                      ✔
+                      <svg class="w-3 h-3 text-green-600" fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
+                      </svg>
                     </span>
                     <span
                       v-else
-                      class="absolute -top-0.5 -right-0.5 text-yellow-600 text-sm bg-white rounded-full w-4 h-4 flex items-center justify-center"
-                      title="No Students Assigned"
+                      class="absolute -top-0.5 -right-0.5 
+                            text-yellow-600 text-sm 
+                            leading-none flip-vertical"
                     >
                       ⏳
                     </span>
@@ -198,18 +205,25 @@
                     >
                       Question Bank
                     </button>
-                    <!-- Status Indicator -->
+                    <!-- Status Indicator for Question Bank -->
                     <span
                       v-if="examStatus[exam.Exam_Id]?.has_question_bank"
-                      class="absolute -top-0.5 -right-0.5 text-green-600 text-sm bg-white rounded-full w-4 h-4 flex items-center justify-center"
-                      title="Completed"
+                      class="absolute -top-0.5 -right-0.5 
+                            border-2 border-green-500 
+                            bg-white
+                            rounded-full w-[18px] h-[18px]
+                            flex items-center justify-center
+                            shadow"
                     >
-                      ✔
+                      <svg class="w-3 h-3 text-green-600" fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
+                      </svg>
                     </span>
                     <span
                       v-else
-                      class="absolute -top-0.5 -right-0.5 text-yellow-600 text-sm bg-white rounded-full w-4 h-4 flex items-center justify-center"
-                      title="Pending"
+                      class="absolute -top-0.5 -right-0.5 
+                            text-yellow-600 text-sm 
+                            leading-none flip-vertical"
                     >
                       ⏳
                     </span>
@@ -223,18 +237,25 @@
                     >
                       Question Paper
                     </button>
-                    <!-- Status Indicator -->
+                    <!-- Status Indicator for Question Paper -->
                     <span
                       v-if="examStatus[exam.Exam_Id]?.has_question_paper"
-                      class="absolute -top-0.5 -right-0.5 text-green-600 text-sm bg-white rounded-full w-4 h-4 flex items-center justify-center"
-                      title="Completed"
+                      class="absolute -top-0.5 -right-0.5 
+                            border-2 border-green-500 
+                            bg-white
+                            rounded-full w-[18px] h-[18px]
+                            flex items-center justify-center
+                            shadow"
                     >
-                      ✔
+                      <svg class="w-3 h-3 text-green-600" fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
+                      </svg>
                     </span>
                     <span
                       v-else
-                      class="absolute -top-0.5 -right-0.5 text-yellow-600 text-sm bg-white rounded-full w-4 h-4 flex items-center justify-center"
-                      title="Pending"
+                      class="absolute -top-0.5 -right-0.5 
+                            text-yellow-600 text-sm 
+                            leading-none flip-vertical"
                     >
                       ⏳
                     </span>
@@ -627,5 +648,16 @@ button:hover:not(:disabled) {
 
 button:active:not(:disabled) {
   transform: translateY(0);
+}
+
+/* Animated flip for timer icon */
+@keyframes flipVertical {
+  0%   { transform: rotate(0deg); }
+  50%  { transform: rotate(180deg); }
+  100% { transform: rotate(0deg); }
+}
+
+.flip-vertical {
+  animation: flipVertical 1.2s infinite ease-in-out;
 }
 </style>
