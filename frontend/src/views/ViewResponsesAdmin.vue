@@ -33,12 +33,13 @@
 
       <div
         v-if="error"
-        class="mb-6 p-4 bg-red-100 text-red-700 border border-red-400 rounded-lg w-full"
+        class="mb-6 p-6 bg-red-50 text-red-700 border border-red-400 rounded-xl w-full text-center"
       >
-        {{ error }}
+        <h2 class="text-xl font-semibold mb-2">403 - Unauthorized</h2>
+        <p>{{ error }}</p>
       </div>
 
-      <div class="rounded-xl shadow-xl overflow-x-auto bg-white w-full">
+      <div v-if="!error" class="rounded-xl shadow-xl overflow-x-auto bg-white w-full">
         <table class="w-full border-separate border-spacing-0 min-w-[900px]">
           <thead>
             <tr class="bg-gradient-to-r from-blue-200 to-purple-200 text-blue-900 font-bold">
@@ -187,6 +188,7 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import axios from '../utils/axiosInstance'
 
 const route = useRoute()
 const router = useRouter()
@@ -268,19 +270,34 @@ const goToPage = (page) => {
 
 const fetchAttempts = async () => {
   error.value = ''
+  attempts.value = []
+
   try {
-    const response = await fetch(
-      `http://localhost:5000/responses/api/attempts?exam_id=${examId.value}`
-    )
-    const data = await response.json()
-    if (!response.ok) {
-      error.value = data.error || 'Failed to load attempts'
-    } else {
-      attempts.value = data.attempts
-      currentPage.value = 1 // Reset to first page when data refreshes
+    const email = localStorage.getItem("email")
+    const role = localStorage.getItem("active_role")
+
+    const res = await axios.get('/attempts', {
+      params: {
+        exam_id: examId.value,
+        email,
+        role
+      }
+    })
+
+    if (!res.data.success) {
+      error.value = "Unauthorized Access. You are not allowed to view this exam."
+      return
     }
-  } catch (e) {
-    error.value = 'Error fetching attempts: ' + e.message
+
+    attempts.value = res.data.attempts
+    currentPage.value = 1
+
+  } catch (err) {
+    if (err.response?.status === 403) {
+      error.value = "Unauthorized Access. You are not allowed to view this exam."
+    } else {
+      error.value = "Something went wrong while loading responses."
+    }
   }
 }
 
