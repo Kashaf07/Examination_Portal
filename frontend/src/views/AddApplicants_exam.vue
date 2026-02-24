@@ -1,38 +1,30 @@
 <template>
-  <div class="min-h-screen p-10 bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50">
+  <!-- ================= AUTHORIZED CONTENT ================= -->
   <div
-  v-if="!isAuthorized"
-  class="max-w-3xl mx-auto mt-10 p-8 bg-red-50 border border-red-400 rounded-xl text-center"
->
-  <h2 class="text-2xl font-bold text-red-700 mb-2">
-    403 - Unauthorized
-  </h2>
-  <p class="text-red-600">
-    {{ error }}
-  </p>
-</div>
-
+    v-if="isAuthorized"
+    class="min-h-screen p-10 bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50"
+  >
     <!-- BACK BUTTON -->
     <button
-  @click="goBack"
-  class="mb-6 flex items-center gap-2 px-4 py-2 bg-white/70 hover:bg-white/90 
-         text-gray-800 rounded-lg shadow-md hover:shadow-lg transition-all duration-200 
-         backdrop-blur-sm border border-gray-200"
->
-  <svg 
-    xmlns="http://www.w3.org/2000/svg" 
-    class="h-5 w-5" 
-    viewBox="0 0 20 20" 
-    fill="currentColor"
-  >
-    <path 
-      fill-rule="evenodd" 
-      d="M9.707 16.707a1 1 0 01-1.414 0l-6-6a1 1 0 010-1.414l6-6a1 1 0 011.414 1.414L5.414 9H17a1 1 0 110 2H5.414l4.293 4.293a1 1 0 010 1.414z" 
-      clip-rule="evenodd" 
-    />
-  </svg>
-  <span class="font-semibold">Back</span>
-</button>
+      @click="goBack"
+      class="mb-6 flex items-center gap-2 px-4 py-2 bg-white/70 hover:bg-white/90 
+             text-gray-800 rounded-lg shadow-md hover:shadow-lg transition-all duration-200 
+             backdrop-blur-sm border border-gray-200"
+    >
+      <svg 
+        xmlns="http://www.w3.org/2000/svg" 
+        class="h-5 w-5" 
+        viewBox="0 0 20 20" 
+        fill="currentColor"
+      >
+        <path 
+          fill-rule="evenodd" 
+          d="M9.707 16.707a1 1 0 01-1.414 0l-6-6a1 1 0 010-1.414l6-6a1 1 0 011.414 1.414L5.414 9H17a1 1 0 110 2H5.414l4.293 4.293a1 1 0 010 1.414z" 
+          clip-rule="evenodd" 
+        />
+      </svg>
+      <span class="font-semibold">Back</span>
+    </button>
 
     <!-- Heading -->
     <div class="text-center mb-6">
@@ -43,7 +35,7 @@
     </div>
 
     <div class="max-w-5xl mx-auto bg-white p-10 rounded-2xl shadow-xl">
-
+      
       <!-- GROUP ASSIGNMENT -->
       <h3 class="text-xl font-semibold mb-4 text-purple-700">
         Assign by Group
@@ -87,7 +79,6 @@
             </span>
           </span>
 
-          <!-- Assigned -->
           <span
             v-if="app.is_assigned === 1"
             class="text-green-600 font-semibold text-sm"
@@ -95,7 +86,6 @@
             ✔ Assigned
           </span>
 
-          <!-- New -->
           <button
             v-else
             @click="removeApplicant(app.Applicant_Id)"
@@ -125,12 +115,10 @@
         </button>
       </div>
 
-      <!-- SUCCESS -->
       <p v-if="message" class="mt-4 text-center text-green-600 font-semibold">
         {{ message }}
       </p>
 
-      <!-- EMAIL -->
       <div
         v-if="assignedApplicants.some(a => a.is_assigned === 1)"
         class="mt-6 text-center"
@@ -146,8 +134,38 @@
 
     </div>
   </div>
-</template>
 
+  <!-- ================= UNAUTHORIZED CONTENT ================= -->
+  <div
+    v-else
+    class="min-h-screen flex items-center justify-center 
+           bg-gradient-to-br from-red-50 via-pink-50 to-orange-50"
+  >
+    <div class="bg-white shadow-2xl rounded-2xl p-10 text-center max-w-md w-full">
+
+      <div class="text-5xl mb-4">⚠️</div>
+
+      <h2 class="text-3xl font-bold text-red-600 mb-4">
+        403 - Unauthorized
+      </h2>
+
+      <p class="text-gray-600 mb-6">
+        {{ error || "You are not allowed to manage this exam." }}
+      </p>
+
+      <button
+        @click="goBack"
+        class="bg-gradient-to-r from-red-500 to-pink-500 
+               hover:from-pink-600 hover:to-red-600 
+               text-white font-semibold px-6 py-3 rounded-full 
+               shadow-lg transition-all hover:scale-105"
+      >
+        Go Back
+      </button>
+
+    </div>
+  </div>
+</template>
 <script setup>
 import { ref, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
