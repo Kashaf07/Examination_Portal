@@ -1,6 +1,9 @@
 <template>
-  <div class="min-h-screen w-full bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 flex flex-col items-center py-10">
-
+  <!-- ================= AUTHORIZED CONTENT ================= -->
+  <div
+    v-if="!error"
+    class="min-h-screen w-full bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 flex flex-col items-center py-10"
+  >
     <div class="w-full max-w-[1600px] px-8">
 
       <!-- Back Button -->
@@ -17,19 +20,7 @@
         Submitted Answers for Attempt {{ attemptId }}
       </h1>
 
-      <!-- 🔴 ERROR / 403 DISPLAY -->
-      <div
-        v-if="error"
-        class="mb-6 p-6 bg-red-50 text-red-700 border border-red-400 rounded-xl w-full text-center"
-      >
-        <h2 class="text-xl font-semibold mb-2">
-          {{ errorTitle }}
-        </h2>
-        <p>{{ error }}</p>
-      </div>
-
-      <!-- ✅ TABLE ONLY IF NO ERROR -->
-      <div v-if="!error" class="rounded-xl shadow-xl overflow-x-auto bg-white">
+      <div class="rounded-xl shadow-xl overflow-x-auto bg-white">
         <table class="min-w-full border-separate border-spacing-0">
           <thead>
             <tr class="bg-gradient-to-r from-purple-200 to-pink-200 text-purple-900 font-bold">
@@ -63,8 +54,38 @@
 
     </div>
   </div>
-</template>
 
+  <!-- ================= ERROR / UNAUTHORIZED SCREEN ================= -->
+  <div
+    v-else
+    class="min-h-screen flex items-center justify-center 
+           bg-gradient-to-br from-red-50 via-pink-50 to-orange-50"
+  >
+    <div class="bg-white shadow-2xl rounded-2xl p-10 text-center max-w-md w-full">
+
+      <div class="text-5xl mb-4">⚠️</div>
+
+      <h2 class="text-3xl font-bold text-red-600 mb-4">
+        {{ errorTitle }}
+      </h2>
+
+      <p class="text-gray-600 mb-6">
+        {{ error }}
+      </p>
+
+      <button
+        @click="goBack"
+        class="bg-gradient-to-r from-red-500 to-pink-500 
+               hover:from-pink-600 hover:to-red-600 
+               text-white font-semibold px-6 py-3 rounded-full 
+               shadow-lg transition-all hover:scale-105"
+      >
+        Go Back
+      </button>
+
+    </div>
+  </div>
+</template>
 <script setup>
 import { ref, onMounted, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
@@ -90,6 +111,10 @@ const fetchAnswers = async () => {
       params: { email, role }
     })
 
+    if (res.data.success === false) {
+      throw { response: { status: 403 } }
+    }
+
     answers.value = res.data.answers || []
 
   } catch (err) {
@@ -107,7 +132,6 @@ const fetchAnswers = async () => {
     }
   }
 }
-
 const isCorrect = (answer) => {
   if (!answer.Correct_Answer) return false
   return (answer.Answer_Text || '').trim().toLowerCase() === 

@@ -18,16 +18,18 @@ def create_view_answers_bp(mysql):
 
             cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
 
-            # ===============================
+            # ==================================================
             # 🔐 AUTHORIZATION CHECK
-            # ===============================
+            # ==================================================
 
-            # 1️⃣ Get Exam_Id related to this attempt
+            # 1️⃣ Get Exam + Faculty info for this attempt
             cursor.execute("""
-                SELECT ee.Exam_Id
+                SELECT ee.Exam_Id, ee.Faculty_Email
                 FROM applicant_attempt aa
-                JOIN exam_paper ep ON aa.Exam_Paper_Id = ep.Exam_Paper_Id
-                JOIN entrance_exam ee ON ep.Exam_Id = ee.Exam_Id
+                JOIN exam_paper ep 
+                    ON aa.Exam_Paper_Id = ep.Exam_Paper_Id
+                JOIN Entrance_Exam ee 
+                    ON ep.Exam_Id = ee.Exam_Id
                 WHERE aa.Attempt_Id = %s
             """, (attempt_id,))
 
@@ -41,30 +43,33 @@ def create_view_answers_bp(mysql):
                 }), 404
 
             exam_id = exam_data["Exam_Id"]
+            faculty_email_db = (exam_data["Faculty_Email"] or "").strip().lower()
+            user_email = email.strip().lower()
 
-            # 2️⃣ If Faculty → Check if assigned to this exam
-            if role == "Faculty":
-                cursor.execute("""
-                    SELECT 1
-                    FROM faculty_exam_assignment
-                    WHERE Exam_Id = %s AND Faculty_Email = %s
-                """, (exam_id, email))
+            # 2️⃣ Admin → Always allowed
+            if role.lower() == "admin":
+                pass
 
-                authorized = cursor.fetchone()
-
-                if not authorized:
+            # 3️⃣ Faculty → Only if own exam
+            elif role.lower() == "faculty":
+                if faculty_email_db != user_email:
                     cursor.close()
                     return jsonify({
                         "success": False,
                         "error": "Unauthorized Access"
                     }), 403
 
-            # 3️⃣ If Admin → allow automatically
-            # (You can also add extra admin check here if needed)
+            # 4️⃣ Any other role → deny
+            else:
+                cursor.close()
+                return jsonify({
+                    "success": False,
+                    "error": "Unauthorized Access"
+                }), 403
 
-            # ===============================
+            # ==================================================
             # 📄 FETCH ANSWERS
-            # ===============================
+            # ==================================================
 
             cursor.execute("""
                 SELECT 
