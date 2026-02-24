@@ -134,37 +134,31 @@
 
     </div>
   </div>
+<!-- ================= UNAUTHORIZED CONTENT ================= -->
+<div
+  v-else
+  class="min-h-screen flex items-center justify-center bg-red-50"
+>
+  <div class="bg-white shadow-xl rounded-xl p-8 text-center w-full max-w-md">
+    
+    <h2 class="text-2xl font-bold text-red-600 mb-4">
+      Unauthorized Access
+    </h2>
 
-  <!-- ================= UNAUTHORIZED CONTENT ================= -->
-  <div
-    v-else
-    class="min-h-screen flex items-center justify-center 
-           bg-gradient-to-br from-red-50 via-pink-50 to-orange-50"
-  >
-    <div class="bg-white shadow-2xl rounded-2xl p-10 text-center max-w-md w-full">
+    <p class="text-gray-600 mb-6">
+      You are not allowed to access this exam.
+    </p>
 
-      <div class="text-5xl mb-4">⚠️</div>
+    <!-- Go Back Button -->
+    <button
+  @click="router.back()"
+  class="bg-red-600 hover:bg-red-700 text-white px-6 py-2 rounded-lg font-semibold shadow-md transition"
+>
+  Go Back
+</button>
 
-      <h2 class="text-3xl font-bold text-red-600 mb-4">
-        403 - Unauthorized
-      </h2>
-
-      <p class="text-gray-600 mb-6">
-        {{ error || "You are not allowed to manage this exam." }}
-      </p>
-
-      <button
-        @click="goBack"
-        class="bg-gradient-to-r from-red-500 to-pink-500 
-               hover:from-pink-600 hover:to-red-600 
-               text-white font-semibold px-6 py-3 rounded-full 
-               shadow-lg transition-all hover:scale-105"
-      >
-        Go Back
-      </button>
-
-    </div>
   </div>
+</div>
 </template>
 <script setup>
 import { ref, onMounted } from 'vue'
