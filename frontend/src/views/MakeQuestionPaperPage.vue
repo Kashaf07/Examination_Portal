@@ -173,7 +173,15 @@ export default {
     },
     async fetchQuestions() {
       try {
-        const res = await axios.get(`http://localhost:5000/api/paper/questionbank/all/${this.examId}`);
+        const res = await axios.get(
+          `http://localhost:5000/api/paper/questionbank/all/${this.examId}`,
+          {
+            params: {
+              email: localStorage.getItem("email"),
+              role: localStorage.getItem("active_role")
+            }
+          }
+        );
         this.questions = res.data;
       } catch (err) {
         console.error("Failed to fetch questions:", err);
@@ -182,7 +190,13 @@ export default {
     async fetchPaperQuestionsForPDF() {
       try {
         const res = await axios.get(
-          `http://localhost:5000/api/questions/paper/${this.examId}`
+          `http://localhost:5000/api/questions/paper/${this.examId}`,
+          {
+            params: {
+              email: localStorage.getItem("email"),
+              role: localStorage.getItem("active_role")
+            }
+          }
         )
         return res.data
       } catch (err) {
@@ -192,7 +206,15 @@ export default {
     },
     async fetchSelectedQuestions() {
       try {
-        const res = await axios.get(`http://localhost:5000/api/paper/selected/${this.examId}`);
+        const res = await axios.get(
+          `http://localhost:5000/api/paper/selected/${this.examId}`,
+          {
+            params: {
+              email: localStorage.getItem("email"),
+              role: localStorage.getItem("active_role")
+            }
+          }
+        );
         this.selectedQuestions = res.data;
       } catch (err) {
         console.error("❌ Failed to fetch selected questions:", err);
@@ -247,7 +269,9 @@ export default {
       }
       const payload = {
         exam_id: this.$route.params.examId,
-        questions: this.selectedQuestions.map(q => q.Question_Id)
+        questions: this.selectedQuestions.map(q => q.Question_Id),
+        email: localStorage.getItem("email"),
+        role: localStorage.getItem("active_role")
       };
       
       fetch('http://localhost:5000/api/paper/save-question-paper', {
@@ -272,9 +296,12 @@ export default {
     },
     async randomizeQuestions() {
       try {
-        const res = await fetch(`http://localhost:5000/api/paper/randomize/${this.examId}`, {
-          method: 'POST'
-      });
+        const res = await fetch(
+          `http://localhost:5000/api/paper/randomize/${this.examId}?email=${localStorage.getItem("email")}&role=${localStorage.getItem("active_role")}`,
+          {
+            method: 'POST'
+          }
+        );
       const data = await res.json();
       this.selectedQuestions = data;
       alert('🎲 Random questions selected!');

@@ -1,5 +1,6 @@
 <template>
   <div
+    v-if="!error"
     class="min-h-screen w-full bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 flex flex-col items-center py-10"
   >
     <div class="w-full max-w-full px-6">
@@ -11,7 +12,7 @@
                backdrop-blur-sm border border-gray-200"
       >
         <svg 
-          xmlns="http://www.w3.org/2000/svg" 
+          xmlns="http://www.w3.org/2000/svg"  
           class="h-5 w-5" 
           viewBox="0 0 20 20" 
           fill="currentColor"
@@ -28,23 +29,15 @@
       <h1
         class="text-3xl font-bold mb-6 text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-purple-700 tracking-tight"
       >
-        Applicant Attempts for Exam {{ examId }}
+        Student Attempts for Exam {{ examId }}
       </h1>
 
-      <div
-        v-if="error"
-        class="mb-6 p-6 bg-red-50 text-red-700 border border-red-400 rounded-xl w-full text-center"
-      >
-        <h2 class="text-xl font-semibold mb-2">403 - Unauthorized</h2>
-        <p>{{ error }}</p>
-      </div>
-
-      <div v-if="!error" class="rounded-xl shadow-xl overflow-x-auto bg-white w-full">
+      <div class="rounded-xl shadow-xl overflow-x-auto bg-white w-full">
         <table class="w-full border-separate border-spacing-0 min-w-[900px]">
           <thead>
             <tr class="bg-gradient-to-r from-blue-200 to-purple-200 text-blue-900 font-bold">
               <th class="px-6 py-4 w-24 text-left">Attempt ID</th>
-              <th class="px-6 py-4 w-28 text-left">Applicant ID</th>
+              <th class="px-6 py-4 w-28 text-left">Student ID</th>
               <th class="px-6 py-4 w-64 text-left">Student Email</th>
               <th class="px-6 py-4 w-40 text-left">Start Time</th>
               <th class="px-6 py-4 w-40 text-left">End Time</th>
@@ -181,6 +174,20 @@
           </div>
         </div>
       </div>
+    </div>
+  </div>
+  <!-- UNAUTHORIZED UI -->
+  <div
+    v-else
+    class="min-h-screen flex items-center justify-center bg-red-50"
+  >
+    <div class="bg-white shadow-xl rounded-xl p-8 text-center">
+      <h2 class="text-2xl font-bold text-red-600 mb-4">
+        Unauthorized Access
+      </h2>
+      <p class="text-gray-600">
+        You are not allowed to access this exam.
+      </p>
     </div>
   </div>
 </template>

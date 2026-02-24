@@ -6,12 +6,48 @@ from werkzeug.utils import secure_filename
 
 def create_question_routes(mysql):
     question_bp = Blueprint('questions', __name__)
+    def is_exam_authorized(cursor, exam_id, email, role):
+        if role == "Admin":
+            cursor.execute(
+                "SELECT 1 FROM entrance_exam WHERE Exam_Id = %s",
+                (exam_id,)
+            )
+        else:
+            cursor.execute(
+                """
+                SELECT 1
+                FROM entrance_exam
+                WHERE Exam_Id = %s
+                AND Faculty_Email = %s
+                """,
+                (exam_id, email)
+            )
+
+        return cursor.fetchone() is not None
 
     @question_bp.route('/add', methods=['POST'])
     def add_question():
         data = request.json
+        exam_id = data.get("exam_id")
+        email = data.get("email")
+        role = data.get("role")
+        
         conn = mysql.connection
         cursor = conn.cursor()
+
+        if not exam_id or not email or not role:
+            cursor.close()
+            return jsonify({
+                "success": False,
+                "message": "Missing required fields"
+            }), 400      
+        # 🔐 AUTHORIZATION CHECK
+        if not is_exam_authorized(cursor, exam_id, email, role):
+            cursor.close()
+            return jsonify({
+                "success": False,
+                "message": "Unauthorized Access"
+            }), 403
 
         # Validation for MCQ - correct answer must be present in options
         if data['question_type'] == 'MCQ':
@@ -78,6 +114,14 @@ def create_question_routes(mysql):
 
         # Log upload
         cursor = mysql.connection.cursor()
+        
+        if not is_exam_authorized(cursor, exam_id, uploaded_by, role):
+            cursor.close()
+            return jsonify({
+                "success": False,
+                "message": "Unauthorized Access"
+            }), 403
+            
         cursor.execute("""
             INSERT INTO file_uploads (Uploaded_By, Role, File_Name, File_Path)
             VALUES (%s, %s, %s, %s)
@@ -151,22 +195,49 @@ def create_question_routes(mysql):
 
     @question_bp.route('/exams', methods=['GET'])
     def get_exams():
+        email = request.args.get("email")
+        role = request.args.get("role")
+
         conn = mysql.connection
         cursor = conn.cursor()
+
         try:
-            cursor.execute("SELECT Exam_Id, Exam_Name FROM Entrance_Exam")
+            if role == "Admin":
+                cursor.execute("SELECT Exam_Id, Exam_Name FROM entrance_exam")
+            else:
+                cursor.execute("""
+                    SELECT Exam_Id, Exam_Name
+                    FROM entrance_exam
+                    WHERE Faculty_Email = %s
+                """, (email,))
+
             exams = cursor.fetchall()
-            exam_list = [{'Exam_Id': e[0], 'Exam_Name': e[1]} for e in exams]
-            return jsonify(exam_list), 200
+
+            exam_list = [
+                {'Exam_Id': e[0], 'Exam_Name': e[1]}
+                for e in exams
+            ]
+
+            return jsonify(success=True, exams=exam_list), 200
+
         except Exception as e:
             return jsonify({'error': str(e)}), 500
+
         finally:
             cursor.close()
-
     @question_bp.route('/questions/bank/<int:exam_id>', methods=['GET'])
     def get_question_bank(exam_id):
+        email = request.args.get("email")
+        role = request.args.get("role")
         conn = mysql.connection
         cursor = conn.cursor()
+        
+        if not is_exam_authorized(cursor, exam_id, email, role):
+            cursor.close()
+            return jsonify({
+                "success": False,
+                "message": "Unauthorized Access"
+            }), 403 
         try:
             cursor.execute("SELECT * FROM entrance_question_bank WHERE Exam_Id = %s", (exam_id,))
             rows = cursor.fetchall()
@@ -180,8 +251,16 @@ def create_question_routes(mysql):
 
     @question_bp.route('/questionbank/all/<int:exam_id>', methods=['GET'])
     def get_all_questions_for_exam(exam_id):
+        email = request.args.get("email")
+        role = request.args.get("role")
         conn = mysql.connection
         cursor = conn.cursor()
+        
+        if not is_exam_authorized(cursor, exam_id, email, role):
+            return jsonify({
+                "success": False,
+                "message": "Unauthorized Access"
+            }), 403
         try:
             cursor.execute("""
                 SELECT Question_Id, Question_Text, Marks 
@@ -198,62 +277,183 @@ def create_question_routes(mysql):
 
     @question_bp.route('/paper/<int:exam_id>', methods=['GET'])
     def get_exam_paper_questions(exam_id):
+        email = request.args.get("email")
+        role = request.args.get("role")
+
+        if not email or not role:
+            return jsonify({
+                "success": False,
+                "message": "Missing authentication details"
+            }), 400
+
         conn = mysql.connection
         cursor = conn.cursor()
+
         try:
+            # 🔐 Authorization Check
+            if not is_exam_authorized(cursor, exam_id, email, role):
+                return jsonify({
+                    "success": False,
+                    "message": "Unauthorized Access"
+                }), 403
+
+            # ✅ Fetch Paper Questions
             cursor.execute("""
                 SELECT q.*
                 FROM entrance_question_bank q
-                JOIN exam_paper_questions epq ON q.Question_Id = epq.Question_Id
-                JOIN exam_paper ep ON epq.Exam_Paper_Id = ep.Exam_Paper_Id
+                JOIN exam_paper_questions epq 
+                    ON q.Question_Id = epq.Question_Id
+                JOIN exam_paper ep 
+                    ON epq.Exam_Paper_Id = ep.Exam_Paper_Id
                 WHERE ep.Exam_Id = %s
             """, (exam_id,))
+
             rows = cursor.fetchall()
             columns = [desc[0] for desc in cursor.description]
             results = [dict(zip(columns, row)) for row in rows]
-            return jsonify(results), 200
+
+            return jsonify({
+                "success": True,
+                "questions": results
+            }), 200
+
         except Exception as e:
-            return jsonify({'error': str(e)}), 500
+            return jsonify({
+                "success": False,
+                "error": str(e)
+            }), 500
+
         finally:
             cursor.close()
 
     @question_bp.route('/questions/paper/add', methods=['POST'])
     def add_question_to_paper():
         data = request.json
-        exam_paper_id = data['exam_paper_id']
-        question_id = data['question_id']
+
+        exam_paper_id = data.get('exam_paper_id')
+        question_id = data.get('question_id')
+        email = data.get("email")   # ⚠️ better to send in body
+        role = data.get("role")
+
+        if not exam_paper_id or not question_id or not email or not role:
+            return jsonify({
+                "success": False,
+                "message": "Missing required data"
+            }), 400
+
         conn = mysql.connection
         cursor = conn.cursor()
+
         try:
+            # 🔎 Step 1: Get Exam_Id from exam_paper
+            cursor.execute(
+                "SELECT Exam_Id FROM exam_paper WHERE Exam_Paper_Id = %s",
+                (exam_paper_id,)
+            )
+            row = cursor.fetchone()
+
+            if not row:
+                return jsonify({
+                    "success": False,
+                    "message": "Invalid Exam Paper"
+                }), 404
+
+            exam_id = row[0]
+
+            # 🔐 Step 2: Authorization Check
+            if not is_exam_authorized(cursor, exam_id, email, role):
+                return jsonify({
+                    "success": False,
+                    "message": "Unauthorized Access"
+                }), 403
+
+            # ✅ Step 3: Insert Question into Paper
             cursor.execute("""
-                INSERT INTO exam_paper_questions (Exam_Paper_Id, Question_Id)
+                INSERT INTO exam_paper_questions 
+                (Exam_Paper_Id, Question_Id)
                 VALUES (%s, %s)
             """, (exam_paper_id, question_id))
+
             conn.commit()
-            return jsonify({'message': 'Question added to paper'}), 201
+
+            return jsonify({
+                "success": True,
+                "message": "Question added to paper"
+            }), 201
+
         except Exception as e:
             conn.rollback()
-            return jsonify({'error': str(e)}), 500
+            return jsonify({
+                "success": False,
+                "error": str(e)
+            }), 500
+
         finally:
             cursor.close()
 
     @question_bp.route('/questions/paper/delete', methods=['POST'])
     def delete_question_from_paper():
         data = request.json
-        exam_paper_id = data['exam_paper_id']
-        question_id = data['question_id']
+
+        exam_paper_id = data.get('exam_paper_id')
+        question_id = data.get('question_id')
+        email = data.get("email")
+        role = data.get("role")
+
+        if not exam_paper_id or not question_id or not email or not role:
+            return jsonify({
+                "success": False,
+                "message": "Missing required fields"
+            }), 400
+
         conn = mysql.connection
         cursor = conn.cursor()
+
         try:
+            # 🔎 Step 1: Get Exam_Id from exam_paper
+            cursor.execute("""
+                SELECT Exam_Id 
+                FROM exam_paper 
+                WHERE Exam_Paper_Id = %s
+            """, (exam_paper_id,))
+
+            row = cursor.fetchone()
+
+            if not row:
+                return jsonify({
+                    "success": False,
+                    "message": "Invalid exam paper"
+                }), 404
+
+            exam_id = row[0]
+
+            # 🔐 Step 2: Authorization Check
+            if not is_exam_authorized(cursor, exam_id, email, role):
+                return jsonify({
+                    "success": False,
+                    "message": "Unauthorized Access"
+                }), 403
+
+            # 🗑 Step 3: Delete Question
             cursor.execute("""
                 DELETE FROM exam_paper_questions
                 WHERE Exam_Paper_Id = %s AND Question_Id = %s
             """, (exam_paper_id, question_id))
+
             conn.commit()
-            return jsonify({'message': 'Question removed from paper'}), 200
+
+            return jsonify({
+                "success": True,
+                "message": "Question removed from paper"
+            }), 200
+
         except Exception as e:
             conn.rollback()
-            return jsonify({'error': str(e)}), 500
+            return jsonify({
+                "success": False,
+                "error": str(e)
+            }), 500
+
         finally:
             cursor.close()
 
@@ -261,8 +461,24 @@ def create_question_routes(mysql):
     def randomize_questions_for_paper(exam_id):
         data = request.json
         limit = data.get('limit', 10)
+        email = request.args.get("email")
+        role = request.args.get("role")
         conn = mysql.connection
         cursor = conn.cursor()
+        
+        if not email or not role:
+            return jsonify({
+                "success": False,
+                "message": "Missing authentication details"
+            }), 400
+        
+        if not is_exam_authorized(cursor, exam_id, email, role):
+            cursor.close()
+            return jsonify({
+                "success": False,
+                "message": "Unauthorized Access"
+            }), 403 
+            
         try:
             cursor.execute("SELECT Exam_Paper_Id FROM exam_paper WHERE Exam_Id = %s", (exam_id,))
             paper = cursor.fetchone()
@@ -291,8 +507,17 @@ def create_question_routes(mysql):
 
     @question_bp.route('/questions/<int:exam_id>', methods=['GET'])
     def get_questions_by_exam(exam_id):
+        email = request.args.get("email")
+        role = request.args.get("role")
         conn = mysql.connection
         cursor = conn.cursor()
+        
+        if not is_exam_authorized(cursor, exam_id, email, role):
+            cursor.close()
+            return jsonify({
+                "success": False,
+                "message": "Unauthorized Access"
+            }), 403 
         try:
             cursor.execute("""
                 SELECT Question_Id, Question_Text, Marks

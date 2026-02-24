@@ -1,5 +1,5 @@
 <template>
-  <div class="min-h-screen p-10 bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 rounded-2xl shadow-xl">
+  <div v-if="isAuthorized" class="min-h-screen p-10 bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 rounded-2xl shadow-xl">
     <!-- Back Button -->
     <button
       @click="goBack"
@@ -146,6 +146,20 @@
       </div>
     </form>
   </div>
+  <!-- UNAUTHORIZED CONTENT -->
+  <div
+    v-else
+    class="min-h-screen flex items-center justify-center bg-red-50"
+  >
+    <div class="bg-white shadow-xl rounded-xl p-8 text-center">
+      <h2 class="text-2xl font-bold text-red-600 mb-4">
+        {{ unauthorizedMessage }}
+      </h2>
+      <p class="text-gray-600">
+        You are not allowed to access this exam.
+      </p>
+    </div>
+  </div>
 </template>
 
 <script>
@@ -157,6 +171,8 @@ export default {
   },
   data() {
     return {
+      isAuthorized: true,
+      unauthorizedMessage: "",
       activeTab: 'add', // default
       activeBtn:
         'bg-blue-500 hover:bg-blue-600 text-white font-semibold px-6 py-3 rounded-full shadow-lg transition-all hover:scale-105',
@@ -176,6 +192,23 @@ export default {
     };
   },
   methods: {
+    async checkAuthorization() {
+      try {
+        const res = await fetch(
+          `http://localhost:5000/api/questions/questionbank/all/${this.$route.params.examId}?email=${localStorage.getItem("email")}&role=${localStorage.getItem("active_role")}`
+        );
+
+        if (res.status === 403) {
+          this.isAuthorized = false;
+          this.unauthorizedMessage = "⚠️ Unauthorized Access";
+        } else if (res.status === 404) {
+          this.isAuthorized = false;
+          this.unauthorizedMessage = "⚠️ Exam does not exist";
+        }
+      } catch (err) {
+        console.error("Authorization check failed:", err);
+      }
+    },
     goBack() {
       // Navigate based on active role
       const activeRole = localStorage.getItem('active_role')
@@ -230,7 +263,11 @@ export default {
         const response = await fetch('http://localhost:5000/api/questions/add', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(this.form)
+          body: JSON.stringify({
+            ...this.form,
+            email: localStorage.getItem("email"),
+            role: localStorage.getItem("active_role")
+          })
         });
         const result = await response.json();
         if (response.ok) {
@@ -261,6 +298,7 @@ export default {
   },
   mounted() {
     this.form.exam_id = this.$route.params.examId;
+    this.checkAuthorization();
   }
 };
 </script>
