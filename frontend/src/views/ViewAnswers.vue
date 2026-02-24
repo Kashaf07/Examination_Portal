@@ -8,13 +8,29 @@
 
       <!-- Back Button -->
       <button
-        @click="goBack"
-        class="mb-6 flex items-center gap-2 px-4 py-2 bg-white/70 hover:bg-white/90 
-               text-gray-800 rounded-lg shadow-md hover:shadow-lg transition-all duration-200 
-               backdrop-blur-sm border border-gray-200"
-      >
-        ← Back
-      </button>
+  @click="goBack"
+  class="mb-6 flex items-center gap-2 px-5 py-3 
+         bg-white/70 hover:bg-white/90 
+         text-gray-800 rounded-xl 
+         shadow-lg hover:shadow-xl 
+         transition-all duration-200 
+         backdrop-blur-sm border border-gray-200"
+>
+  <svg 
+    xmlns="http://www.w3.org/2000/svg" 
+    class="h-5 w-5" 
+    viewBox="0 0 20 20" 
+    fill="currentColor"
+  >
+    <path 
+      fill-rule="evenodd" 
+      d="M9.707 16.707a1 1 0 01-1.414 0l-6-6a1 1 0 010-1.414l6-6a1 1 0 011.414 1.414L5.414 9H17a1 1 0 110 2H5.414l4.293 4.293a1 1 0 010 1.414z" 
+      clip-rule="evenodd" 
+    />
+  </svg>
+
+  <span class="font-semibold text-lg">Back</span>
+</button>
 
       <h1 class="text-3xl font-bold mb-6 text-transparent bg-clip-text bg-gradient-to-r from-purple-700 to-pink-500 tracking-tight">
         Submitted Answers for Attempt {{ attemptId }}
@@ -55,36 +71,31 @@
     </div>
   </div>
 
-  <!-- ================= ERROR / UNAUTHORIZED SCREEN ================= -->
-  <div
-    v-else
-    class="min-h-screen flex items-center justify-center 
-           bg-gradient-to-br from-red-50 via-pink-50 to-orange-50"
-  >
-    <div class="bg-white shadow-2xl rounded-2xl p-10 text-center max-w-md w-full">
+<!-- UNAUTHORIZED UI -->
+<div
+  v-else
+  class="min-h-screen flex items-center justify-center bg-red-50"
+>
+  <div class="bg-white shadow-xl rounded-xl p-8 text-center w-full max-w-md">
+    
+    <h2 class="text-2xl font-bold text-red-600 mb-4">
+      Unauthorized Access
+    </h2>
 
-      <div class="text-5xl mb-4">⚠️</div>
+    <p class="text-gray-600 mb-6">
+      You are not allowed to access this exam.
+    </p>
 
-      <h2 class="text-3xl font-bold text-red-600 mb-4">
-        {{ errorTitle }}
-      </h2>
+    <!-- Go Back Button -->
+    <button
+      @click="router.back()"
+      class="bg-red-600 hover:bg-red-700 text-white px-6 py-2 rounded-lg font-semibold shadow-md transition"
+    >
+      Go Back
+    </button>
 
-      <p class="text-gray-600 mb-6">
-        {{ error }}
-      </p>
-
-      <button
-        @click="goBack"
-        class="bg-gradient-to-r from-red-500 to-pink-500 
-               hover:from-pink-600 hover:to-red-600 
-               text-white font-semibold px-6 py-3 rounded-full 
-               shadow-lg transition-all hover:scale-105"
-      >
-        Go Back
-      </button>
-
-    </div>
   </div>
+</div>
 </template>
 <script setup>
 import { ref, onMounted, computed } from 'vue'

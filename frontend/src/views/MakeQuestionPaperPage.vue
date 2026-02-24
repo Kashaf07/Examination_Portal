@@ -113,19 +113,30 @@
     </div>
   </div>
   <!-- UNAUTHORIZED UI -->
-  <div
-    v-else
-    class="min-h-screen flex items-center justify-center bg-red-50"
-  >
-    <div class="bg-white shadow-xl rounded-xl p-8 text-center">
-      <h2 class="text-2xl font-bold text-red-600 mb-4">
-        {{ unauthorizedMessage }}
-      </h2>
-      <p class="text-gray-600">
-        You are not allowed to access this exam.
-      </p>
-    </div>
+<div
+  v-else
+  class="min-h-screen flex items-center justify-center bg-red-50"
+>
+  <div class="bg-white shadow-xl rounded-xl p-8 text-center w-full max-w-md">
+    
+    <h2 class="text-2xl font-bold text-red-600 mb-4">
+      Unauthorized Access
+    </h2>
+
+    <p class="text-gray-600 mb-6">
+      You are not allowed to access this exam.
+    </p>
+
+    <!-- Go Back Button -->
+    <button
+      @click="$router.back()"
+      class="bg-red-600 hover:bg-red-700 text-white px-6 py-2 rounded-lg font-semibold shadow-md transition"
+    >
+      Go Back
+    </button>
+
   </div>
+</div>
 </template>
 
 <script>
