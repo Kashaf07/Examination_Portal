@@ -1,5 +1,16 @@
 <template>
   <div class="min-h-screen p-10 bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50">
+  <div
+  v-if="!isAuthorized"
+  class="max-w-3xl mx-auto mt-10 p-8 bg-red-50 border border-red-400 rounded-xl text-center"
+>
+  <h2 class="text-2xl font-bold text-red-700 mb-2">
+    403 - Unauthorized
+  </h2>
+  <p class="text-red-600">
+    {{ error }}
+  </p>
+</div>
 
     <!-- BACK BUTTON -->
     <button
@@ -128,6 +139,7 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import axios from '@/utils/axiosInstance'
 
 const route = useRoute()
 const router = useRouter()
@@ -135,6 +147,9 @@ const examId = route.params.examId
 
 const role = localStorage.getItem("active_role")
 const email = localStorage.getItem("email")
+
+const isAuthorized = ref(true)
+const error = ref('')
 
 const groups = ref([])
 const selectedGroupId = ref('')
@@ -150,7 +165,7 @@ const message = ref('')
 const infoMessage = ref('')
 const sendingEmails = ref(false)
 
-/* NAVIGATION */
+/* ================== NAVIGATION ================== */
 const goBack = () => {
   const activeRole = localStorage.getItem('active_role')
   if (activeRole === 'Admin') router.push('/admin/exams')
@@ -158,65 +173,119 @@ const goBack = () => {
   else router.push('/')
 }
 
-/* EXAM */
-const fetchExamDetails = async () => {
-  const res = await fetch(`http://localhost:5000/api/exam/get_exam_by_id/${examId}`)
-  const data = await res.json()
-  if (data.exam) {
-    examName.value = data.exam.Exam_Name
-    examDate.value = data.exam.Exam_Date
-    examTime.value = data.exam.Exam_Time
+/* ================== 🔐 AUTH CHECK ================== */
+const checkAuthorization = async () => {
+  try {
+    const res = await axios.get('/exam/can-manage-applicants', {
+      params: {
+        exam_id: examId,
+        email,
+        role
+      }
+    })
+
+    if (!res.data.success) {
+      isAuthorized.value = false
+      error.value = "Unauthorized Access. You are not allowed to manage this exam."
+    }
+
+  } catch (err) {
+    isAuthorized.value = false
+    error.value = "Unauthorized Access. You are not allowed to manage this exam."
   }
 }
 
-/* GROUPS */
-const fetchGroups = async () => {
-  const res = await fetch(`http://localhost:5000/api/groups?role=${role}&email=${email}`)
-  const data = await res.json()
-  if (data.success) groups.value = data.groups
+/* ================== EXAM DETAILS ================== */
+const fetchExamDetails = async () => {
+  try {
+    const res = await axios.get(`/exam/get_exam_by_id/${examId}`)
+
+    if (res.data.exam) {
+      examName.value = res.data.exam.Exam_Name
+      examDate.value = res.data.exam.Exam_Date
+      examTime.value = res.data.exam.Exam_Time
+    } else {
+      isAuthorized.value = false
+      error.value = "Exam not found."
+    }
+
+  } catch {
+    isAuthorized.value = false
+    error.value = "Exam not found."
+  }
 }
 
-/* ADD GROUP - ✅ FIXED: Use /api/exam-groups endpoint */
+/* ================== GROUPS ================== */
+const fetchGroups = async () => {
+  try {
+    const res = await axios.get('/groups', {
+      params: { role, email }
+    })
+
+    if (res.data.success) {
+      groups.value = res.data.groups
+    }
+
+  } catch (err) {
+    console.error("Error loading groups")
+  }
+}
+
+/* ================== ADD GROUP ================== */
 const addGroupApplicants = async () => {
   infoMessage.value = ''
+
   if (!selectedGroupId.value) {
     infoMessage.value = 'Please select a group first.'
     return
   }
 
-  // ✅ CHANGED: /api/exam-groups instead of /api/groups
-  const res = await fetch(
-    `http://localhost:5000/api/exam-groups/${selectedGroupId.value}/applicants?exam_id=${examId}`
-  )
-  const data = await res.json()
+  try {
+    const res = await axios.get(
+      `/exam-groups/${selectedGroupId.value}/applicants`,
+      {
+        params: { exam_id: examId }
+      }
+    )
 
-  let newCount = 0
+    const data = res.data
 
-  data.applicants.forEach(app => {
-    if (assignedApplicants.value.some(a => a.Applicant_Id === app.Applicant_Id)) return
+    if (!data.success) {
+      infoMessage.value = data.message || 'Failed to load applicants'
+      return
+    }
 
-    assignedApplicants.value.push({
-      ...app,
-      Group_Name: groups.value.find(
-        g => g.Group_Id === selectedGroupId.value
-      )?.Group_Name || 'Unknown Group'
+    let newCount = 0
+
+    data.applicants.forEach(app => {
+      if (assignedApplicants.value.some(a => a.Applicant_Id === app.Applicant_Id)) return
+
+      assignedApplicants.value.push({
+        ...app,
+        Group_Name:
+          groups.value.find(g => g.Group_Id === selectedGroupId.value)
+            ?.Group_Name || 'Unknown Group'
+      })
+
+      if (
+        app.is_assigned === 0 &&
+        !selectedApplicants.value.includes(app.Applicant_Id)
+      ) {
+        selectedApplicants.value.push(app.Applicant_Id)
+        newCount++
+      }
     })
 
-    if (
-      app.is_assigned === 0 &&
-      !selectedApplicants.value.includes(app.Applicant_Id)
-    ) {
-      selectedApplicants.value.push(app.Applicant_Id)
-      newCount++
+    if (newCount === 0) {
+      infoMessage.value = 'All applicants in this group are already assigned.'
     }
-  })
 
-  if (newCount === 0) {
-    infoMessage.value = 'All applicants in this group are already assigned.'
+  } catch (err) {
+    console.error("Error loading applicants")
   }
 }
 
-/* REMOVE */
+/* ================== REMOVE ================== */
 const removeApplicant = (id) => {
   selectedApplicants.value =
     selectedApplicants.value.filter(a => a !== id)
@@ -227,57 +296,60 @@ const removeApplicant = (id) => {
     )
 }
 
-/* CONFIRM */
-/* CONFIRM - ✅ UPDATED ENDPOINT */
+/* ================== CONFIRM ================== */
 const confirmAdd = async () => {
-  // ✅ CHANGED: /api/exam-groups/assign instead of /api/assign_applicants
-  const res = await fetch('http://localhost:5000/api/exam-groups/assign', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
+  try {
+    const res = await axios.post('/exam-groups/assign', {
       exam_id: examId,
       applicant_ids: selectedApplicants.value
     })
-  })
 
-  const data = await res.json()
+    const data = res.data
 
-  if (data.success) {
-    message.value = `${data.assigned_count} applicant(s) assigned successfully!`
+    if (data.success) {
+      message.value =
+        `${data.assigned_count} applicant(s) assigned successfully!`
 
-    assignedApplicants.value.forEach(app => {
-      if (selectedApplicants.value.includes(app.Applicant_Id)) {
-        app.is_assigned = 1
-      }
-    })
+      assignedApplicants.value.forEach(app => {
+        if (selectedApplicants.value.includes(app.Applicant_Id)) {
+          app.is_assigned = 1
+        }
+      })
 
-    selectedApplicants.value = []
-  } else {
-    message.value = `Error: ${data.message || 'Failed to assign applicants'}`
+      selectedApplicants.value = []
+    } else {
+      message.value =
+        `Error: ${data.message || 'Failed to assign applicants'}`
+    }
+
+  } catch (err) {
+    console.error("Error assigning applicants")
   }
 }
 
-/* EMAIL */
+/* ================== EMAIL ================== */
 const sendEmails = async () => {
   sendingEmails.value = true
-  await fetch('http://localhost:5000/api/send_exam_emails', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      exam: {
-        Exam_Id: examId,
-        Exam_Name: examName.value,
-        Exam_Date: examDate.value,
-        Exam_Time: examTime.value
-      },
-      applicants: assignedApplicants.value
-    })
+
+  await axios.post('/send_exam_emails', {
+    exam: {
+      Exam_Id: examId,
+      Exam_Name: examName.value,
+      Exam_Date: examDate.value,
+      Exam_Time: examTime.value
+    },
+    applicants: assignedApplicants.value
   })
+
   sendingEmails.value = false
 }
 
-/* INIT */
+/* ================== INIT ================== */
 onMounted(async () => {
+  await checkAuthorization()
+
+  if (!isAuthorized.value) return
+
   await fetchExamDetails()
   await fetchGroups()
 })

@@ -258,6 +258,55 @@ def create_exam_routes(mysql):
             print("❌ Exam reminder error:", e)
             traceback.print_exc()
             return jsonify(success=False, message="Server error"), 500
+        
+        # =====================================================
+    # 🔐 CHECK IF USER CAN MANAGE APPLICANTS FOR THIS EXAM
+    # URL: /api/exam/can-manage-applicants
+    # =====================================================
+    @exam_bp.route('/can-manage-applicants', methods=['GET'])
+    def can_manage_applicants():
+        try:
+            exam_id = request.args.get("exam_id")
+            email = request.args.get("email")
+            role = request.args.get("role")
+
+            if not exam_id:
+                return jsonify(success=False, message="Missing exam_id"), 400
+
+            cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+
+            cursor.execute("""
+                SELECT Faculty_Email
+                FROM Entrance_Exam
+                WHERE Exam_Id = %s
+            """, (exam_id,))
+            exam = cursor.fetchone()
+
+            if not exam:
+                cursor.close()
+                return jsonify(success=False, message="Exam not found"), 403
+
+            # ✅ Admin can access any exam
+            if role and role.lower() == "admin":
+                cursor.close()
+                return jsonify(success=True)
+
+            # ✅ Faculty can access only own exam
+            if role and role.lower() == "faculty":
+                db_email = (exam["Faculty_Email"] or "").strip().lower()
+                user_email = (email or "").strip().lower()
+
+                if db_email == user_email:
+                    cursor.close()
+                    return jsonify(success=True)
+
+            cursor.close()
+            return jsonify(success=False, message="Unauthorized"), 403
+
+        except Exception as e:
+            print("❌ can_manage_applicants error:", e)
+            traceback.print_exc()
+            return jsonify(success=False, message="Server error"), 500
 
    
     return exam_bp
