@@ -1,5 +1,4 @@
 import { createRouter, createWebHistory } from 'vue-router'
-import axios from '@/utils/axiosInstance'
 
 // Core views
 import Login from '../views/Login.vue'
@@ -135,23 +134,13 @@ const routes = [
     component: AddApplicantsPage,
     meta: { requiresAuth: true, role: ['Admin', 'Faculty'] }
   },
- {
-  path: '/view-answers/:attemptId',
-  name: 'ViewAnswers',
-  component: ViewAnswers,
-  meta: { requiresAuth: true, role: ['Admin', 'Faculty'] },
-  beforeEnter: (to, from, next) => {
-    // Only allow navigation from responses pages
-    if (
-      from.name === 'ViewResponsesAdmin' ||
-      from.name === 'ViewResponsesFaculty'
-    ) {
-      next()
-    } else {
-      next('/admin/exams')
-    }
-  }
-},
+  {
+    path: '/view-answers/:attemptId',
+    name: 'ViewAnswers',
+    component: ViewAnswers,
+    props: true,
+    meta: { requiresAuth: true, role: ['Admin', 'Faculty'] }
+  },
 
   // ---------------- RESPONSES ----------------
   {
@@ -159,50 +148,14 @@ const routes = [
     name: 'ViewResponsesAdmin',
     component: ViewResponsesAdmin,
     props: true,
-    meta: { requiresAuth: true, role: 'Admin' },
-    beforeEnter: async (to, from, next) => {
-      try {
-        const examId = to.params.examId
-        const email = localStorage.getItem('email')
-        const role = 'Admin'
-
-        console.log("Checking access for:", examId, email, role)
-
-        const res = await axios.get('/exam/can-view-responses', {
-          params: { exam_id: examId, email, role }
-        })
-
-        console.log("Backend response:", res.data)
-
-        // Always allow route to load
-        next()
-
-      } catch (err) {
-        next()
-      }
-    }
+    meta: { requiresAuth: true, role: 'Admin' }
   },
   {
     path: '/faculty/view-responses/:examId',
     name: 'ViewResponsesFaculty',
     component: ViewResponsesFaculty,
     props: true,
-    meta: { requiresAuth: true, role: 'Faculty' },
-    beforeEnter: async (to, from, next) => {
-      try {
-        const examId = to.params.examId
-        const email = localStorage.getItem('email')
-        const role = 'Faculty'
-
-        const res = await axios.get('/exam/can-view-responses', {
-          params: { exam_id: examId, email, role }
-        })
-
-        next()
-      } catch {
-        next()
-      }
-    }
+    meta: { requiresAuth: true, role: 'Faculty' }
   },
 
   // ---------------- FALLBACK ----------------
