@@ -96,8 +96,8 @@ export default {
       const formData = new FormData();
       formData.append('file', this.file);
       formData.append('exam_id', this.examId);
-      formData.append('email', localStorage.getItem('faculty_email'));
-      formData.append('role', 'Faculty');
+      formData.append('email', localStorage.getItem('email'));
+      formData.append('role', localStorage.getItem('active_role'));
 
       try {
         const res = await fetch(
