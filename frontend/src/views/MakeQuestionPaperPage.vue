@@ -1,5 +1,5 @@
 <template>
-  <div class="min-h-screen p-10 bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50">
+  <div v-if="isAuthorized" class="min-h-screen p-10 bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50">
     
     <!-- Back Button -->
     <button
@@ -112,6 +112,20 @@
       </ul>
     </div>
   </div>
+  <!-- UNAUTHORIZED UI -->
+  <div
+    v-else
+    class="min-h-screen flex items-center justify-center bg-red-50"
+  >
+    <div class="bg-white shadow-xl rounded-xl p-8 text-center">
+      <h2 class="text-2xl font-bold text-red-600 mb-4">
+        {{ unauthorizedMessage }}
+      </h2>
+      <p class="text-gray-600">
+        You are not allowed to access this exam.
+      </p>
+    </div>
+  </div>
 </template>
 
 <script>
@@ -122,6 +136,8 @@ import autoTable from 'jspdf-autotable';
 export default {
   data() {
     return {
+      isAuthorized: true,
+      unauthorizedMessage: "Unauthorized Access",
       examId: this.$route.params.examId,
       questions: [],
       selectedQuestions: [],
@@ -184,7 +200,11 @@ export default {
         );
         this.questions = res.data;
       } catch (err) {
-        console.error("Failed to fetch questions:", err);
+        if (err.response?.status === 403) {
+          this.isAuthorized = false;
+        } else {
+          console.error("Failed to fetch questions:", err);
+        }        
       }
     },
     async fetchPaperQuestionsForPDF() {
@@ -229,9 +249,13 @@ export default {
         this.examDate = res.data.exam_date || res.data.Exam_Date
         this.examTime = res.data.exam_time || res.data.Exam_Time
       } catch (err) {
-        console.error("❌ Failed to fetch exam details:", err);
-        this.examTotalMarks = 0;
-        this.examName = '';
+        if (err.response?.status === 403) {
+          this.isAuthorized = false;
+        } else {
+          console.error("❌ Failed to fetch exam details:", err);
+          this.examTotalMarks = 0;
+          this.examName = '';
+        }
       }
     },
     formatTime12h(time) {
