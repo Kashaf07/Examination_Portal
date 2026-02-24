@@ -157,6 +157,16 @@ const routes = [
     props: true,
     meta: { requiresAuth: true, role: 'Faculty' }
   },
+  {
+    path: '/exam/:examId/result',
+    name: 'ExamResult',
+    component: () => import('../views/ExamResult.vue')
+  },
+  {
+    path: '/exam/:examId/analytics',
+    name: 'ExamAnalytics',
+    component: () => import('../views/ExamAnalytics.vue')
+  },
 
   // ---------------- FALLBACK ----------------
   { path: '/:pathMatch(.*)*', redirect: '/' }

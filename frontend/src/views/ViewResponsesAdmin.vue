@@ -26,11 +26,36 @@
         <span class="font-semibold">Back</span>
       </button>
 
-      <h1
-        class="text-3xl font-bold mb-6 text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-purple-700 tracking-tight"
-      >
-        Student Attempts for Exam {{ examId }}
-      </h1>
+      <!-- Title + Actions Row -->
+      <div class="flex items-center justify-between mb-6">
+
+        <h1
+          class="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-purple-700 tracking-tight"
+        >
+          Student Attempts for Exam {{ examId }}
+        </h1>
+
+        <!-- Action Buttons -->
+        <div class="flex gap-4">
+
+          <!-- Result Button -->
+          <button
+            @click="goToResult"
+            class="bg-blue-500 hover:bg-blue-600 text-white font-semibold px-6 py-3 rounded-full shadow-lg transition-all duration-200 hover:scale-105"
+          >
+            Result
+          </button>
+
+          <!-- Analytics Button -->
+          <button
+            @click="goToAnalytics"
+            class="bg-purple-500 hover:bg-purple-600 text-white font-semibold px-6 py-3 rounded-full shadow-lg transition-all duration-200 hover:scale-105"
+          >
+            Analytics
+          </button>
+
+        </div>
+      </div>
 
       <div class="rounded-xl shadow-xl overflow-x-auto bg-white w-full">
         <table class="w-full border-separate border-spacing-0 min-w-[900px]">
@@ -214,6 +239,20 @@ const router = useRouter()
 const examId = ref(route.params.examId)
 const attempts = ref([])
 const error = ref('')
+
+const goToResult = () => {
+  router.push({
+    name: 'ExamResult',
+    params: { examId: examId.value }
+  })
+}
+
+const goToAnalytics = () => {
+  router.push({
+    name: 'ExamAnalytics',
+    params: { examId: examId.value }
+  })
+}
 
 // ================= PAGINATION STATE =================
 const currentPage = ref(1)
