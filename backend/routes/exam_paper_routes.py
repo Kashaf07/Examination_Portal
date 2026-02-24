@@ -4,17 +4,55 @@ import random
 
 def create_exam_paper_routes(mysql):
     exam_paper_bp = Blueprint('exam_paper', __name__)
+    
+    def is_exam_authorized(cursor, exam_id, email, role):
+        if role == "Admin":
+            cursor.execute(
+                "SELECT 1 FROM entrance_exam WHERE Exam_Id = %s",
+                (exam_id,)
+            )
+        else:
+            cursor.execute(
+                """
+                SELECT 1 FROM entrance_exam
+                WHERE Exam_Id = %s
+                AND Faculty_Email = %s
+                """,
+                (exam_id, email)
+            )
+
+        return cursor.fetchone() is not None
 
     @exam_paper_bp.route('/questionbank/all/<int:exam_id>', methods=['GET'])
     def get_all_questions(exam_id):
-        print(f"➡️ Fetching questions for Exam ID: {exam_id}")
+
+        email = request.args.get("email")
+        role = request.args.get("role")
+
         cur = mysql.connection.cursor(DictCursor)
+
+        if not email or not role:
+            return jsonify({"success": False, "message": "Missing authentication details"}), 400
+
+        if not is_exam_authorized(cur, exam_id, email, role):
+            return jsonify({"success": False, "message": "Unauthorized Access"}), 403
+
         cur.execute("SELECT * FROM entrance_question_bank WHERE Exam_Id = %s", (exam_id,))
         return jsonify(cur.fetchall())
     
     @exam_paper_bp.route('/api/exam/details/<int:exam_id>', methods=['GET'])
     def get_exam_details(exam_id):
         print(f"📥 Getting exam details for Exam ID: {exam_id}")
+        email = request.args.get("email")
+        role = request.args.get("role")
+
+        cursor = mysql.connection.cursor(DictCursor)
+
+        if not email or not role:
+            return jsonify({"success": False, "message": "Missing authentication details"}), 400
+
+        if not is_exam_authorized(cursor, exam_id, email, role):
+            return jsonify({"success": False, "message": "Unauthorized Access"}), 403
         try:
             cursor = mysql.connection.cursor(DictCursor)
             cursor.execute("SELECT Exam_Name, Exam_Date, Exam_Time, Max_Marks AS Total_Marks FROM entrance_exam WHERE Exam_Id = %s", (exam_id,))
@@ -40,6 +78,17 @@ def create_exam_paper_routes(mysql):
         data = request.get_json()
         exam_id = data.get('exam_id')
         question_ids = data.get('questions', [])
+        email = data.get("email")
+        role = data.get("role")
+
+        if not email or not role:
+            return jsonify({"success": False, "message": "Missing authentication"}), 400
+
+        conn = mysql.connection
+        cur = conn.cursor()
+
+        if not is_exam_authorized(cur, exam_id, email, role):
+            return jsonify({"success": False, "message": "Unauthorized Access"}), 403
 
         print(f"➡️ Received exam_id: {exam_id}")
         print(f"➡️ Received questions: {question_ids}")
@@ -50,9 +99,6 @@ def create_exam_paper_routes(mysql):
         # require at least one question (you can adjust if empty allowed)
         if not isinstance(question_ids, list) or len(question_ids) == 0:
             return jsonify({'error': 'questions must be a non-empty list of question IDs'}), 400
-
-        conn = mysql.connection
-        cur = conn.cursor()
 
         try:
             # 🟡 Fetch Exam Info from entrance_exam
@@ -124,7 +170,16 @@ def create_exam_paper_routes(mysql):
     @exam_paper_bp.route('/randomize/<int:exam_id>', methods=['POST'])
     def randomize_questions(exam_id):
         print(f"🎲 Randomizing questions for Exam ID: {exam_id}")
+        email = request.args.get("email")
+        role = request.args.get("role")
+
         cur = mysql.connection.cursor(DictCursor)
+
+        if not email or not role:
+            return jsonify({"success": False, "message": "Missing authentication"}), 400
+
+        if not is_exam_authorized(cur, exam_id, email, role):
+            return jsonify({"success": False, "message": "Unauthorized Access"}), 403
 
         # Get paper ID (create one if it doesn’t exist)
         cur.execute("SELECT Exam_Paper_Id FROM exam_paper WHERE Exam_Id = %s ORDER BY Created_At DESC LIMIT 1", (exam_id,))
@@ -169,7 +224,16 @@ def create_exam_paper_routes(mysql):
     
     @exam_paper_bp.route('/selected/<int:exam_id>', methods=['GET'])
     def get_selected_questions_for_exam(exam_id):
+        email = request.args.get("email")
+        role = request.args.get("role")
+
         cur = mysql.connection.cursor(DictCursor)
+
+        if not email or not role:
+            return jsonify({"success": False, "message": "Missing authentication"}), 400
+
+        if not is_exam_authorized(cur, exam_id, email, role):
+            return jsonify({"success": False, "message": "Unauthorized Access"}), 403
 
         cur.execute("""
             SELECT epq.Question_Id, eqb.*
