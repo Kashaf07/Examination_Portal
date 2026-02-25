@@ -241,10 +241,8 @@ const attempts = ref([])
 const error = ref('')
 
 const goToResult = () => {
-  router.push({
-    name: 'ExamResult',
-    params: { examId: examId.value }
-  })
+  console.log("Navigating to:", `/exam/${examId.value}/result`)
+  router.push(`/exam/${examId.value}/result`)
 }
 
 const goToAnalytics = () => {
