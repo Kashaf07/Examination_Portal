@@ -40,7 +40,7 @@ def create_exam_paper_routes(mysql):
         cur.execute("SELECT * FROM entrance_question_bank WHERE Exam_Id = %s", (exam_id,))
         return jsonify(cur.fetchall())
     
-    @exam_paper_bp.route('/api/exam/details/<int:exam_id>', methods=['GET'])
+    @exam_paper_bp.route('/exam/details/<int:exam_id>', methods=['GET'])
     def get_exam_details(exam_id):
         print(f"📥 Getting exam details for Exam ID: {exam_id}")
         email = request.args.get("email")

@@ -221,7 +221,7 @@ export default {
     async fetchPaperQuestionsForPDF() {
       try {
         const res = await axios.get(
-          `http://localhost:5000/api/questions/paper/${this.examId}`,
+          `http://localhost:5000/api/paper/selected/${this.examId}`,
           {
             params: {
               email: localStorage.getItem("email"),
@@ -229,8 +229,13 @@ export default {
             }
           }
         )
+
         return res.data
+
       } catch (err) {
+        if (err.response?.status === 403) {
+          this.isAuthorized = false
+        }
         console.error("❌ Failed to fetch paper questions:", err)
         return []
       }
@@ -253,7 +258,15 @@ export default {
     },
     async fetchExamDetails() {
       try {
-        const res = await axios.get(`http://localhost:5000/api/paper/api/exam/details/${this.examId}`);
+        const res = await axios.get(
+          `http://localhost:5000/api/paper/exam/details/${this.examId}`,
+          {
+            params: {
+              email: localStorage.getItem("email"),
+              role: localStorage.getItem("active_role")
+            }
+          }
+        );
         console.log("📋 Exam Details:", res.data);
         this.examTotalMarks = res.data.total_marks; // Your backend should return this
         this.examName = res.data.exam_name;
