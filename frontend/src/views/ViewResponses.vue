@@ -8,49 +8,41 @@
       <!-- Back Button -->
       <button
         @click="goBack"
-        class="mb-6 flex items-center gap-2 px-4 py-2 bg-white/70 hover:bg-white/90 
-               text-gray-800 rounded-lg shadow-md hover:shadow-lg transition-all duration-200 
+        class="mb-6 flex items-center gap-2 px-4 py-2 bg-white/70 hover:bg-white/90
+               text-gray-800 rounded-lg shadow-md hover:shadow-lg transition-all duration-200
                backdrop-blur-sm border border-gray-200"
       >
         ← Back
       </button>
 
-      <!-- Title + Actions Row -->
+      <!-- Title + Buttons -->
       <div class="flex items-center justify-between mb-6">
-
-      <h1
-          class="text-3xl font-bold tracking-tight 
-                bg-gradient-to-r from-blue-600 to-purple-700 
-                bg-clip-text text-transparent inline-block"
+        <h1
+          class="text-3xl font-bold tracking-tight
+                 bg-gradient-to-r from-blue-600 to-purple-700
+                 bg-clip-text text-transparent inline-block"
         >
           Student Attempts for Exam {{ examId }}
         </h1>
 
-        <!-- Action Buttons -->
         <div class="flex gap-4">
-
-          <!-- Result Button -->
           <button
             @click="goToResult"
-            class="bg-blue-500 hover:bg-blue-600 text-white font-semibold px-6 py-3 rounded-full shadow-lg transition-all duration-200 hover:scale-105"
+            class="bg-blue-500 hover:bg-blue-600 text-white font-semibold px-6 py-3 rounded-full shadow-lg transition hover:scale-105"
           >
             Result
           </button>
 
-          <!-- Analytics Button -->
           <button
             @click="goToAnalytics"
-            class="bg-purple-500 hover:bg-purple-600 text-white font-semibold px-6 py-3 rounded-full shadow-lg transition-all duration-200 hover:scale-105"
+            class="bg-purple-500 hover:bg-purple-600 text-white font-semibold px-6 py-3 rounded-full shadow-lg transition hover:scale-105"
           >
             Analytics
           </button>
-
         </div>
-
       </div>
 
-           <!-- TABLE CARD -->
-
+      <!-- TABLE -->
       <div class="rounded-xl shadow-xl overflow-x-auto bg-white w-full">
         <table class="w-full border-separate border-spacing-0 min-w-[900px]">
           <thead>
@@ -68,7 +60,9 @@
                     viewBox="0 0 24 24"
                     fill="currentColor"
                     class="w-5 h-5 cursor-pointer transition"
-                    :class="filters.studentId ? 'text-blue-600' : 'text-gray-500 hover:text-blue-600'"
+                    :class="filters.studentId || filters.studentSort
+                      ? 'text-blue-600'
+                      : 'text-gray-500 hover:text-blue-600'"
                   >
                     <path d="M3 4h18l-7 8v6l-4 2v-8L3 4z"/>
                   </svg>
@@ -89,7 +83,9 @@
                     viewBox="0 0 24 24"
                     fill="currentColor"
                     class="w-5 h-5 cursor-pointer transition"
-                    :class="filters.minMarks !== null ? 'text-blue-600' : 'text-gray-500 hover:text-blue-600'"
+                    :class="filters.minMarks !== null || filters.marksSort
+                      ? 'text-blue-600'
+                      : 'text-gray-500 hover:text-blue-600'"
                   >
                     <path d="M3 4h18l-7 8v6l-4 2v-8L3 4z"/>
                   </svg>
@@ -108,7 +104,9 @@
                     viewBox="0 0 24 24"
                     fill="currentColor"
                     class="w-5 h-5 cursor-pointer transition"
-                    :class="filters.status ? 'text-blue-600' : 'text-gray-500 hover:text-blue-600'"
+                    :class="filters.status
+                      ? 'text-blue-600'
+                      : 'text-gray-500 hover:text-blue-600'"
                   >
                     <path d="M3 4h18l-7 8v6l-4 2v-8L3 4z"/>
                   </svg>
@@ -121,7 +119,7 @@
 
           <tbody>
             <tr
-              v-for="attempt in paginatedAttempts"
+              v-for="attempt in filteredAttempts"
               :key="attempt.Attempt_Id"
               class="hover:bg-blue-50 border-b border-gray-100"
             >
@@ -151,66 +149,86 @@
                 </button>
               </td>
             </tr>
-
-            <tr v-if="filteredAttempts.length === 0">
-              <td colspan="9" class="text-center py-8 text-gray-500 italic">
-                No matching attempts found.
-              </td>
-            </tr>
           </tbody>
         </table>
       </div>
     </div>
   </div>
 
-  <!-- FLOATING FILTER -->
+  <!-- FILTER POPOVER -->
   <transition name="fade">
     <div
       v-if="activeFilter"
       :style="popoverStyle"
-      class="fixed bg-white shadow-2xl border border-gray-200 
-             rounded-xl p-4 w-72 z-[9999]"
+      class="fixed bg-white shadow-2xl border border-gray-200
+             rounded-xl p-4 w-72 z-[9999] max-w-[95vw]"
     >
+
+      <!-- STUDENT FILTER -->
       <div v-if="activeFilter === 'student'">
         <input
           v-model="filters.studentId"
           type="text"
           placeholder="Search Student ID..."
-          class="w-full border px-3 py-2 rounded-lg focus:ring-2 focus:ring-blue-400 outline-none"
+          class="w-full border px-3 py-2 rounded-lg focus:ring-2 focus:ring-blue-400 outline-none mb-3"
         />
+
+        <label class="text-xs text-gray-500 font-semibold block mb-2">
+          Sort Student ID
+        </label>
+
+        <div class="flex justify-center gap-8 text-2xl font-bold">
+          <span
+            @click="toggleStudentSort('asc')"
+            :class="filters.studentSort === 'asc'
+              ? 'text-blue-600 cursor-pointer'
+              : 'text-gray-400 hover:text-blue-600 cursor-pointer'"
+          >↑</span>
+
+          <span
+            @click="toggleStudentSort('desc')"
+            :class="filters.studentSort === 'desc'
+              ? 'text-blue-600 cursor-pointer'
+              : 'text-gray-400 hover:text-blue-600 cursor-pointer'"
+          >↓</span>
+        </div>
       </div>
 
+      <!-- MARKS FILTER -->
       <div v-if="activeFilter === 'marks'">
+        <label class="text-xs text-gray-500 font-semibold block mb-2">
+          Minimum Marks
+        </label>
 
-  <!-- SORT OPTION -->
-  <label class="text-xs text-gray-500 font-semibold block mb-2">
-    Sort Marks
-  </label>
+        <input
+          v-model.number="filters.minMarks"
+          type="number"
+          placeholder="Minimum Marks..."
+          class="w-full border px-3 py-2 rounded-lg focus:ring-2 focus:ring-blue-400 outline-none mb-4"
+        />
 
-  <select
-    v-model="filters.marksSort"
-    class="w-full border px-3 py-2 rounded-lg mb-3 
-           focus:ring-2 focus:ring-blue-400 outline-none"
-  >
-    <option value="">None</option>
-    <option value="asc">Low to High</option>
-    <option value="desc">High to Low</option>
-  </select>
+        <label class="text-xs text-gray-500 font-semibold block mb-2">
+          Sort Marks
+        </label>
 
-  <!-- MIN MARKS -->
-  <label class="text-xs text-gray-500 font-semibold block mb-2">
-    Minimum Marks
-  </label>
+        <div class="flex justify-center gap-8 text-2xl font-bold">
+          <span
+            @click="toggleMarksSort('asc')"
+            :class="filters.marksSort === 'asc'
+              ? 'text-blue-600 cursor-pointer'
+              : 'text-gray-400 hover:text-blue-600 cursor-pointer'"
+          >↑</span>
 
-  <input
-    v-model.number="filters.minMarks"
-    type="number"
-    placeholder="Minimum Marks..."
-    class="w-full border px-3 py-2 rounded-lg 
-           focus:ring-2 focus:ring-blue-400 outline-none"
-  />
-</div>
+          <span
+            @click="toggleMarksSort('desc')"
+            :class="filters.marksSort === 'desc'
+              ? 'text-blue-600 cursor-pointer'
+              : 'text-gray-400 hover:text-blue-600 cursor-pointer'"
+          >↓</span>
+        </div>
+      </div>
 
+      <!-- STATUS FILTER -->
       <div v-if="activeFilter === 'status'">
         <select
           v-model="filters.status"
@@ -230,6 +248,7 @@
           Clear
         </button>
       </div>
+
     </div>
   </transition>
 </template>
@@ -246,25 +265,6 @@ const examId = ref(route.params.examId)
 const attempts = ref([])
 const error = ref('')
 
-const goToResult = () => {
-  console.log("Navigating to:", `/exam/${examId.value}/result`)
-  router.push(`/exam/${examId.value}/result`)
-}
-
-const goToAnalytics = () => {
-  router.push({
-    name: 'ExamAnalytics',
-    params: { examId: examId.value }
-  })
-}
-
-// ================= PAGINATION STATE =================
-const currentPage = ref(1)
-const itemsPerPage = ref(15)
-
-// ================= PAGINATION COMPUTED =================
-const totalAttempts = computed(() => attempts.value.length)
-const totalPages = computed(() => Math.ceil(totalAttempts.value / itemsPerPage.value))
 const activeFilter = ref(null)
 const popoverStyle = ref({})
 
@@ -272,46 +272,70 @@ const filters = ref({
   studentId: '',
   minMarks: null,
   status: '',
-  marksSort: '' // NEW
+  marksSort: '',
+  studentSort: ''
 })
 
+/* SMART OVERFLOW FIX */
 const openFilter = (event, type) => {
   activeFilter.value = type
+
   const rect = event.target.getBoundingClientRect()
+  const popupWidth = 288
+  const padding = 16
+
+  let left = rect.left
+  let top = rect.bottom + 8
+
+  if (left + popupWidth > window.innerWidth - padding) {
+    left = window.innerWidth - popupWidth - padding
+  }
+
+  if (left < padding) {
+    left = padding
+  }
 
   popoverStyle.value = {
-    top: rect.bottom + 8 + 'px',
-    left: rect.left + 'px'
+    top: `${top}px`,
+    left: `${left}px`
   }
+}
+
+const toggleStudentSort = (direction) => {
+  filters.value.studentSort =
+    filters.value.studentSort === direction ? '' : direction
+  filters.value.marksSort = ''
+}
+
+const toggleMarksSort = (direction) => {
+  filters.value.marksSort =
+    filters.value.marksSort === direction ? '' : direction
+  filters.value.studentSort = ''
 }
 
 const clearCurrentFilter = () => {
   if (activeFilter.value === 'student') {
     filters.value.studentId = ''
+    filters.value.studentSort = ''
   }
-
   if (activeFilter.value === 'marks') {
     filters.value.minMarks = null
     filters.value.marksSort = ''
   }
-
   if (activeFilter.value === 'status') {
     filters.value.status = ''
   }
 }
 
-const applyFilter = () => {
-  activeFilter.value = null
-}
+const applyFilter = () => activeFilter.value = null
 
 const handleClickOutside = (e) => {
-  if (!e.target.closest('.fixed')) {
-    activeFilter.value = null
-  }
+  if (!e.target.closest('.fixed')) activeFilter.value = null
 }
 
 onMounted(() => {
   document.addEventListener('click', handleClickOutside)
+  fetchAttempts()
 })
 
 onBeforeUnmount(() => {
@@ -320,50 +344,38 @@ onBeforeUnmount(() => {
 
 const filteredAttempts = computed(() => {
   let result = attempts.value.filter(a => {
-
     if (filters.value.studentId &&
-        !String(a.Applicant_Id).includes(filters.value.studentId))
-      return false
-
+        !String(a.Applicant_Id).includes(filters.value.studentId)) return false
     if (filters.value.minMarks !== null &&
-        a.Marks_Obtained < filters.value.minMarks)
-      return false
-
+        a.Marks_Obtained < filters.value.minMarks) return false
     if (filters.value.status &&
-        a.Status !== filters.value.status)
-      return false
-
+        a.Status !== filters.value.status) return false
     return true
   })
 
-  // SORTING LOGIC
-  if (filters.value.marksSort === 'asc') {
-    result.sort((a, b) => a.Marks_Obtained - b.Marks_Obtained)
-  }
-
-  if (filters.value.marksSort === 'desc') {
-    result.sort((a, b) => b.Marks_Obtained - a.Marks_Obtained)
-  }
+  if (filters.value.studentSort === 'asc')
+    result.sort((a,b)=>a.Applicant_Id-b.Applicant_Id)
+  if (filters.value.studentSort === 'desc')
+    result.sort((a,b)=>b.Applicant_Id-a.Applicant_Id)
+  if (filters.value.marksSort === 'asc')
+    result.sort((a,b)=>a.Marks_Obtained-b.Marks_Obtained)
+  if (filters.value.marksSort === 'desc')
+    result.sort((a,b)=>b.Marks_Obtained-a.Marks_Obtained)
 
   return result
 })
-
-const paginatedAttempts = computed(() => filteredAttempts.value)
 
 const fetchAttempts = async () => {
   try {
     const email = localStorage.getItem("email")
     const role = localStorage.getItem("active_role")
-
     const res = await axios.get('/attempts', {
       params: { exam_id: examId.value, email, role }
     })
-
     if (!res.data.success) {
       error.value = "Unauthorized Access"
       return
     }
-
     attempts.value = res.data.attempts
   } catch {
     error.value = "Unauthorized Access"
@@ -374,14 +386,20 @@ const viewAnswers = (attemptId) => {
   router.push({ name: 'ViewAnswers', params: { attemptId } })
 }
 
+const goToResult = () => {
+  router.push(`/exam/${examId.value}/result`)
+}
+
+const goToAnalytics = () => {
+  router.push({ name: 'ExamAnalytics', params: { examId: examId.value } })
+}
+
 const goBack = () => {
   const role = localStorage.getItem('active_role')
   if (role === 'Admin') router.push('/admin/exams')
   else if (role === 'Faculty') router.push('/faculty')
   else router.push('/')
 }
-
-onMounted(fetchAttempts)
 </script>
 
 <style scoped>
