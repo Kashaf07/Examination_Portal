@@ -4,6 +4,7 @@
     class="min-h-screen w-full bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 flex flex-col items-center py-10"
   >
     <div class="w-full max-w-full px-6">
+
       <!-- Back Button -->
       <button
         @click="goBack"
@@ -11,19 +12,7 @@
                text-gray-800 rounded-lg shadow-md hover:shadow-lg transition-all duration-200 
                backdrop-blur-sm border border-gray-200"
       >
-        <svg 
-          xmlns="http://www.w3.org/2000/svg" 
-          class="h-5 w-5" 
-          viewBox="0 0 20 20" 
-          fill="currentColor"
-        >
-          <path 
-            fill-rule="evenodd" 
-            d="M9.707 16.707a1 1 0 01-1.414 0l-6-6a1 1 0 010-1.414l6-6a1 1 0 011.414 1.414L5.414 9H17a1 1 0 110 2H5.414l4.293 4.293a1 1 0 010 1.414z" 
-            clip-rule="evenodd" 
-          />
-        </svg>
-        <span class="font-semibold">Back</span>
+        ← Back
       </button>
 
       <h1
@@ -32,30 +21,84 @@
         Student Attempts for Exam {{ examId }}
       </h1>
 
+      <!-- TABLE CARD -->
       <div class="rounded-xl shadow-xl overflow-x-auto bg-white w-full">
         <table class="w-full border-separate border-spacing-0 min-w-[900px]">
           <thead>
             <tr class="bg-gradient-to-r from-blue-200 to-purple-200 text-blue-900 font-bold">
-              <th class="px-6 py-4 w-24 text-left">Attempt ID</th>
-              <th class="px-6 py-4 w-28 text-left">Student ID</th>
-              <th class="px-6 py-4 w-64 text-left">Student Email</th>
-              <th class="px-6 py-4 w-40 text-left">Start Time</th>
-              <th class="px-6 py-4 w-40 text-left">End Time</th>
-              <th class="px-6 py-4 w-32 text-right">Marks Obtained</th>
-              <th class="px-6 py-4 w-24 text-right">Max Marks</th>
-              <th class="px-6 py-4 w-28 text-center">Status</th>
-              <th class="px-6 py-4 w-32 text-center">Actions</th>
+
+              <th class="px-6 py-4 text-left">Attempt ID</th>
+
+              <!-- STUDENT FILTER -->
+              <th class="px-6 py-4 text-left">
+                <div class="flex items-center gap-2">
+                  Student ID
+                  <svg
+                    @click.stop="openFilter($event, 'student')"
+                    xmlns="http://www.w3.org/2000/svg"
+                    viewBox="0 0 24 24"
+                    fill="currentColor"
+                    class="w-5 h-5 cursor-pointer transition"
+                    :class="filters.studentId ? 'text-blue-600' : 'text-gray-500 hover:text-blue-600'"
+                  >
+                    <path d="M3 4h18l-7 8v6l-4 2v-8L3 4z"/>
+                  </svg>
+                </div>
+              </th>
+
+              <th class="px-6 py-4 text-left">Student Email</th>
+              <th class="px-6 py-4 text-left">Start Time</th>
+              <th class="px-6 py-4 text-left">End Time</th>
+
+              <!-- MARKS FILTER -->
+              <th class="px-6 py-4 text-right">
+                <div class="flex items-center justify-end gap-2">
+                  Marks
+                  <svg
+                    @click.stop="openFilter($event, 'marks')"
+                    xmlns="http://www.w3.org/2000/svg"
+                    viewBox="0 0 24 24"
+                    fill="currentColor"
+                    class="w-5 h-5 cursor-pointer transition"
+                    :class="filters.minMarks !== null ? 'text-blue-600' : 'text-gray-500 hover:text-blue-600'"
+                  >
+                    <path d="M3 4h18l-7 8v6l-4 2v-8L3 4z"/>
+                  </svg>
+                </div>
+              </th>
+
+              <th class="px-6 py-4 text-right">Max Marks</th>
+
+              <!-- STATUS FILTER -->
+              <th class="px-6 py-4 text-center">
+                <div class="flex items-center justify-center gap-2">
+                  Status
+                  <svg
+                    @click.stop="openFilter($event, 'status')"
+                    xmlns="http://www.w3.org/2000/svg"
+                    viewBox="0 0 24 24"
+                    fill="currentColor"
+                    class="w-5 h-5 cursor-pointer transition"
+                    :class="filters.status ? 'text-blue-600' : 'text-gray-500 hover:text-blue-600'"
+                  >
+                    <path d="M3 4h18l-7 8v6l-4 2v-8L3 4z"/>
+                  </svg>
+                </div>
+              </th>
+
+              <th class="px-6 py-4 text-center">Actions</th>
             </tr>
           </thead>
+
           <tbody>
             <tr
-              v-for="(attempt, index) in paginatedAttempts"
+              v-for="attempt in paginatedAttempts"
               :key="attempt.Attempt_Id"
-              class="hover:bg-blue-50 transition-colors duration-200 border-b border-gray-100"
+              class="hover:bg-blue-50 border-b border-gray-100"
             >
               <td class="px-6 py-3">{{ attempt.Attempt_Id }}</td>
               <td class="px-6 py-3">{{ attempt.Applicant_Id }}</td>
-              <td class="px-6 py-3 break-words">{{ attempt.Student_Email || '-' }}</td>
+              <td class="px-6 py-3">{{ attempt.Student_Email || '-' }}</td>
               <td class="px-6 py-3">{{ attempt.Start_Time }}</td>
               <td class="px-6 py-3">{{ attempt.End_Time || '-' }}</td>
               <td class="px-6 py-3 text-right">{{ attempt.Marks_Obtained }}</td>
@@ -64,147 +107,106 @@
                 <span
                   :class="{
                     'text-green-600 font-semibold': attempt.Status === 'Pass',
-                    'text-red-500 font-semibold': attempt.Status === 'Fail',
+                    'text-red-500 font-semibold': attempt.Status === 'Fail'
                   }"
                 >
-                  {{ attempt.Status || '-' }}
+                  {{ attempt.Status }}
                 </span>
               </td>
               <td class="px-6 py-3 text-center">
                 <button
                   @click="viewAnswers(attempt.Attempt_Id)"
-                  class="bg-purple-600 hover:bg-purple-700 text-white px-5 py-2 rounded-full font-semibold shadow transition"
+                  class="bg-purple-600 hover:bg-purple-700 text-white px-5 py-2 rounded-full font-semibold shadow"
                 >
                   View Answers
                 </button>
               </td>
             </tr>
-            <tr v-if="attempts.length === 0">
-              <td colspan="9" class="text-center py-8 text-gray-500 italic"
-                >No attempts found.</td
-              >
+
+            <tr v-if="filteredAttempts.length === 0">
+              <td colspan="9" class="text-center py-8 text-gray-500 italic">
+                No matching attempts found.
+              </td>
             </tr>
           </tbody>
         </table>
-
-        <!-- Pagination Controls -->
-        <div v-if="attempts.length > 0" class="bg-gray-50 px-6 py-4 border-t border-gray-200">
-          <div class="flex items-center justify-between">
-            
-            <!-- Results Info -->
-            <div class="text-sm text-gray-700">
-              Showing 
-              <span class="font-semibold">{{ startIndex + 1 }}</span>
-              to 
-              <span class="font-semibold">{{ endIndex }}</span>
-              of 
-              <span class="font-semibold">{{ totalAttempts }}</span>
-              results
-            </div>
-
-            <!-- Pagination Buttons -->
-            <div class="flex items-center gap-2">
-              
-              <!-- Previous Button -->
-              <button
-                @click="goToPage(currentPage - 1)"
-                :disabled="currentPage === 1"
-                class="px-3 py-2 rounded-lg border border-gray-300 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition"
-              >
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
-                </svg>
-              </button>
-
-              <!-- First Page -->
-              <button
-                v-if="showFirstPage"
-                @click="goToPage(1)"
-                class="px-4 py-2 rounded-lg border transition"
-                :class="currentPage === 1 
-                  ? 'bg-blue-600 text-white border-blue-600' 
-                  : 'border-gray-300 bg-white hover:bg-gray-50'"
-              >
-                1
-              </button>
-
-              <!-- Left Ellipsis -->
-              <span v-if="showLeftEllipsis" class="px-2 text-gray-500">...</span>
-
-              <!-- Page Numbers -->
-              <button
-                v-for="page in visiblePages"
-                :key="page"
-                @click="goToPage(page)"
-                class="px-4 py-2 rounded-lg border transition"
-                :class="currentPage === page 
-                  ? 'bg-blue-600 text-white border-blue-600' 
-                  : 'border-gray-300 bg-white hover:bg-gray-50'"
-              >
-                {{ page }}
-              </button>
-
-              <!-- Right Ellipsis -->
-              <span v-if="showRightEllipsis" class="px-2 text-gray-500">...</span>
-
-              <!-- Last Page -->
-              <button
-                v-if="showLastPage"
-                @click="goToPage(totalPages)"
-                class="px-4 py-2 rounded-lg border transition"
-                :class="currentPage === totalPages 
-                  ? 'bg-blue-600 text-white border-blue-600' 
-                  : 'border-gray-300 bg-white hover:bg-gray-50'"
-              >
-                {{ totalPages }}
-              </button>
-
-              <!-- Next Button -->
-              <button
-                @click="goToPage(currentPage + 1)"
-                :disabled="currentPage === totalPages"
-                class="px-3 py-2 rounded-lg border border-gray-300 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition"
-              >
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
-                </svg>
-              </button>
-
-            </div>
-          </div>
-        </div>
       </div>
     </div>
   </div>
-  <!-- UNAUTHORIZED UI -->
-<div
-  v-else
-  class="min-h-screen flex items-center justify-center bg-red-50"
->
-  <div class="bg-white shadow-xl rounded-xl p-8 text-center w-full max-w-md">
-    
-    <h2 class="text-2xl font-bold text-red-600 mb-4">
-      Unauthorized Access
-    </h2>
 
-    <p class="text-gray-600 mb-6">
-      You are not allowed to access this exam.
-    </p>
-
-    <!-- Go Back Button -->
-    <button
-      @click="router.back()"
-      class="bg-red-600 hover:bg-red-700 text-white px-6 py-2 rounded-lg font-semibold shadow-md transition"
+  <!-- FLOATING FILTER -->
+  <transition name="fade">
+    <div
+      v-if="activeFilter"
+      :style="popoverStyle"
+      class="fixed bg-white shadow-2xl border border-gray-200 
+             rounded-xl p-4 w-72 z-[9999]"
     >
-      Go Back
-    </button>
+      <div v-if="activeFilter === 'student'">
+        <input
+          v-model="filters.studentId"
+          type="text"
+          placeholder="Search Student ID..."
+          class="w-full border px-3 py-2 rounded-lg focus:ring-2 focus:ring-blue-400 outline-none"
+        />
+      </div>
 
-  </div>
+      <div v-if="activeFilter === 'marks'">
+
+  <!-- SORT OPTION -->
+  <label class="text-xs text-gray-500 font-semibold block mb-2">
+    Sort Marks
+  </label>
+
+  <select
+    v-model="filters.marksSort"
+    class="w-full border px-3 py-2 rounded-lg mb-3 
+           focus:ring-2 focus:ring-blue-400 outline-none"
+  >
+    <option value="">None</option>
+    <option value="asc">Low to High</option>
+    <option value="desc">High to Low</option>
+  </select>
+
+  <!-- MIN MARKS -->
+  <label class="text-xs text-gray-500 font-semibold block mb-2">
+    Minimum Marks
+  </label>
+
+  <input
+    v-model.number="filters.minMarks"
+    type="number"
+    placeholder="Minimum Marks..."
+    class="w-full border px-3 py-2 rounded-lg 
+           focus:ring-2 focus:ring-blue-400 outline-none"
+  />
 </div>
+
+      <div v-if="activeFilter === 'status'">
+        <select
+          v-model="filters.status"
+          class="w-full border px-3 py-2 rounded-lg focus:ring-2 focus:ring-blue-400 outline-none"
+        >
+          <option value="">All</option>
+          <option value="Pass">Pass</option>
+          <option value="Fail">Fail</option>
+        </select>
+      </div>
+
+      <div class="flex justify-between mt-4">
+        <button @click="applyFilter" class="text-sm text-blue-600 font-semibold">
+          Apply
+        </button>
+        <button @click="clearCurrentFilter" class="text-sm text-red-500 font-semibold">
+          Clear
+        </button>
+      </div>
+    </div>
+  </transition>
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import axios from '../utils/axiosInstance'
 
@@ -214,156 +216,133 @@ const router = useRouter()
 const examId = ref(route.params.examId)
 const attempts = ref([])
 const error = ref('')
+const activeFilter = ref(null)
+const popoverStyle = ref({})
 
-// ================= PAGINATION STATE =================
-const currentPage = ref(1)
-const itemsPerPage = ref(15)
-
-// ================= PAGINATION COMPUTED =================
-const totalAttempts = computed(() => attempts.value.length)
-const totalPages = computed(() => Math.ceil(totalAttempts.value / itemsPerPage.value))
-
-const paginatedAttempts = computed(() => {
-  const start = (currentPage.value - 1) * itemsPerPage.value
-  const end = start + itemsPerPage.value
-  return attempts.value.slice(start, end)
+const filters = ref({
+  studentId: '',
+  minMarks: null,
+  status: '',
+  marksSort: '' // NEW
 })
 
-const startIndex = computed(() => (currentPage.value - 1) * itemsPerPage.value)
+const openFilter = (event, type) => {
+  activeFilter.value = type
+  const rect = event.target.getBoundingClientRect()
 
-const endIndex = computed(() => {
-  const end = currentPage.value * itemsPerPage.value
-  return end > totalAttempts.value ? totalAttempts.value : end
-})
-
-// Google-style pagination
-const visiblePages = computed(() => {
-  const pages = []
-  const maxVisible = 5
-  
-  let start = Math.max(2, currentPage.value - 2)
-  let end = Math.min(totalPages.value - 1, currentPage.value + 2)
-  
-  if (currentPage.value <= 3) {
-    end = Math.min(maxVisible, totalPages.value - 1)
-    start = 2
-  }
-  
-  if (currentPage.value >= totalPages.value - 2) {
-    start = Math.max(2, totalPages.value - maxVisible + 1)
-    end = totalPages.value - 1
-  }
-  
-  for (let i = start; i <= end; i++) {
-    pages.push(i)
-  }
-  
-  return pages
-})
-
-const showFirstPage = computed(() => {
-  return totalPages.value > 1 && !visiblePages.value.includes(1)
-})
-
-const showLastPage = computed(() => {
-  return totalPages.value > 1 && !visiblePages.value.includes(totalPages.value)
-})
-
-const showLeftEllipsis = computed(() => {
-  return visiblePages.value.length > 0 && visiblePages.value[0] > 2
-})
-
-const showRightEllipsis = computed(() => {
-  return visiblePages.value.length > 0 && visiblePages.value[visiblePages.value.length - 1] < totalPages.value - 1
-})
-
-// ================= PAGINATION METHODS =================
-const goToPage = (page) => {
-  if (page >= 1 && page <= totalPages.value) {
-    currentPage.value = page
-    window.scrollTo({ top: 0, behavior: 'smooth' })
+  popoverStyle.value = {
+    top: rect.bottom + 8 + 'px',
+    left: rect.left + 'px'
   }
 }
 
-const fetchAttempts = async () => {
-  error.value = ''
-  attempts.value = []
+const clearCurrentFilter = () => {
+  if (activeFilter.value === 'student') {
+    filters.value.studentId = ''
+  }
 
+  if (activeFilter.value === 'marks') {
+    filters.value.minMarks = null
+    filters.value.marksSort = ''
+  }
+
+  if (activeFilter.value === 'status') {
+    filters.value.status = ''
+  }
+}
+
+const applyFilter = () => {
+  activeFilter.value = null
+}
+
+const handleClickOutside = (e) => {
+  if (!e.target.closest('.fixed')) {
+    activeFilter.value = null
+  }
+}
+
+onMounted(() => {
+  document.addEventListener('click', handleClickOutside)
+})
+
+onBeforeUnmount(() => {
+  document.removeEventListener('click', handleClickOutside)
+})
+
+const filteredAttempts = computed(() => {
+  let result = attempts.value.filter(a => {
+
+    if (filters.value.studentId &&
+        !String(a.Applicant_Id).includes(filters.value.studentId))
+      return false
+
+    if (filters.value.minMarks !== null &&
+        a.Marks_Obtained < filters.value.minMarks)
+      return false
+
+    if (filters.value.status &&
+        a.Status !== filters.value.status)
+      return false
+
+    return true
+  })
+
+  // SORTING LOGIC
+  if (filters.value.marksSort === 'asc') {
+    result.sort((a, b) => a.Marks_Obtained - b.Marks_Obtained)
+  }
+
+  if (filters.value.marksSort === 'desc') {
+    result.sort((a, b) => b.Marks_Obtained - a.Marks_Obtained)
+  }
+
+  return result
+})
+
+const paginatedAttempts = computed(() => filteredAttempts.value)
+
+const fetchAttempts = async () => {
   try {
     const email = localStorage.getItem("email")
     const role = localStorage.getItem("active_role")
 
     const res = await axios.get('/attempts', {
-      params: {
-        exam_id: examId.value,
-        email,
-        role
-      }
+      params: { exam_id: examId.value, email, role }
     })
 
     if (!res.data.success) {
-      error.value = "Unauthorized Access. You are not allowed to view this exam."
+      error.value = "Unauthorized Access"
       return
     }
 
     attempts.value = res.data.attempts
-    currentPage.value = 1
-
-  } catch (err) {
-    if (err.response?.status === 403) {
-      error.value = "Unauthorized Access. You are not allowed to view this exam."
-    } else {
-      error.value = "Something went wrong while loading responses."
-    }
+  } catch {
+    error.value = "Unauthorized Access"
   }
 }
+
 const viewAnswers = (attemptId) => {
-  sessionStorage.setItem("viewAnswersLock", String(attemptId))
-
-  router.push({
-    name: 'ViewAnswers',
-    params: { attemptId }
-  })
+  router.push({ name: 'ViewAnswers', params: { attemptId } })
 }
+
 const goBack = () => {
-  // Navigate based on active role
-  const activeRole = localStorage.getItem('active_role')
-  
-  if (activeRole === 'Admin') {
-    router.push('/admin/exams')
-  } else if (activeRole === 'Faculty') {
-    router.push('/faculty')
-  } else {
-    router.push('/')
-  }
+  const role = localStorage.getItem('active_role')
+  if (role === 'Admin') router.push('/admin/exams')
+  else if (role === 'Faculty') router.push('/faculty')
+  else router.push('/')
 }
 
-onMounted(() => {
-  fetchAttempts()
-})
+onMounted(fetchAttempts)
 </script>
 
 <style scoped>
-table {
-  min-width: 900px; /* Prevents columns from squeezing too tightly */
+.fade-enter-active,
+.fade-leave-active {
+  transition: all 0.18s ease;
 }
-
-@media (max-width: 900px) {
-  table {
-    min-width: 700px; /* Allows horizontal scrolling on smaller screens */
-  }
-}
-
-/* Smooth transitions for pagination buttons */
-button {
-  transition: all 0.2s ease;
-}
-
-button:hover:not(:disabled) {
-  transform: translateY(-1px);
-}
-
-button:active:not(:disabled) {
-  transform: translateY(0);
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+  transform: translateY(-6px);
 }
 </style>
