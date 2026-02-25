@@ -2,7 +2,7 @@
   <!-- Student Info Box - Fixed Position -->
   <div class="fixed top-4 right-6 z-50 group">
     <div class="bg-white px-6 py-3 rounded-2xl shadow-lg border-2 border-black text-base font-semibold text-indigo-800 cursor-default transition-all duration-300 hover:shadow-xl hover:scale-105">
-      👤 {{ name || email }}
+      👤 {{ studentName || studentEmail }}
     </div>
     
     <!-- Email Tooltip -->

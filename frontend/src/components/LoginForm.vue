@@ -93,6 +93,12 @@ const login = async () => {
     localStorage.setItem("active_role", res.active_role)
     localStorage.setItem("email", res.email)
     localStorage.setItem("name", res.name)
+    localStorage.setItem("student_email", res.email)
+    localStorage.setItem("student_name", res.name)
+
+    if (res.applicant_id) {
+      localStorage.setItem("applicant_id", res.applicant_id)
+    }
 
     // --------------------------
     // REDIRECT BASED ON ROLE
