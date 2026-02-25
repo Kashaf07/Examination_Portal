@@ -32,6 +32,27 @@
         <h1 class="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-purple-700 tracking-tight">
           Student Attempts for Exam {{ examId }}
         </h1>
+
+        <div class="flex gap-4">
+
+    <!-- Result Button -->
+    <button
+      @click="goToResult"
+      class="bg-blue-500 hover:bg-blue-600 text-white font-semibold px-6 py-3 rounded-full shadow-lg transition-all duration-200 hover:scale-105"
+    >
+      Result
+    </button>
+
+    <!-- Analytics Button -->
+    <button
+      @click="goToAnalytics"
+      class="bg-purple-500 hover:bg-purple-600 text-white font-semibold px-6 py-3 rounded-full shadow-lg transition-all duration-200 hover:scale-105"
+    >
+      Analytics
+    </button>
+
+  </div>
+
       </div>
 
       <!-- TABLE -->
@@ -200,6 +221,20 @@
         <button @click="clearCurrentFilter" class="text-red-500 font-semibold">Clear</button>
       </div>
     </div>
+        <!-- UNAUTHORIZED UI -->
+  <div
+    v-else
+    class="min-h-screen flex items-center justify-center bg-red-50"
+  >
+    <div class="bg-white shadow-xl rounded-xl p-8 text-center">
+      <h2 class="text-2xl font-bold text-red-600 mb-4">
+        Unauthorized Access
+      </h2>
+      <p class="text-gray-600">
+        You are not allowed to access this exam.
+      </p>
+    </div>
+  </div>
   </transition>
 </template>
 
@@ -273,6 +308,17 @@ onMounted(()=>{
 onBeforeUnmount(()=>{
   document.removeEventListener('click',handleClickOutside)
 })
+
+const goToResult = () => {
+  router.push(`/exam/${examId.value}/result`)
+}
+
+const goToAnalytics = () => {
+  router.push({
+    name: 'ExamAnalytics',
+    params: { examId: examId.value }
+  })
+}
 
 const filteredAttempts=computed(()=>{
   let result=attempts.value.filter(a=>{

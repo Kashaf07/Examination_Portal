@@ -5,14 +5,26 @@
   >
     <div class="w-full max-w-full px-6">
 
-      <!-- Back Button -->
+     <!-- Back Button -->
       <button
         @click="goBack"
-        class="mb-6 flex items-center gap-2 px-4 py-2 bg-white/70 hover:bg-white/90
-               text-gray-800 rounded-lg shadow-md hover:shadow-lg transition-all duration-200
+        class="mb-6 flex items-center gap-2 px-4 py-2 bg-white/70 hover:bg-white/90 
+               text-gray-800 rounded-lg shadow-md hover:shadow-lg transition-all duration-200 
                backdrop-blur-sm border border-gray-200"
       >
-        ← Back
+        <svg 
+          xmlns="http://www.w3.org/2000/svg"  
+          class="h-5 w-5" 
+          viewBox="0 0 20 20" 
+          fill="currentColor"
+        >
+          <path 
+            fill-rule="evenodd" 
+            d="M9.707 16.707a1 1 0 01-1.414 0l-6-6a1 1 0 010-1.414l6-6a1 1 0 011.414 1.414L5.414 9H17a1 1 0 110 2H5.414l4.293 4.293a1 1 0 010 1.414z" 
+            clip-rule="evenodd" 
+          />
+        </svg>
+        <span class="font-semibold">Back</span>
       </button>
 
       <!-- Title + Buttons -->
@@ -153,6 +165,21 @@
         </table>
       </div>
     </div>
+    
+  </div>
+   <!-- UNAUTHORIZED UI -->
+  <div
+    v-else
+    class="min-h-screen flex items-center justify-center bg-red-50"
+  >
+    <div class="bg-white shadow-xl rounded-xl p-8 text-center">
+      <h2 class="text-2xl font-bold text-red-600 mb-4">
+        Unauthorized Access
+      </h2>
+      <p class="text-gray-600">
+        You are not allowed to access this exam.
+      </p>
+    </div>
   </div>
 
   <!-- FILTER POPOVER -->
@@ -229,16 +256,50 @@
       </div>
 
       <!-- STATUS FILTER -->
-      <div v-if="activeFilter === 'status'">
-        <select
-          v-model="filters.status"
-          class="w-full border px-3 py-2 rounded-lg focus:ring-2 focus:ring-blue-400 outline-none"
-        >
-          <option value="">All</option>
-          <option value="Pass">Pass</option>
-          <option value="Fail">Fail</option>
-        </select>
-      </div>
+<div v-if="activeFilter === 'status'">
+
+  <label class="text-xs text-gray-500 font-semibold block mb-3">
+    Filter by Status
+  </label>
+
+  <div class="flex gap-3 flex-wrap">
+
+    <!-- PASS -->
+    <button
+      @click="filters.status = filters.status === 'Pass' ? '' : 'Pass'"
+      class="flex-1 min-w-[90px] px-4 py-2 rounded-lg border font-semibold transition text-center"
+      :class="filters.status === 'Pass'
+        ? 'bg-green-600 text-white border-green-600'
+        : 'bg-white text-green-600 border-green-400 hover:bg-green-50'"
+    >
+      Pass
+    </button>
+
+    <!-- FAIL -->
+    <button
+      @click="filters.status = filters.status === 'Fail' ? '' : 'Fail'"
+      class="flex-1 min-w-[90px] px-4 py-2 rounded-lg border font-semibold transition text-center"
+      :class="filters.status === 'Fail'
+        ? 'bg-red-600 text-white border-red-600'
+        : 'bg-white text-red-600 border-red-400 hover:bg-red-50'"
+    >
+      Fail
+    </button>
+
+    <!-- RESTRICTED -->
+    <button
+      @click="filters.status = filters.status === 'Restricted' ? '' : 'Restricted'"
+      class="flex-1 min-w-[90px] px-4 py-2 rounded-lg border font-semibold transition text-center"
+      :class="filters.status === 'Restricted'
+        ? 'bg-amber-500 text-white border-amber-500'
+        : 'bg-white text-amber-600 border-amber-500 hover:bg-amber-50'"
+    >
+      Restricted
+    </button>
+
+  </div>
+
+</div>
 
       <div class="flex justify-between mt-4">
         <button @click="applyFilter" class="text-sm text-blue-600 font-semibold">
@@ -250,7 +311,10 @@
       </div>
 
     </div>
+       
   </transition>
+
+  
 </template>
 
 <script setup>
