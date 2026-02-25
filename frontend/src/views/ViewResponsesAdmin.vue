@@ -27,11 +27,35 @@
         <span class="font-semibold">Back</span>
       </button>
 
-      <!-- Title -->
+      <!-- Title + Actions Row -->
       <div class="flex items-center justify-between mb-6">
-        <h1 class="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-purple-700 tracking-tight">
+
+        <h1
+          class="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-purple-700 tracking-tight"
+        >
           Student Attempts for Exam {{ examId }}
         </h1>
+
+        <!-- Action Buttons -->
+        <div class="flex gap-4">
+
+          <!-- Result Button -->
+          <button
+            @click="goToResult"
+            class="bg-blue-500 hover:bg-blue-600 text-white font-semibold px-6 py-3 rounded-full shadow-lg transition-all duration-200 hover:scale-105"
+          >
+            Result
+          </button>
+
+          <!-- Analytics Button -->
+          <button
+            @click="goToAnalytics"
+            class="bg-purple-500 hover:bg-purple-600 text-white font-semibold px-6 py-3 rounded-full shadow-lg transition-all duration-200 hover:scale-105"
+          >
+            Analytics
+          </button>
+
+        </div>
       </div>
 
       <!-- TABLE -->
@@ -221,6 +245,20 @@ const itemsPerPage = ref(15)
 const activeFilter = ref(null)
 const popoverStyle = ref({})
 
+const goToResult = () => {
+  router.push({
+    name: 'ExamResult',
+    params: { examId: examId.value }
+  })
+}
+
+const goToAnalytics = () => {
+  router.push({
+    name: 'ExamAnalytics',
+    params: { examId: examId.value }
+  })
+}
+
 const filters = ref({
   studentId:'',
   minMarks:null,
@@ -310,7 +348,9 @@ const fetchAttempts=async()=>{
 }
 
 const viewAnswers=(id)=>{ router.push({name:'ViewAnswers',params:{attemptId:id}}) }
-const goBack=()=>router.back()
+const goBack = () => {
+  router.push('/admin/exams')
+}
 </script>
 
 <style scoped>

@@ -24,7 +24,7 @@
       <div class="flex items-center justify-between mb-6">
 
         <h1
-          class="text-3xl font-bold tracking-tight 
+          class="text-3xl font-bold leading-relaxed
                  bg-gradient-to-r from-blue-600 to-purple-700 
                  bg-clip-text text-transparent inline-block"
         >
@@ -167,9 +167,22 @@ const goToPage = (page) => {
 
 const goBack = () => {
   const activeRole = localStorage.getItem('active_role')
-  if (activeRole === 'Admin') router.push('/admin/exams')
-  else if (activeRole === 'Faculty') router.push('/faculty')
-  else router.push('/')
+
+  if (activeRole === 'Admin') {
+    router.push({
+      name: 'ViewResponsesAdmin',
+      params: { examId }
+    })
+  }
+  else if (activeRole === 'Faculty') {
+    router.push({
+      name: 'ViewResponsesFaculty',
+      params: { examId }
+    })
+  }
+  else {
+    router.push('/')
+  }
 }
 
 onMounted(async () => {
@@ -202,27 +215,88 @@ const downloadPDF = () => {
     (a, b) => a.Applicant_Id - b.Applicant_Id
   )
 
-  doc.setFontSize(16)
+  /* ================= HEADER ================= */
+
+  // Main Heading
   doc.setFont("helvetica", "bold")
-  doc.text(`${examName.value.toUpperCase()} RESULT`, 105, 20, { align: "center" })
+  doc.setFontSize(18)
+  doc.text(
+    `${examName.value.toUpperCase()} EXAM RESULT`,
+    105,
+    20,
+    { align: "center" }
+  )
 
   doc.setFontSize(11)
+
+  // Exam Date (Bold label, Normal value)
+  doc.setFont("helvetica", "bold")
+  doc.text("Exam Date: ", 14, 32)
+
   doc.setFont("helvetica", "normal")
-  doc.text(`Date: ${examDate.value}`, 14, 30)
-  doc.text(`Time: ${examTime.value}`, 150, 30)
+  doc.text(`${examDate.value || "-"}`, 38, 32)
+
+  // Exam Time (Bold label, Normal value)
+  doc.setFont("helvetica", "bold")
+  doc.text("Exam Time: ", 130, 32)
+
+  doc.setFont("helvetica", "normal")
+  doc.text(`${examTime.value || "-"}`, 155, 32)
+
+  // Divider Line
+  doc.line(14, 38, 196, 38)
+
+  /* ================= TABLE ================= */
 
   autoTable(doc, {
-    startY: 40,
-    head: [["Student ID", "Student Name", "Marks"]],
+    startY: 44,
+
+    head: [
+      ["Student ID", "Student Name", "Marks"]
+    ],
+
     body: sortedResults.map(s => [
       s.Applicant_Id,
       s.Student_Name,
       s.Marks_Obtained
-    ])
+    ]),
+
+    theme: "grid",
+
+    styles: {
+      font: "helvetica",
+      fontSize: 11,
+      textColor: [0, 0, 0],
+      lineColor: [0, 0, 0],
+      lineWidth: 0.2
+    },
+
+    headStyles: {
+      fillColor: false,
+      textColor: [0, 0, 0],
+      fontStyle: "bold"
+    },
+
+    columnStyles: {
+      0: { halign: "center" },
+      1: { halign: "left" },
+      2: { halign: "center" }
+    }
   })
 
-  doc.save(`${examName.value.replace(/\s+/g, "_")}_Result.pdf`)
+  /* ================= FOOTER ================= */
+
+  doc.setFontSize(10)
+  doc.text(
+    `Generated on: ${new Date().toLocaleString()}`,
+    105,
+    285,
+    { align: "center" }
+  )
+
+  doc.save(`${examName.value.replace(/\s+/g, "_")}_Exam_Result.pdf`)
 }
+
 </script>
 
 <style scoped>

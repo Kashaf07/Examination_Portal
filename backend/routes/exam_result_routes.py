@@ -54,11 +54,13 @@ def create_exam_result_routes(mysql):
             cursor.execute("""
                 SELECT 
                     a.Applicant_Id,
-                    s.Student_Name,
+                    ap.Full_Name AS Student_Name,
                     a.Marks_Obtained
-                FROM Trn_Attempts a
-                JOIN students s ON s.Student_Id = a.Applicant_Id
-                WHERE a.Exam_Id = %s
+                FROM applicant_attempt a
+                JOIN exam_paper ep ON ep.Exam_Paper_Id = a.Exam_Paper_Id
+                JOIN applicants ap ON ap.Applicant_Id = a.Applicant_Id
+                WHERE ep.Exam_Id = %s
+                AND a.Status = 'Submitted'
                 ORDER BY a.Applicant_Id ASC
             """, (exam_id,))
 
