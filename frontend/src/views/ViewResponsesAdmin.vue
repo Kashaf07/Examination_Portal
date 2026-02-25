@@ -14,6 +14,36 @@
         ← Back
       </button>
 
+      <!-- Title + Actions Row -->
+      <div class="flex items-center justify-between mb-6">
+
+        <h1
+          class="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-purple-700 tracking-tight"
+        >
+          Student Attempts for Exam {{ examId }}
+        </h1>
+
+        <!-- Action Buttons -->
+        <div class="flex gap-4">
+
+          <!-- Result Button -->
+          <button
+            @click="goToResult"
+            class="bg-blue-500 hover:bg-blue-600 text-white font-semibold px-6 py-3 rounded-full shadow-lg transition-all duration-200 hover:scale-105"
+          >
+            Result
+          </button>
+
+          <!-- Analytics Button -->
+          <button
+            @click="goToAnalytics"
+            class="bg-purple-500 hover:bg-purple-600 text-white font-semibold px-6 py-3 rounded-full shadow-lg transition-all duration-200 hover:scale-105"
+          >
+            Analytics
+          </button>
+
+        </div>
+      </div>
       <h1
         class="text-3xl font-bold mb-8 text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-purple-700"
       >
@@ -182,10 +212,35 @@ const examId = ref(route.params.examId)
 const attempts = ref([])
 const error = ref('')
 
+const goToResult = () => {
+  console.log("Navigating to:", `/exam/${examId.value}/result`)
+  router.push(`/exam/${examId.value}/result`)
+}
+
+const goToAnalytics = () => {
+  router.push({
+    name: 'ExamAnalytics',
+    params: { examId: examId.value }
+  })
+}
+
+const goToResult = () => {
+  console.log("Navigating to:", `/exam/${examId.value}/result`)
+  router.push(`/exam/${examId.value}/result`)
+}
+
+const goToAnalytics = () => {
+  router.push({
+    name: 'ExamAnalytics',
+    params: { examId: examId.value }
+  })
+}
+
 const activeFilter = ref(null)
 const sortColumn = ref('')
 const sortDirection = ref('')
 const statusFilter = ref(null)
+// ================= PAGINATION STATE =================
 
 const currentPage = ref(1)
 const itemsPerPage = ref(15)

@@ -33,6 +33,8 @@ from routes.ViewResponses import create_view_responses_bp
 from routes.ViewAnswers import create_view_answers_bp
 from routes.faculty_groups import create_faculty_groups_routes
 from routes.groups_routes import group_bp
+from routes.exam_result_routes import create_exam_result_routes
+from routes.exam_analytics_routes import create_exam_analytics_routes
 
 # ---------------- APP ----------------
 app = Flask(__name__)
@@ -69,6 +71,8 @@ app.register_blueprint(create_add_students_bp(mysql), url_prefix="/api")
 app.register_blueprint(create_faculty_routes(mysql), url_prefix="/api/faculty")
 app.register_blueprint(create_view_responses_bp(mysql), url_prefix="/api")
 app.register_blueprint(create_faculty_groups_routes(mysql), url_prefix="/api")
+app.register_blueprint(create_exam_result_routes(mysql), url_prefix="/api")
+app.register_blueprint(create_exam_analytics_routes(mysql))
 
 # 🔔 FACULTY NOTIFICATION BLUEPRINT
 app.register_blueprint(exam_notify_bp)

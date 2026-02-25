@@ -157,6 +157,18 @@ const routes = [
     props: true,
     meta: { requiresAuth: true, role: 'Faculty' }
   },
+  {
+    path: '/exam/:examId/result',
+    name: 'ExamResult',
+    component: () => import('../views/ExamResult.vue'),
+    meta: { requiresAuth: true, role: ['Admin', 'Faculty'] }
+  },
+  {
+    path: '/exam/:examId/analytics',
+    name: 'ExamAnalytics',
+    component: () => import('../views/ExamAnalytics.vue'),
+    meta: { requiresAuth: true, role: ['Admin', 'Faculty'] }
+  },
 
   // ---------------- FALLBACK ----------------
   { path: '/:pathMatch(.*)*', redirect: '/' }
@@ -172,7 +184,6 @@ const router = createRouter({
 router.beforeEach((to, from, next) => {
   const token = localStorage.getItem('token')
   const activeRole = localStorage.getItem('active_role')
-  const roles = JSON.parse(localStorage.getItem('roles') || '[]')
 
   const routeMeta = to.matched.find(r => r.meta && r.meta.role)
   const requiredRole = routeMeta ? routeMeta.meta.role : null
@@ -184,9 +195,7 @@ router.beforeEach((to, from, next) => {
     ? requiredRole.map(r => r.toLowerCase())
     : [requiredRole.toLowerCase()]
 
-  const hasAccess = roles.map(r => r.toLowerCase()).some(r => requiredRoles.includes(r))
-
-  if (!hasAccess) {
+  if (!requiredRoles.includes(activeRole.toLowerCase())) {
     alert('Access denied!')
     return next(`/${activeRole.toLowerCase()}`)
   }
