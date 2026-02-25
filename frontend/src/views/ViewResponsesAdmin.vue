@@ -224,6 +224,20 @@
         <button @click="clearCurrentFilter" class="text-red-500 font-semibold">Clear</button>
       </div>
     </div>
+        <!-- UNAUTHORIZED UI -->
+  <div
+    v-else
+    class="min-h-screen flex items-center justify-center bg-red-50"
+  >
+    <div class="bg-white shadow-xl rounded-xl p-8 text-center">
+      <h2 class="text-2xl font-bold text-red-600 mb-4">
+        Unauthorized Access
+      </h2>
+      <p class="text-gray-600">
+        You are not allowed to access this exam.
+      </p>
+    </div>
+  </div>
   </transition>
 </template>
 
@@ -311,6 +325,17 @@ onMounted(()=>{
 onBeforeUnmount(()=>{
   document.removeEventListener('click',handleClickOutside)
 })
+
+const goToResult = () => {
+  router.push(`/exam/${examId.value}/result`)
+}
+
+const goToAnalytics = () => {
+  router.push({
+    name: 'ExamAnalytics',
+    params: { examId: examId.value }
+  })
+}
 
 const filteredAttempts=computed(()=>{
   let result=attempts.value.filter(a=>{
