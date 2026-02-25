@@ -100,6 +100,13 @@ const login = async () => {
       localStorage.setItem("applicant_id", res.applicant_id)
     }
 
+    if (res.faculty_id) {
+      localStorage.setItem("faculty_id", res.faculty_id)
+    }
+
+    if (res.admin_id) {
+      localStorage.setItem("admin_id", res.admin_id)
+    }
     // --------------------------
     // REDIRECT BASED ON ROLE
     // --------------------------

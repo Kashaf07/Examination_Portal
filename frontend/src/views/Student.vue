@@ -281,7 +281,7 @@ export default {
       const email = localStorage.getItem('student_email')
       if (email) {
         try {
-          await axios.post('http://localhost:5000/api/logout', { email: email, role: 'Student' })
+          await axios.post('http://localhost:5000/api/logout', { user_id: localStorage.getItem('applicant_id'), role: 'Student' })
         } catch {}
       }
       this.startRedirectCountdown()
@@ -629,34 +629,37 @@ export default {
       this.stage = 'finished'
       this.finishMessage = msg
       window.removeEventListener('beforeunload', this.preventRefresh)
-      
-      const email = localStorage.getItem('student_email')
-      if (email) {
-        try {
-          await axios.post('http://localhost:5000/api/logout', {
-            email: email,
-            role: 'Student'
-          })
-        } catch (error) {
-          console.error('Logout API failed:', error)
-        }
-      }
-      
-      this.startRedirectCountdown()
-      
+
+      clearInterval(this.interval)
+
       try {
+        // 1️⃣ FIRST submit exam
         const res = await axios.post('http://localhost:5000/api/student/submit', {
           applicant_id: this.applicantId,
           exam_paper_id: this.exam.Exam_Paper_Id,
           answers: this.answers,
           attempt_id: this.examAttemptId
         })
+
         this.attemptId = res.data.Attempt_Id || this.examAttemptId || 'N/A'
+
+        // 2️⃣ THEN call logout API
+        const email = localStorage.getItem('student_email')
+        if (email) {
+          await axios.post('http://localhost:5000/api/logout', {
+            email: email,
+            role: 'Student'
+          })
+        }
+
       } catch (error) {
         console.error('Submission error:', error)
         this.attemptId = this.examAttemptId || 'N/A'
         this.showInlineMessage('Submission failed', 'error')
       }
+
+      // 3️⃣ THEN start redirect countdown
+      this.startRedirectCountdown()
     },
 
     showInlineMessage(text, type = 'error') {

@@ -224,21 +224,29 @@
         <button @click="clearCurrentFilter" class="text-red-500 font-semibold">Clear</button>
       </div>
     </div>
-        <!-- UNAUTHORIZED UI -->
+  </transition>
+  <!-- UNAUTHORIZED UI -->
   <div
-    v-else
+    v-if="error"
     class="min-h-screen flex items-center justify-center bg-red-50"
   >
     <div class="bg-white shadow-xl rounded-xl p-8 text-center">
       <h2 class="text-2xl font-bold text-red-600 mb-4">
         Unauthorized Access
       </h2>
-      <p class="text-gray-600">
+      <p class="text-gray-600 mb-6">
         You are not allowed to access this exam.
       </p>
-    </div>
+      
+      <!-- Go Back Button -->
+    <button
+      @click="router.back()"
+      class="bg-red-600 hover:bg-red-700 text-white px-6 py-2 rounded-lg font-semibold shadow-md transition"
+    >
+      Go Back
+    </button>
+    </div>    
   </div>
-  </transition>
 </template>
 
 <script setup>
@@ -326,17 +334,6 @@ onBeforeUnmount(()=>{
   document.removeEventListener('click',handleClickOutside)
 })
 
-const goToResult = () => {
-  router.push(`/exam/${examId.value}/result`)
-}
-
-const goToAnalytics = () => {
-  router.push({
-    name: 'ExamAnalytics',
-    params: { examId: examId.value }
-  })
-}
-
 const filteredAttempts=computed(()=>{
   let result=attempts.value.filter(a=>{
     if(filters.value.studentId && !String(a.Applicant_Id).includes(filters.value.studentId)) return false
@@ -367,7 +364,7 @@ const fetchAttempts=async()=>{
     const email=localStorage.getItem("email")
     const role=localStorage.getItem("active_role")
     const res=await axios.get('/attempts',{ params:{ exam_id:examId.value,email,role } })
-    if(!res.data.success){ error.value="Unauthorized"; return }
+    if(!res.data.success){ router.replace('/admin/exams'); return }
     attempts.value=res.data.attempts
   }catch{ error.value="Something went wrong." }
 }

@@ -176,10 +176,17 @@
       <h2 class="text-2xl font-bold text-red-600 mb-4">
         Unauthorized Access
       </h2>
-      <p class="text-gray-600">
+      <p class="text-gray-600 mb-6">
         You are not allowed to access this exam.
       </p>
-    </div>
+      <!-- Go Back Button -->
+    <button
+      @click="router.back()"
+      class="bg-red-600 hover:bg-red-700 text-white px-6 py-2 rounded-lg font-semibold shadow-md transition"
+    >
+      Go Back
+    </button>
+    </div>    
   </div>
 
   <!-- FILTER POPOVER -->
