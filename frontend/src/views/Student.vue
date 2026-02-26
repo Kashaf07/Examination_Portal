@@ -129,6 +129,25 @@ export default {
     }
   },
 
+  watch: {
+    textAnswer(newVal) {
+      if (this.stage !== 'exam') return
+
+      const trimmed = newVal.trim()
+
+      if (trimmed === '') {
+        // If empty, keep it NULL
+        this.answers[this.currentIndex] = null
+        return
+      }
+
+      this.answers[this.currentIndex] = {
+        question_id: this.currentQuestion.Question_Id,
+        selected_option: trimmed
+      }
+    }
+  },
+
   mounted() {
     this.studentEmail = localStorage.getItem('student_email')
     this.studentName = localStorage.getItem('student_name')
@@ -408,6 +427,24 @@ export default {
       this.selectedOption = key
       this.keyboardSelectedOption = null
       this.clearInlineMessage()
+
+      this.answers[this.currentIndex] = {
+        question_id: this.currentQuestion.Question_Id,
+        selected_option: key
+      }
+    },
+
+    watchTextAnswer(value) {
+      if (!value) return
+
+      this.answers[this.currentIndex] = {
+        question_id: this.currentQuestion.Question_Id,
+        selected_option: value
+      }
+
+      if (!this.visitedQuestions.includes(this.currentIndex)) {
+        this.visitedQuestions.push(this.currentIndex)
+      }
     },
 
     goBackToEntry() {
@@ -560,14 +597,14 @@ export default {
         value = this.textAnswer.trim()
       }
       
-      this.answers[this.currentIndex] = {
-        question_id: this.currentQuestion.Question_Id,
-        selected_option: value
-      }
-      
       const last = this.currentIndex + 1 === this.questions.length
       if (last) {
-        const anyUnanswered = this.answers.some(ans => ans === null)
+        const anyUnanswered = this.answers.some(ans => {
+          if (!ans) return true
+          if (!ans.selected_option) return true
+          if (ans.selected_option.trim() === '') return true
+          return false
+        })
         if (anyUnanswered) {
           // Mark all unanswered questions as visited/skipped
           this.questions.forEach((_, idx) => {
@@ -586,11 +623,10 @@ export default {
         this.finishExam('✅ All questions submitted!')
       } else {
         this.selectedOption = null
-        this.textAnswer = ''
-        this.keyboardSelectedOption = null
-        this.clearInlineMessage()
         this.currentIndex++
         this.loadCurrentAnswer()
+        this.keyboardSelectedOption = null
+        this.clearInlineMessage()
       }
     },
 
@@ -609,11 +645,14 @@ export default {
     },
 
     jumpToQuestion(idx) {
-      // Mark current question as visited before jumping
-      if (!this.visitedQuestions.includes(this.currentIndex)) {
+      // Mark current question as visited ONLY if unanswered
+      if (
+        this.answers[this.currentIndex] === null &&
+        !this.visitedQuestions.includes(this.currentIndex)
+      ) {
         this.visitedQuestions.push(this.currentIndex)
       }
-      
+
       this.currentIndex = idx
       this.loadCurrentAnswer()
     },
