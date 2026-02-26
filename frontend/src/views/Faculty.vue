@@ -1158,13 +1158,21 @@ const selectRole = (roleId) => {
 
 const logout = async () => {
   try {
-    await axios.post('/auth/logout', {
-      email,
-      role: activeRole.value
-    })
+    await axios.post(
+      '/auth/logout',
+      {},
+      {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("token")}`
+        }
+      }
+    )
+
     localStorage.clear()
     router.push('/')
-  } catch {
+
+  } catch (err) {
+    console.error("Logout failed:", err)
     alert('Logout failed')
   }
 }

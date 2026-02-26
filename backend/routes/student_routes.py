@@ -493,16 +493,25 @@ def create_student_routes(mysql):
                 Total_Score = 0.00, Status = 'Restricted', Evaluated_At = %s
             """, (attempt_id, current_time, current_time))
             
-            # 4. Auto-logout
+            # 4. Auto-logout (SAFE VERSION using User_Id)
             cur2 = mysql.connection.cursor()
+
             cur2.execute("""
                 UPDATE login_log
                 SET Logout_Time = %s
-                WHERE User_Email = %s
-                AND Role = 'Student'
-                ORDER BY Log_ID DESC
-                LIMIT 1
-            """, (current_time, student_email))
+                WHERE Log_ID = (
+                    SELECT Log_ID FROM (
+                        SELECT Log_ID
+                        FROM login_log
+                        WHERE User_Id = %s
+                        AND Role = 'Student'
+                        AND Logout_Time IS NULL
+                        ORDER BY Log_ID DESC
+                        LIMIT 1
+                    ) AS sub
+                )
+            """, (current_time, applicant_id))
+
             cur2.close()
 
             mysql.connection.commit()
@@ -633,7 +642,6 @@ def create_student_routes(mysql):
                 attempt_id = cur.lastrowid
                 
            # --- 3. Handle Restriction and Grading ---
-# --- 3. Handle Restriction and Grading ---
             if is_restricted:
                 grading_status = "Restricted"
                 grading_score = 0.00
@@ -672,18 +680,25 @@ def create_student_routes(mysql):
             # Commit everything together
             mysql.connection.commit()
 
-            mysql.connection.commit()
-
-            # Auto logout (normal)
+            # Auto logout (safe version)
             cur2 = mysql.connection.cursor()
+
             cur2.execute("""
                 UPDATE login_log
                 SET Logout_Time = %s
-                WHERE User_Email = %s
-                AND Role = 'Student'
-                ORDER BY Log_ID DESC
-                LIMIT 1
-            """, (end_time, student_email))
+                WHERE Log_ID = (
+                    SELECT Log_ID FROM (
+                        SELECT Log_ID
+                        FROM login_log
+                        WHERE User_Id = %s
+                        AND Role = 'Student'
+                        AND Logout_Time IS NULL
+                        ORDER BY Log_ID DESC
+                        LIMIT 1
+                    ) AS sub
+                )
+            """, (end_time, applicant_id))
+
             mysql.connection.commit()
             cur2.close()
             cur.close()

@@ -25,7 +25,8 @@ def create_auth_routes(mysql):
                 data = jwt.decode(token, SECRET_KEY, algorithms=["HS256"])
                 current_user = {
                     'email': data['email'],
-                    'role': data['active_role']
+                    'role': data['active_role'],
+                    'user_id': data.get('user_id')
                 }
             except jwt.ExpiredSignatureError:
                 return jsonify({'message': 'Token expired! Please login again.'}), 401
@@ -123,17 +124,38 @@ def create_auth_routes(mysql):
             return jsonify({"status": "fail", "message": "Invalid credentials"}), 401
 
         # ===== LOGIN SUCCESS =====
-        # Save login time
         login_time = datetime.now()
+
+        # Determine User_Id properly
+        user_id = None
+
+        if selected_role == "Student":
+            user_id = student_id
+
+        elif selected_role == "Faculty":
+            cursor.execute("SELECT Faculty_Id FROM mst_faculty WHERE F_Email=%s", (email,))
+            result = cursor.fetchone()
+            if result:
+                user_id = result[0]
+
+        elif selected_role == "Admin":
+            cursor.execute("SELECT Admin_Id FROM mst_admin WHERE Email=%s", (email,))
+            result = cursor.fetchone()
+            if result:
+                user_id = result[0]
+
+        # Insert into login_log with User_Id
         cursor.execute("""
-            INSERT INTO login_log (User_Email, Role, Login_Time)
-            VALUES (%s, %s, %s)
-        """, (email, selected_role, login_time))
+            INSERT INTO login_log (User_Email, User_Id, Role, Login_Time)
+            VALUES (%s, %s, %s, %s)
+        """, (email, user_id, selected_role, login_time))
+
         mysql.connection.commit()
 
         # Create JWT
         token = jwt.encode({
             "email": email,
+            "user_id": user_id,
             "roles": roles,
             "active_role": selected_role,
             "exp": datetime.now(timezone.utc) + timedelta(hours=2)
@@ -153,37 +175,44 @@ def create_auth_routes(mysql):
              response["applicant_id"] = student_id
 
         return jsonify(response), 200
-        
+            
     @auth_bp.route('/logout', methods=['POST'])
-    def logout():
-        data = request.json
-        email = data.get('email')
-        role = data.get('role')
+    @token_required
+    def logout(current_user):
 
         try:
+            user_id = current_user.get("user_id")
+            role = current_user.get("role")
+
+            if not user_id or not role:
+                return jsonify({'success': False, 'message': 'Invalid user data'}), 400
+
             cursor = mysql.connection.cursor()
-            # ✅ Update only latest login record for this user
-            update_query = """
-            UPDATE login_log
-    SET Logout_Time = %s
-    WHERE Log_ID = (
-        SELECT Log_ID FROM (
-            SELECT Log_ID
-            FROM login_log
-            WHERE User_Email = %s AND Role = %s
-            ORDER BY Log_ID DESC
-            LIMIT 1
-        ) AS sub
-    )
-"""
-            cursor.execute(update_query, (datetime.now(), email, role))
+
+            cursor.execute("""
+                UPDATE login_log
+                SET Logout_Time = %s
+                WHERE Log_ID = (
+                    SELECT Log_ID FROM (
+                        SELECT Log_ID
+                        FROM login_log
+                        WHERE User_Id = %s
+                        AND Role = %s
+                        AND Logout_Time IS NULL
+                        ORDER BY Log_ID DESC
+                        LIMIT 1
+                    ) AS sub
+                )
+            """, (datetime.now(), user_id, role))
+
             mysql.connection.commit()
+            cursor.close()
+
             return jsonify({'success': True, 'message': 'Logout time recorded'})
+
         except Exception as e:
-            print("Error in logout route:", e)
-            return jsonify({'success': False, 'message': 'Logout logging failed'}), 500
-        
-        # ---------- SAMPLE PROTECTED ROUTE ----------
+            print("Logout error:", e)
+            return jsonify({'success': False, 'message': 'Logout failed'}), 500 
     @auth_bp.route('/verify-token', methods=['GET'])
     @token_required
     def verify_token(current_user):
