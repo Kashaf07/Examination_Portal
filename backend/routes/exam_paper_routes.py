@@ -154,12 +154,21 @@ def create_exam_paper_routes(mysql):
             cur.execute("DELETE FROM exam_paper_questions WHERE Exam_Paper_Id = %s", (exam_paper_id,))
 
             # 📝 Insert new questions
+           # 📝 Insert new questions
             for qid in question_ids:
-                cur.execute("INSERT INTO exam_paper_questions (Exam_Paper_Id, Question_Id) VALUES (%s, %s)", (exam_paper_id, qid))
+                cur.execute(
+                    "INSERT INTO exam_paper_questions (Exam_Paper_Id, Question_Id) VALUES (%s, %s)",
+                    (exam_paper_id, qid)
+                )
+
+            # 🔥 VERY IMPORTANT: mark exam as saved
+            cur.execute("""
+                UPDATE exam_paper SET is_saved = 1 WHERE Exam_Paper_Id = %s
+            """, (exam_paper_id,))
 
             conn.commit()
-            return jsonify({'message': '✅ Question paper saved successfully!'}), 200
 
+            return jsonify({'message': '✅ Question paper saved successfully!'}), 200
         except Exception as e:
             conn.rollback()
             print("❌ Error occurred:", str(e))
