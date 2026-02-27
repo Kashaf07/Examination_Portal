@@ -29,13 +29,12 @@
         <div class="flex items-center gap-4">
           <!-- CREATE GROUP BUTTON -->
           <button
-
-            @click="createGroup"
-            class="bg-blue-500 hover:bg-blue-600 text-white font-semibold px-6 py-3 
-                  rounded-full shadow-lg transition hover:scale-105"
-          >
-            Create Group
-          </button>
+  @click="showCreateModal = true"
+  class="bg-blue-500 hover:bg-blue-600 text-white font-semibold px-6 py-3 
+        rounded-full shadow-lg transition hover:scale-105"
+>
+  Create Group
+</button>
 
           <!-- ACTIVE / ALL TOGGLE -->
           <div class="flex items-center bg-gray-100 rounded-full p-1 shadow-inner">
