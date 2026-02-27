@@ -1,5 +1,27 @@
 <template>
   <div class="w-full h-full flex flex-col items-center px-4 py-4">
+    <!-- Outside Screen Countdown Overlay -->
+    <div v-if="isOutsideScreen"
+        class="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50">
+
+      <div class="bg-white p-10 rounded-2xl shadow-2xl text-center">
+        <h2 class="text-2xl font-bold text-red-700 mb-4">
+          ⚠️ Return to Exam Immediately!
+        </h2>
+
+        <p class="text-lg font-semibold mb-2">
+          You left the exam screen.
+        </p>
+
+        <p class="text-4xl font-extrabold text-red-600">
+          {{ outsideCountdown }}
+        </p>
+
+        <p class="mt-2 text-sm text-gray-600">
+          Seconds before automatic restriction
+        </p>
+      </div>
+    </div>
     <!-- Timer - Fixed Top Left Corner -->
     <div class="fixed top-20 left-6 z-40">
       <div class="flex items-center bg-white px-4 py-2 rounded-xl shadow-lg border border-indigo-200">
@@ -209,6 +231,8 @@ const props = defineProps({
   answers: Array,
   violationCount: Number,
   inlineMessage: Object,
+  outsideCountdown: Number,
+  isOutsideScreen: Boolean,
   visitedQuestions: Array
 })
 

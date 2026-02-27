@@ -64,6 +64,8 @@
         @select-option="selectOption"
         @finish-exam="finishExam"
         @handle-next="handleNext"
+        :outside-countdown="outsideCountdown"
+        :is-outside-screen="isOutsideScreen"
       />
 
       <!-- Finished Stage -->
@@ -113,6 +115,9 @@ export default {
       interval: null,
       examIdError: false,
       inlineMessage: null,
+      outsideCountdown: 0,
+      outsideTimer: null,
+      isOutsideScreen: false,
       violationCount: 0,
       maxViolations: 3,
       fullscreenRecoveryTimeout: null,
@@ -135,6 +140,7 @@ export default {
     this.applicantId = parseInt(localStorage.getItem('applicant_id'))
 
     window.addEventListener('keydown', this.handleKeydown)
+    window.addEventListener('focus', this.cancelOutsideCountdown)
     window.addEventListener('blur', this.handleBlur)
     window.addEventListener('resize', this.detectSplitScreen)
     document.addEventListener('visibilitychange', this.handleVisibilityChange)
@@ -153,6 +159,7 @@ export default {
     clearTimeout(this.fullscreenRecoveryTimeout)
     clearInterval(this.redirectTimer)
 
+    window.removeEventListener('focus', this.cancelOutsideCountdown)
     window.removeEventListener('keydown', this.handleKeydown)
     window.removeEventListener('blur', this.handleBlur)
     window.removeEventListener('resize', this.detectSplitScreen)
@@ -189,24 +196,16 @@ export default {
     },
 
     handleBlur() {
-      if (this.stage === 'exam' && !this.isProcessingViolation) {
-        this.isProcessingViolation = true
-        this.handleViolation('Window lost focus (Alt+Tab detected)')
-        setTimeout(() => {
-          this.recoverFullscreen(100)
-          this.isProcessingViolation = false
-        }, 500)
+      if (this.stage === 'exam') {
+        this.startOutsideCountdown('Window lost focus (5s exceeded)')
       }
     },
 
     handleVisibilityChange() {
-      if (document.hidden && this.stage === 'exam' && !this.isProcessingViolation) {
-        this.isProcessingViolation = true
-        this.handleViolation('Tab switch detected')
-        setTimeout(() => {
-          this.recoverFullscreen(100)
-          this.isProcessingViolation = false
-        }, 500)
+      if (document.hidden && this.stage === 'exam') {
+        this.startOutsideCountdown('Tab switch detected (5s exceeded)')
+      } else if (!document.hidden && this.stage === 'exam') {
+        this.cancelOutsideCountdown()
       }
     },
 
@@ -238,6 +237,37 @@ export default {
       }
     },
 
+    startOutsideCountdown(reason) {
+      if (this.isOutsideScreen || this.stage !== 'exam') return
+
+      this.isOutsideScreen = true
+      this.outsideCountdown = 5
+
+      this.outsideTimer = setInterval(() => {
+        this.outsideCountdown--
+
+        if (this.outsideCountdown <= 0) {
+          clearInterval(this.outsideTimer)
+          this.outsideTimer = null
+          this.isOutsideScreen = false
+
+          // 🚨 5 sec over → Restrict
+          this.forceExit(reason)
+        }
+      }, 1000)
+    },
+
+    cancelOutsideCountdown() {
+      if (!this.isOutsideScreen) return
+
+      clearInterval(this.outsideTimer)
+      this.outsideTimer = null
+      this.isOutsideScreen = false
+
+      // Student came back in time → normal warning
+      this.handleViolation('Window lost focus (returned in time)')
+    },
+
     handleViolation(reason) {
       this.violationCount++
       if (this.violationCount >= this.maxViolations) {
@@ -252,6 +282,7 @@ export default {
     },
 
     async forceExit(reason) {
+      this.isOutsideScreen = false
       clearInterval(this.interval)
 
       // 🔥 Fill unanswered questions before submission
