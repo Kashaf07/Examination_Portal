@@ -253,37 +253,45 @@ export default {
 
     async forceExit(reason) {
       clearInterval(this.interval)
+
+      // 🔥 Fill unanswered questions before submission
+      this.answers = this.questions.map((q, index) => {
+        if (this.answers[index]) {
+          return this.answers[index]
+        }
+
+        return {
+          question_id: q.Question_Id,
+          selected_option: ''
+        }
+      })
+
       this.stage = 'finished'
-      this.finishMessage = `Exam forcibly ended.\nReason: ${reason}\n\nTotal Violations: ${this.violationCount}/${this.maxViolations}`
+      this.finishMessage =
+        `Exam forcibly ended.\nReason: ${reason}\n\nTotal Violations: ${this.violationCount}/${this.maxViolations}`
+
       window.removeEventListener('beforeunload', this.preventRefresh)
-      
+
       try {
-        if (this.examAttemptId) {
-          const res = await axios.post('http://localhost:5000/api/student/report-restriction', {
-            attempt_id: this.examAttemptId,
+        const res = await axios.post(
+          'http://localhost:5000/api/student/submit',
+          {
             applicant_id: this.applicantId,
             exam_paper_id: this.exam.Exam_Paper_Id,
-            reason: reason || 'Misconduct'
-          })
-          if (res.data && res.data.attempt_id) {
-            this.attemptId = res.data.attempt_id
-          } else {
-            this.attemptId = this.examAttemptId
+            answers: this.answers,
+            attempt_id: this.examAttemptId,
+            is_restricted: true,
+            restriction_reason: reason
           }
-        } else {
-          this.attemptId = 'N/A'
-        }
+        )
+
+        this.attemptId = res.data.Attempt_Id || this.examAttemptId
+
       } catch (error) {
-        console.error('Forced end API failed:', error)
+        console.error("❌ Restriction submission failed:", error)
         this.attemptId = this.examAttemptId || 'N/A'
       }
 
-      const email = localStorage.getItem('student_email')
-      if (email) {
-        try {
-          await axios.post('http://localhost:5000/api/logout', { user_id: localStorage.getItem('applicant_id'), role: 'Student' })
-        } catch {}
-      }
       this.startRedirectCountdown()
     },
 

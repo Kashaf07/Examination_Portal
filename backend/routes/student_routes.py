@@ -528,17 +528,8 @@ def create_student_routes(mysql):
             mysql.connection.rollback()
             return jsonify({"error": str(e)}), 500
 
-    # Submit answers with optional restriction flag
     @student_routes.route('/submit', methods=['POST'])
     def submit_answers():
-        data = request.json
-        applicant_id = data['applicant_id']
-
-        if not is_student_active(mysql, applicant_id):
-            return jsonify({
-                "error": "Your account is disabled. Submission blocked."
-            }), 403
-
         try:
             data = request.json
             applicant_id = data['applicant_id']
@@ -548,34 +539,27 @@ def create_student_routes(mysql):
             is_restricted = data.get('is_restricted', False)
             restriction_reason = data.get('restriction_reason', 'Academic misconduct detected')
 
+            if not is_student_active(mysql, applicant_id):
+                return jsonify({
+                    "error": "Your account is disabled. Submission blocked."
+                }), 403
+
             cur = mysql.connection.cursor()
 
             end_time = datetime.now()
 
-            # Update or create attempt
-            if attempt_id:
-                cur.execute("""
-                    UPDATE applicant_attempt 
-                    SET End_Time = %s, Status = %s
-                    WHERE Attempt_Id = %s
-                """, (end_time, "Submitted", attempt_id))
-            else:
-                cur.execute("SELECT Email FROM applicants WHERE Applicant_Id = %s", (applicant_id,))
-                applicant_result = cur.fetchone()
-                if not applicant_result:
-                    cur.close()
-                    return jsonify({"error": "Applicant not found"}), 404
-                student_email = applicant_result[0]
-                start_time = end_time
-                cur.execute("""
-                    INSERT INTO applicant_attempt (Applicant_Id, Student_Email, Exam_Paper_Id, Start_Time, End_Time, Status)
-                    VALUES (%s, %s, %s, %s, %s, %s)
-                """, (applicant_id, student_email, exam_paper_id, start_time, end_time, "Submitted"))
-                attempt_id = cur.lastrowid
+            # ALWAYS fetch student email first
+            cur.execute("SELECT Email FROM applicants WHERE Applicant_Id = %s", (applicant_id,))
+            applicant_result = cur.fetchone()
+            if not applicant_result:
+                cur.close()
+                return jsonify({"error": "Applicant not found"}), 404
 
+            student_email = applicant_result[0]
+
+            # Calculate marks
             total_marks = 0
 
-            # Evaluate and store answers
             for ans in answers:
                 question_id = ans['question_id']
                 selected_option = ans.get('selected_option') or ans.get('answer_text')
@@ -584,123 +568,83 @@ def create_student_routes(mysql):
 
                 cur.execute("""
                     SELECT Question_Type, Correct_Answer, Marks,
-                           Option_A, Option_B, Option_C, Option_D
+                        Option_A, Option_B, Option_C, Option_D
                     FROM entrance_question_bank
                     WHERE Question_Id = %s
                 """, (question_id,))
                 row = cur.fetchone()
                 if not row:
                     continue
-                    
+
                 q_type, correct_answer, marks, opt_a, opt_b, opt_c, opt_d = row
                 option_map = {'A': opt_a, 'B': opt_b, 'C': opt_c, 'D': opt_d}
-                
+
                 selected_text = selected_option
                 is_correct = False
-                
+
                 if q_type in ('MCQ', 'TF'):
-                    # Selected_option will be 'A', 'B', 'C', or 'D'
                     selected_text = option_map.get(selected_option, "")
                     is_correct = selected_text.strip().lower() == correct_answer.strip().lower()
                 elif q_type in ('Fill', 'OneWord'):
-                    # Selected_option/answer_text is the user's input
                     is_correct = selected_text.strip().lower() == correct_answer.strip().lower()
 
-                # Award marks only if correct and NOT restricted
                 if is_correct and not is_restricted:
                     total_marks += marks
-                
-                # Insert answer record - using INSERT IGNORE or ON DUPLICATE KEY UPDATE might be better for safety
+
                 cur.execute("""
                     INSERT INTO applicant_answers (Attempt_Id, Question_Id, Selected_Option_Id, Answer_Text)
                     VALUES (%s, %s, %s, %s)
                 """, (
                     attempt_id,
                     question_id,
-                    selected_option if q_type in ('MCQ', 'TF') else None, # Store option letter for MCQ/TF
+                    selected_option if q_type in ('MCQ', 'TF') else None,
                     selected_text
                 ))
 
-            # --- 2. Update/Create Attempt Record ---
+            # Decide status
             attempt_status = "Restricted" if is_restricted else "Submitted"
             final_marks = 0.00 if is_restricted else total_marks
 
-            if attempt_id:
-                # Update existing attempt
-                cur.execute("""
-                    UPDATE applicant_attempt 
-                    SET End_Time = %s, Status = %s, Marks_Obtained = %s
-                    WHERE Attempt_Id = %s
-                """, (end_time, attempt_status, final_marks, attempt_id))
-            else:
-                # Create new attempt (Shouldn't happen if /start-exam is used)
-                start_time = end_time
-                cur.execute("""
-                    INSERT INTO applicant_attempt (Applicant_Id, Student_Email, Exam_Paper_Id, Start_Time, End_Time, Status, Marks_Obtained)
-                    VALUES (%s, %s, %s, %s, %s, %s, %s)
-                """, (applicant_id, student_email, exam_paper_id, start_time, end_time, attempt_status, final_marks))
-                attempt_id = cur.lastrowid
-                
-           # --- 3. Handle Restriction and Grading ---
+            # Update attempt (ONLY ONCE)
+            cur.execute("""
+                UPDATE applicant_attempt 
+                SET End_Time = %s, Status = %s, Marks_Obtained = %s
+                WHERE Attempt_Id = %s
+            """, (end_time, attempt_status, final_marks, attempt_id))
+
+            # Handle restriction
             if is_restricted:
-                grading_status = "Restricted"
-                grading_score = 0.00
-                
-                # Insert into restricted_attempts table
                 cur.execute("""
-                    INSERT INTO restricted_attempts (Attempt_Id, Applicant_Id, Exam_Paper_Id, Reason)
+                    INSERT INTO restricted_attempts 
+                    (Attempt_Id, Applicant_Id, Exam_Paper_Id, Reason)
                     VALUES (%s, %s, %s, %s)
                 """, (attempt_id, applicant_id, exam_paper_id, restriction_reason))
-                
+
+                grading_status = "Restricted"
+                grading_score = 0.00
             else:
-                # Normal submission - calculate Pass/Fail based on actual marks earned
-                grading_score = total_marks  # Use the calculated marks
-                
                 cur.execute("SELECT Total_Marks FROM exam_paper WHERE Exam_Paper_Id = %s", (exam_paper_id,))
-                exam_paper_result = cur.fetchone()
-                
-                if exam_paper_result and exam_paper_result[0]:
-                    total_possible_marks = float(exam_paper_result[0])
-                    if total_possible_marks > 0:
-                        percentage = (total_marks / total_possible_marks) * 100
-                        grading_status = "Pass" if percentage >= 40 else "Fail"
-                    else:
-                        grading_status = "Fail"
+                total_possible_marks = cur.fetchone()[0] or 0
+
+                if total_possible_marks > 0:
+                    percentage = (total_marks / float(total_possible_marks)) * 100
+                    grading_status = "Pass" if percentage >= 40 else "Fail"
                 else:
                     grading_status = "Fail"
 
-            # ALWAYS insert/update auto_grading for EVERY submission
+                grading_score = total_marks
+
+            # Insert auto grading
             cur.execute("""
                 INSERT INTO auto_grading (Attempt_Id, Total_Score, Status, Evaluated_At)
                 VALUES (%s, %s, %s, %s)
                 ON DUPLICATE KEY UPDATE 
                 Total_Score = %s, Status = %s, Evaluated_At = %s
-            """, (attempt_id, grading_score, grading_status, end_time, grading_score, grading_status, end_time))
-
-            # Commit everything together
-            mysql.connection.commit()
-
-            # Auto logout (safe version)
-            cur2 = mysql.connection.cursor()
-
-            cur2.execute("""
-                UPDATE login_log
-                SET Logout_Time = %s
-                WHERE Log_ID = (
-                    SELECT Log_ID FROM (
-                        SELECT Log_ID
-                        FROM login_log
-                        WHERE User_Id = %s
-                        AND Role = 'Student'
-                        AND Logout_Time IS NULL
-                        ORDER BY Log_ID DESC
-                        LIMIT 1
-                    ) AS sub
-                )
-            """, (end_time, applicant_id))
+            """, (attempt_id, grading_score, grading_status, end_time,
+                grading_score, grading_status, end_time))
 
             mysql.connection.commit()
-            cur2.close()
+
             cur.close()
 
             return jsonify({
@@ -711,11 +655,10 @@ def create_student_routes(mysql):
                 "Status": grading_status,
                 "Is_Restricted": is_restricted
             })
+
         except Exception as e:
             mysql.connection.rollback()
-            return jsonify({"error": str(e)}), 500
-
-    # View all attempts (including restricted) - UPDATED TO SHOW RESTRICTION PROPERLY
+            return jsonify({"error": str(e)}), 500    # View all attempts (including restricted) - UPDATED TO SHOW RESTRICTION PROPERLY
     @student_routes.route('/attempts/<int:applicant_id>', methods=['GET'])
     def get_attempts(applicant_id):
         try:

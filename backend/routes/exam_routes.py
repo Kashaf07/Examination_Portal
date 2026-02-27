@@ -158,22 +158,25 @@ def create_exam_routes(mysql):
             return jsonify(success=False, message="Server error"), 500
 
     # EXAM STATUS
+    # EXAM STATUS
     @exam_bp.route('/status/<int:exam_id>', methods=['GET'])
     def get_exam_status(exam_id):
         try:
             cursor = mysql.connection.cursor()
 
+            # Check question bank
             cursor.execute("""
                 SELECT COUNT(*) FROM entrance_question_bank
                 WHERE Exam_Id = %s
             """, (exam_id,))
             qb_count = cursor.fetchone()[0]
 
+            # 🔥 Check is_saved instead of exam_paper count
             cursor.execute("""
-                SELECT COUNT(*) FROM exam_paper
-                WHERE Exam_Id = %s
-            """, (exam_id,))
-            qp_count = cursor.fetchone()[0]
+                SELECT is_saved FROM exam_paper WHERE Exam_Id = %s ORDER BY Created_At DESC LIMIT 1 """, (exam_id,))
+            row = cursor.fetchone()
+
+            is_saved = row[0] == 1 if row else False
 
             cursor.close()
 
@@ -181,7 +184,7 @@ def create_exam_routes(mysql):
                 success=True,
                 status={
                     "has_question_bank": qb_count > 0,
-                    "has_question_paper": qp_count > 0
+                    "has_question_paper": is_saved
                 }
             )
 
@@ -189,7 +192,6 @@ def create_exam_routes(mysql):
             print("❌ Status error:", e)
             traceback.print_exc()
             return jsonify(success=False), 500
-
     # EXAM REMINDERS (DASHBOARD NOTIFICATION)
     #  EXAM REMINDERS (ADMIN + FACULTY)
     # =====================================================
