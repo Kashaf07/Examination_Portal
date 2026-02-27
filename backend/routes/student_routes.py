@@ -1,3 +1,5 @@
+import traceback
+
 from flask import Blueprint, request, jsonify
 from datetime import datetime, timedelta
 
@@ -526,6 +528,9 @@ def create_student_routes(mysql):
             
         except Exception as e:
             mysql.connection.rollback()
+            print("❌ REPORT RESTRICTION ERROR:", str(e))
+            import traceback
+            traceback.print_exc()
             return jsonify({"error": str(e)}), 500
 
     @student_routes.route('/submit', methods=['POST'])
@@ -713,6 +718,8 @@ def create_student_routes(mysql):
 
         try:
             cur = mysql.connection.cursor()
+
+            # Get exam
             cur.execute("SELECT * FROM entrance_exam WHERE Exam_Id = %s", (exam_id,))
             exam = cur.fetchone()
 
@@ -723,6 +730,7 @@ def create_student_routes(mysql):
             exam_date = exam[2]
             exam_time = exam[3]
             duration_minutes = exam[4]
+
             if isinstance(exam_time, timedelta):
                 exam_datetime = datetime.combine(exam_date, (datetime.min + exam_time).time())
             else:
@@ -731,9 +739,46 @@ def create_student_routes(mysql):
             exam_end_entry_window = exam_datetime + timedelta(minutes=10)
             current_time = datetime.now()
 
+            # -------------------------------
+            # 🔥 AUTO CLOSE STUCK ATTEMPTS
+            # -------------------------------
+            cur.execute("""
+                SELECT aa.Attempt_Id, aa.Status, aa.Start_Time
+                FROM applicant_attempt aa
+                JOIN exam_paper ep ON aa.Exam_Paper_Id = ep.Exam_Paper_Id
+                WHERE aa.Applicant_Id = %s AND ep.Exam_Id = %s
+                ORDER BY aa.Start_Time DESC LIMIT 1
+            """, (applicant_id, exam_id))
+
+            attempt_row = cur.fetchone()
+
+            if attempt_row:
+                attempt_id, attempt_status, start_time = attempt_row
+
+                if attempt_status == "In Progress":
+                    exam_duration = timedelta(minutes=duration_minutes)
+                    exam_end_time = start_time + exam_duration
+
+                    # If exam time is over → auto submit
+                    if current_time >= exam_end_time:
+                        cur.execute("""
+                            UPDATE applicant_attempt
+                            SET Status = 'Submitted',
+                                End_Time = %s,
+                                Marks_Obtained = 0.00
+                            WHERE Attempt_Id = %s
+                        """, (current_time, attempt_id))
+
+                        mysql.connection.commit()
+                        attempt_status = "Submitted"
+
+            # -------------------------------
+            # NORMAL STATUS LOGIC
+            # -------------------------------
+
             status = "NOT_STARTED"
             message = f"Exam will start at {exam_datetime.strftime('%Y-%m-%d %H:%M:%S')}"
-            
+
             if current_time > exam_datetime:
                 if current_time > exam_end_entry_window:
                     status = "EXPIRED"
@@ -743,23 +788,9 @@ def create_student_routes(mysql):
                     remaining_seconds = int((exam_end_entry_window - current_time).total_seconds())
                     message = f"Exam entry window is active. {remaining_seconds} seconds remaining."
 
-            # Check for existing attempts (submitted or restricted)
-            cur.execute("""
-                SELECT aa.Attempt_Id, aa.Status, ra.Id as Restriction_Id
-                FROM applicant_attempt aa
-                JOIN exam_paper ep ON aa.Exam_Paper_Id = ep.Exam_Paper_Id
-                LEFT JOIN restricted_attempts ra ON aa.Attempt_Id = ra.Attempt_Id
-                WHERE aa.Applicant_Id = %s AND ep.Exam_Id = %s
-                ORDER BY aa.Start_Time DESC LIMIT 1
-            """, (applicant_id, exam_id))
-            
-            attempt_result = cur.fetchone()
-            
-            if attempt_result:
-                attempt_status = attempt_result[1]
-                restriction_id = attempt_result[2]
-                
-                if restriction_id or attempt_status == 'Restricted':
+            # Check final attempt state
+            if attempt_row:
+                if attempt_status == 'Restricted':
                     status = "RESTRICTED"
                     message = "You are restricted from this exam due to academic misconduct."
                 elif attempt_status == 'Submitted':
@@ -768,10 +799,9 @@ def create_student_routes(mysql):
                 elif attempt_status == 'In Progress':
                     status = "IN_PROGRESS"
                     message = "You have an ongoing attempt."
-            
-            
 
             cur.close()
+
             return jsonify({
                 "status": status,
                 "message": message,
@@ -779,7 +809,8 @@ def create_student_routes(mysql):
                 "exam_end_entry_window": exam_end_entry_window.strftime('%Y-%m-%d %H:%M:%S'),
                 "current_time": current_time.strftime('%Y-%m-%d %H:%M:%S')
             })
-        except Exception as e:
-            return jsonify({"error": str(e)}), 500
 
+        except Exception as e:
+            mysql.connection.rollback()
+            return jsonify({"error": str(e)}), 500
     return student_routes
