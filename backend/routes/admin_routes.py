@@ -1133,7 +1133,7 @@ def create_admin_routes(mysql):
                     SELECT ep.Exam_Id, COUNT(DISTINCT aa.Applicant_Id) AS attempted_applicants
                     FROM exam_paper ep
                     JOIN applicant_attempt aa ON ep.Exam_Paper_Id = aa.Exam_Paper_Id
-                    WHERE aa.Status = 'Submitted'
+                    WHERE aa.Status IN ('Submitted', 'Restricted')
                     GROUP BY ep.Exam_Id
                 ) AS attempts ON ee.Exam_Id = attempts.Exam_Id
                 WHERE TIMESTAMP(ee.Exam_Date, ee.Exam_Time) + INTERVAL ee.Duration_Minutes MINUTE <= NOW()

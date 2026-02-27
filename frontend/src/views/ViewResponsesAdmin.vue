@@ -147,10 +147,11 @@
               <td class="px-6 py-3 text-right">{{ attempt.Marks_Obtained }}</td>
               <td class="px-6 py-3 text-right">{{ attempt.Max_Marks }}</td>
               <td class="px-6 py-3 text-center">
-                <span :class="{
-                  'text-green-600 font-semibold': attempt.Status === 'Pass',
-                  'text-red-500 font-semibold': attempt.Status === 'Fail'
-                }">
+               <span :class="{
+  'text-green-600 font-semibold': attempt.Status === 'Pass',
+  'text-red-500 font-semibold': attempt.Status === 'Fail',
+  'text-amber-600 font-semibold': attempt.Status === 'Restricted'
+}">
                   {{ attempt.Status || '-' }}
                 </span>
               </td>
@@ -211,13 +212,49 @@
       </div>
 
       <div v-if="activeFilter === 'status'">
-        <select v-model="filters.status"
-                class="w-full border px-3 py-2 rounded-lg">
-          <option value="">All</option>
-          <option value="Pass">Pass</option>
-          <option value="Fail">Fail</option>
-        </select>
-      </div>
+
+  <label class="text-xs text-gray-500 font-semibold block mb-3">
+    Filter by Status
+  </label>
+
+  <div class="flex gap-3 flex-wrap">
+
+    <!-- PASS -->
+    <button
+      @click="filters.status = filters.status === 'Pass' ? '' : 'Pass'"
+      class="flex-1 min-w-[90px] px-4 py-2 rounded-lg border font-semibold transition text-center"
+      :class="filters.status === 'Pass'
+        ? 'bg-green-600 text-white border-green-600'
+        : 'bg-white text-green-600 border-green-400 hover:bg-green-50'"
+    >
+      Pass
+    </button>
+
+    <!-- FAIL -->
+    <button
+      @click="filters.status = filters.status === 'Fail' ? '' : 'Fail'"
+      class="flex-1 min-w-[90px] px-4 py-2 rounded-lg border font-semibold transition text-center"
+      :class="filters.status === 'Fail'
+        ? 'bg-red-600 text-white border-red-600'
+        : 'bg-white text-red-600 border-red-400 hover:bg-red-50'"
+    >
+      Fail
+    </button>
+
+    <!-- RESTRICTED -->
+    <button
+      @click="filters.status = filters.status === 'Restricted' ? '' : 'Restricted'"
+      class="flex-1 min-w-[90px] px-4 py-2 rounded-lg border font-semibold transition text-center"
+      :class="filters.status === 'Restricted'
+        ? 'bg-amber-500 text-white border-amber-500'
+        : 'bg-white text-amber-600 border-amber-500 hover:bg-amber-50'"
+    >
+      Restricted
+    </button>
+
+  </div>
+
+</div>
 
       <div class="flex justify-between mt-4">
         <button @click="applyFilter" class="text-blue-600 font-semibold">Apply</button>
