@@ -813,4 +813,52 @@ def create_student_routes(mysql):
         except Exception as e:
             mysql.connection.rollback()
             return jsonify({"error": str(e)}), 500
+        
+        
+        # ─── Keystroke Logging ───────────────────────────────────────────────────
+    @student_routes.route('/log-key', methods=['POST'])
+    def log_key():
+        try:
+            data = request.json
+            attempt_id   = data.get('attempt_id')
+            applicant_id = data.get('applicant_id')
+            event_type   = data.get('event_type', 'allowed')   # allowed | blocked | warning
+            key_value    = data.get('key_value', '')
+            ctrl_key     = int(bool(data.get('ctrl_key',  False)))
+            shift_key    = int(bool(data.get('shift_key', False)))
+            alt_key      = int(bool(data.get('alt_key',  False)))
+            meta_key     = int(bool(data.get('meta_key', False)))
+            log_timestamp = data.get('log_timestamp')          # ISO string from frontend
+
+            if not attempt_id or not applicant_id or not key_value:
+                return jsonify({"error": "Missing required fields"}), 400
+
+            if event_type not in ('allowed', 'blocked', 'warning'):
+                event_type = 'allowed'
+
+            # Parse timestamp or fall back to now
+            try:
+                from datetime import datetime as _dt
+                ts = _dt.fromisoformat(log_timestamp) if log_timestamp else _dt.now()
+            except Exception:
+                from datetime import datetime as _dt
+                ts = _dt.now()
+
+            cur = mysql.connection.cursor()
+            cur.execute("""
+                INSERT INTO attempt_key_logs
+                    (Attempt_Id, Applicant_Id, Event_Type, Key_Value,
+                     Ctrl_Key, Shift_Key, Alt_Key, Meta_Key, Log_Timestamp)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+            """, (attempt_id, applicant_id, event_type, key_value,
+                  ctrl_key, shift_key, alt_key, meta_key, ts))
+            mysql.connection.commit()
+            cur.close()
+
+            return jsonify({"success": True}), 200
+
+        except Exception as e:
+            mysql.connection.rollback()
+            return jsonify({"error": str(e)}), 500
+        
     return student_routes

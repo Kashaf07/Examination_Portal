@@ -80,7 +80,8 @@
 </template>
 
 <script>
-import axios from 'axios'
+// ✅ Use axiosInstance for all API calls (consistent base URL + headers)
+import axiosInstance from '../utils/axiosInstance'
 import ExamIdEntry from '../components/ExamIdEntry.vue'
 import ExamInstructions from '../components/ExamInstructions.vue'
 import ExamInterface from '../components/ExamInterface.vue'
@@ -124,7 +125,11 @@ export default {
       redirectCountdown: 10,
       redirectTimer: null,
       isProcessingViolation: false,
-      visitedQuestions: []
+      visitedQuestions: [],
+
+      // ── Key-log queue: batch-send every 3 seconds to reduce HTTP overhead ──
+      _keyLogQueue: [],
+      _keyLogFlushTimer: null
     }
   },
 
@@ -136,47 +141,108 @@ export default {
 
   mounted() {
     this.studentEmail = localStorage.getItem('student_email')
-    this.studentName = localStorage.getItem('student_name')
-    this.applicantId = parseInt(localStorage.getItem('applicant_id'))
+    this.studentName  = localStorage.getItem('student_name')
+    this.applicantId  = parseInt(localStorage.getItem('applicant_id'))
 
-    window.addEventListener('keydown', this.handleKeydown)
-    window.addEventListener('focus', this.cancelOutsideCountdown)
-    window.addEventListener('blur', this.handleBlur)
-    window.addEventListener('resize', this.detectSplitScreen)
+    window.addEventListener('keydown',          this.handleKeydown)
+    window.addEventListener('focus',            this.cancelOutsideCountdown)
+    window.addEventListener('blur',             this.handleBlur)
+    window.addEventListener('resize',           this.detectSplitScreen)
     document.addEventListener('visibilitychange', this.handleVisibilityChange)
     document.addEventListener('fullscreenchange', this.handleFullscreenChange)
-    window.addEventListener('beforeunload', this.preventRefresh)
-    window.addEventListener('popstate', this.preventBack)
-    document.addEventListener('contextmenu', e => e.preventDefault())
-    document.addEventListener('cut', e => e.preventDefault())
-    document.addEventListener('copy', e => e.preventDefault())
-    document.addEventListener('paste', e => e.preventDefault())
+    window.addEventListener('beforeunload',     this.preventRefresh)
+    window.addEventListener('popstate',         this.preventBack)
+    document.addEventListener('contextmenu',    e => e.preventDefault())
+
+    // ─── Copy / Paste / Cut — block + log ────────────────────────────────────
+    document.addEventListener('cut',  this._handleCut  = (e) => {
+      e.preventDefault()
+      this.logKey('Ctrl+X', 'blocked', { ctrlKey: true, shiftKey: false, altKey: false, metaKey: false })
+    })
+    document.addEventListener('copy', this._handleCopy = (e) => {
+      e.preventDefault()
+      this.logKey('Ctrl+C', 'blocked', { ctrlKey: true, shiftKey: false, altKey: false, metaKey: false })
+    })
+    document.addEventListener('paste', this._handlePaste = (e) => {
+      e.preventDefault()
+      this.logKey('Ctrl+V', 'blocked', { ctrlKey: true, shiftKey: false, altKey: false, metaKey: false })
+    })
+
     window.history.pushState(null, null, location.href)
   },
 
   beforeUnmount() {
+    // Flush any remaining queued key logs before unmounting
+    this._flushKeyLogs()
+
     clearInterval(this.interval)
     clearTimeout(this.fullscreenRecoveryTimeout)
     clearInterval(this.redirectTimer)
+    clearInterval(this._keyLogFlushTimer)
 
-    window.removeEventListener('focus', this.cancelOutsideCountdown)
-    window.removeEventListener('keydown', this.handleKeydown)
-    window.removeEventListener('blur', this.handleBlur)
-    window.removeEventListener('resize', this.detectSplitScreen)
+    window.removeEventListener('focus',           this.cancelOutsideCountdown)
+    window.removeEventListener('keydown',         this.handleKeydown)
+    window.removeEventListener('blur',            this.handleBlur)
+    window.removeEventListener('resize',          this.detectSplitScreen)
     document.removeEventListener('visibilitychange', this.handleVisibilityChange)
     document.removeEventListener('fullscreenchange', this.handleFullscreenChange)
-    window.removeEventListener('beforeunload', this.preventRefresh)
-    window.removeEventListener('popstate', this.preventBack)
+    window.removeEventListener('beforeunload',    this.preventRefresh)
+    window.removeEventListener('popstate',        this.preventBack)
+    document.removeEventListener('cut',           this._handleCut)
+    document.removeEventListener('copy',          this._handleCopy)
+    document.removeEventListener('paste',         this._handlePaste)
   },
 
   methods: {
+
+    // ─── Keystroke Logger ─────────────────────────────────────────────────────
+    // Queues key events and flushes them one-by-one every 3s to avoid
+    // hammering the server with hundreds of individual HTTP requests.
+    logKey(keyValue, eventType, originalEvent) {
+      if (this.stage !== 'exam' || !this.examAttemptId || !this.applicantId) return
+
+      this._keyLogQueue.push({
+        attempt_id:    this.examAttemptId,
+        applicant_id:  this.applicantId,
+        event_type:    eventType,
+        key_value:     keyValue,
+        ctrl_key:      originalEvent?.ctrlKey  ?? false,
+        shift_key:     originalEvent?.shiftKey ?? false,
+        alt_key:       originalEvent?.altKey   ?? false,
+        meta_key:      originalEvent?.metaKey  ?? false,
+        log_timestamp: new Date().toISOString()
+      })
+
+      // Start flush timer if not already running
+      if (!this._keyLogFlushTimer) {
+        this._keyLogFlushTimer = setInterval(() => {
+          this._flushKeyLogs()
+        }, 3000)
+      }
+    },
+
+    async _flushKeyLogs() {
+      if (!this._keyLogQueue.length) return
+
+      const batch = this._keyLogQueue.splice(0, this._keyLogQueue.length)
+
+      // Send each log individually (server expects single-row inserts)
+      for (const entry of batch) {
+        try {
+          await axiosInstance.post('/student/log-key', entry)
+        } catch {
+          // Silent — never disrupt the exam for a logging failure
+        }
+      }
+    },
+
     enterFullscreen() {
       const el = document.documentElement
       setTimeout(() => {
-        if (el.requestFullscreen) el.requestFullscreen()
+        if (el.requestFullscreen)           el.requestFullscreen()
         else if (el.webkitRequestFullscreen) el.webkitRequestFullscreen()
-        else if (el.mozRequestFullScreen) el.mozRequestFullScreen()
-        else if (el.msRequestFullscreen) el.msRequestFullscreen()
+        else if (el.mozRequestFullScreen)    el.mozRequestFullScreen()
+        else if (el.msRequestFullscreen)     el.msRequestFullscreen()
       }, 100)
     },
 
@@ -187,6 +253,7 @@ export default {
           this.redirectCountdown--
         } else {
           clearInterval(this.redirectTimer)
+          clearInterval(this._keyLogFlushTimer)
           localStorage.removeItem('student_email')
           localStorage.removeItem('student_name')
           localStorage.removeItem('applicant_id')
@@ -211,16 +278,16 @@ export default {
 
     detectSplitScreen() {
       if (this.stage !== 'exam' || this.isProcessingViolation) return
-      const isFullscreen = document.fullscreenElement !== null
-      const screenWidth = window.screen.width
-      const screenHeight = window.screen.height
-      const windowWidth = window.innerWidth
-      const windowHeight = window.innerHeight
+      const isFullscreen  = document.fullscreenElement !== null
+      const screenWidth   = window.screen.width
+      const screenHeight  = window.screen.height
+      const windowWidth   = window.innerWidth
+      const windowHeight  = window.innerHeight
       if (!isFullscreen) {
         this.recoverFullscreen(100)
         return
       }
-      const widthRatio = windowWidth / screenWidth
+      const widthRatio  = windowWidth  / screenWidth
       const heightRatio = windowHeight / screenHeight
       if (widthRatio < 0.95 || heightRatio < 0.95) {
         this.recoverFullscreen(100)
@@ -240,7 +307,7 @@ export default {
     startOutsideCountdown(reason) {
       if (this.isOutsideScreen || this.stage !== 'exam') return
 
-      this.isOutsideScreen = true
+      this.isOutsideScreen  = true
       this.outsideCountdown = 5
 
       this.outsideTimer = setInterval(() => {
@@ -248,10 +315,8 @@ export default {
 
         if (this.outsideCountdown <= 0) {
           clearInterval(this.outsideTimer)
-          this.outsideTimer = null
+          this.outsideTimer    = null
           this.isOutsideScreen = false
-
-          // 🚨 5 sec over → Restrict
           this.forceExit(reason)
         }
       }, 1000)
@@ -261,10 +326,10 @@ export default {
       if (!this.isOutsideScreen) return
 
       clearInterval(this.outsideTimer)
-      this.outsideTimer = null
+      this.outsideTimer    = null
       this.isOutsideScreen = false
 
-      // Student came back in time → normal warning
+      // Came back in time → normal warning
       this.handleViolation('Window lost focus (returned in time)')
     },
 
@@ -284,42 +349,35 @@ export default {
     async forceExit(reason) {
       this.isOutsideScreen = false
       clearInterval(this.interval)
+      clearInterval(this._keyLogFlushTimer)
+      this._keyLogFlushTimer = null
 
-      // 🔥 Fill unanswered questions before submission
+      // Flush remaining key logs before submitting
+      await this._flushKeyLogs()
+
+      // Fill unanswered questions
       this.answers = this.questions.map((q, index) => {
-        if (this.answers[index]) {
-          return this.answers[index]
-        }
-
-        return {
-          question_id: q.Question_Id,
-          selected_option: ''
-        }
+        if (this.answers[index]) return this.answers[index]
+        return { question_id: q.Question_Id, selected_option: '' }
       })
 
-      this.stage = 'finished'
-      this.finishMessage =
-        `Exam forcibly ended.\nReason: ${reason}\n\nTotal Violations: ${this.violationCount}/${this.maxViolations}`
+      this.stage         = 'finished'
+      this.finishMessage = `Exam forcibly ended.\nReason: ${reason}\n\nTotal Violations: ${this.violationCount}/${this.maxViolations}`
 
       window.removeEventListener('beforeunload', this.preventRefresh)
 
       try {
-        const res = await axios.post(
-          'http://localhost:5000/api/student/submit',
-          {
-            applicant_id: this.applicantId,
-            exam_paper_id: this.exam.Exam_Paper_Id,
-            answers: this.answers,
-            attempt_id: this.examAttemptId,
-            is_restricted: true,
-            restriction_reason: reason
-          }
-        )
-
+        const res = await axiosInstance.post('/student/submit', {
+          applicant_id:       this.applicantId,
+          exam_paper_id:      this.exam.Exam_Paper_Id,
+          answers:            this.answers,
+          attempt_id:         this.examAttemptId,
+          is_restricted:      true,
+          restriction_reason: reason
+        })
         this.attemptId = res.data.Attempt_Id || this.examAttemptId
-
-      } catch (error) {
-        console.error("❌ Restriction submission failed:", error)
+      } catch (err) {
+        console.error('❌ Restriction submission failed:', err)
         this.attemptId = this.examAttemptId || 'N/A'
       }
 
@@ -344,74 +402,101 @@ export default {
       window.history.pushState(null, null, location.href)
     },
 
+    // ─── handleKeydown ────────────────────────────────────────────────────────
     handleKeydown(event) {
       if (this.stage !== 'exam') return
 
-      const qType = this.currentQuestion.Question_Type
+      const key   = event.key
+      const ctrl  = event.ctrlKey
+      const shift = event.shiftKey
+      const meta  = event.metaKey
+
+      // ── Arrow / Enter navigation for MCQ/TF ─────────────────────────────────
+      const qType = this.currentQuestion?.Question_Type
       if (['MCQ', 'TF'].includes(qType)) {
-        const key = event.key
         if (['ArrowUp', 'ArrowDown'].includes(key)) {
           event.preventDefault()
           this.navigateOptions(key === 'ArrowUp' ? -1 : 1)
-        } else if (key === 'Enter') {
+          return
+        }
+        if (key === 'Enter') {
           event.preventDefault()
           this.handleEnterKey()
+          return
         }
       }
 
-      if (event.key === 'Escape') {
+      // ── ESC — warning violation ──────────────────────────────────────────────
+      if (key === 'Escape') {
         event.preventDefault()
         event.stopPropagation()
+        this.logKey('Escape', 'warning', event)
         this.violationCount++
-        
         if (this.violationCount >= this.maxViolations) {
           this.forceExit('ESC key pressed (attempted to exit fullscreen)')
           return
         }
-        
         const left = this.maxViolations - this.violationCount
         this.showInlineMessage(
-          `⚠️ Warning ${this.violationCount}/${this.maxViolations}: ESC key pressed. You have ${left} attempt(s) left.`, 
+          `⚠️ Warning ${this.violationCount}/${this.maxViolations}: ESC key pressed. You have ${left} attempt(s) left.`,
           'warning'
         )
-        
         setTimeout(() => this.enterFullscreen(), 100)
         return
       }
 
-      const isRestrictedCombo =
-        event.key === 'F12' ||
-        (event.ctrlKey && event.shiftKey && ['I', 'C', 'J'].includes(event.key)) ||
-        (event.ctrlKey && ['U'].includes(event.key)) ||
-        (event.ctrlKey && event.key === 'Tab')
-
-      if (isRestrictedCombo) {
+      // ── PrintScreen / Mac screenshot — warning ───────────────────────────────
+      if (key === 'PrintScreen' || (meta && shift && ['3', '4', '5'].includes(key))) {
         event.preventDefault()
+        this.logKey('PrintScreen', 'warning', event)
         return
       }
 
-      const isRefreshKey =
-        event.key === 'F5' ||
-        (event.ctrlKey && event.key === 'r') ||
-        (event.ctrlKey && event.key === 'R') ||
-        (event.ctrlKey && event.shiftKey && event.key === 'r') ||
-        (event.ctrlKey && event.shiftKey && event.key === 'R')
-
-      if (isRefreshKey) {
+      // ── F12 — blocked ────────────────────────────────────────────────────────
+      if (key === 'F12') {
         event.preventDefault()
+        this.logKey('F12', 'blocked', event)
         return
       }
 
-      if (event.key === 'PrintScreen' || 
-          (event.metaKey && event.shiftKey && ['3', '4', '5'].includes(event.key))) {
+      // ── Ctrl+Shift+I / C / J — DevTools — blocked ───────────────────────────
+      if (ctrl && shift && ['I', 'C', 'J'].includes(key)) {
         event.preventDefault()
+        this.logKey(`Ctrl+Shift+${key}`, 'blocked', event)
         return
       }
+
+      // ── Ctrl+U — view source — blocked ───────────────────────────────────────
+      if (ctrl && key === 'u') {
+        event.preventDefault()
+        this.logKey('Ctrl+U', 'blocked', event)
+        return
+      }
+
+      // ── Ctrl+Tab — tab switch — blocked ──────────────────────────────────────
+      if (ctrl && key === 'Tab') {
+        event.preventDefault()
+        this.logKey('Ctrl+Tab', 'blocked', event)
+        return
+      }
+
+      // ── F5 / Ctrl+R / Ctrl+Shift+R — refresh — blocked ───────────────────────
+      if (
+        key === 'F5' ||
+        (ctrl && (key === 'r' || key === 'R')) ||
+        (ctrl && shift && (key === 'r' || key === 'R'))
+      ) {
+        event.preventDefault()
+        this.logKey(key === 'F5' ? 'F5' : (shift ? 'Ctrl+Shift+R' : 'Ctrl+R'), 'blocked', event)
+        return
+      }
+
+      
     },
 
     navigateOptions(dir) {
       const type = this.currentQuestion.Question_Type
-      const options = type === 'TF' 
+      const options = type === 'TF'
         ? { A: this.currentQuestion.Option_A, B: this.currentQuestion.Option_B }
         : type === 'MCQ'
         ? {
@@ -421,7 +506,7 @@ export default {
             D: this.currentQuestion.Option_D
           }
         : {}
-      
+
       const availableKeys = Object.keys(options)
       const index = this.keyboardSelectedOption
         ? availableKeys.indexOf(this.keyboardSelectedOption)
@@ -450,14 +535,14 @@ export default {
     },
 
     goBackToEntry() {
-      this.stage = 'enter'
-      this.examIdError = false
+      this.stage        = 'enter'
+      this.examIdError  = false
       this.clearInlineMessage()
-      this.exam = null
-      this.questions = []
+      this.exam         = null
+      this.questions    = []
       this.examAttemptId = null
       this.currentIndex = 0
-      this.answers = []
+      this.answers      = []
       this.visitedQuestions = []
     },
 
@@ -466,62 +551,45 @@ export default {
       try {
         this.examIdError = false
         this.clearInlineMessage()
-        
-        const res = await axios.post(`http://localhost:5000/api/student/exam/${this.examId}`, {
+
+        const res = await axiosInstance.post(`/student/exam/${this.examId}`, {
           applicant_id: this.applicantId
         })
-        
-        this.exam = res.data.exam
-        this.questions = res.data.questions
-        this.answers = new Array(this.questions.length).fill(null)
+
+        this.exam          = res.data.exam
+        this.questions     = res.data.questions
+        this.answers       = new Array(this.questions.length).fill(null)
         this.examAttemptId = res.data.attempt_id || null
-        
-        if (res.data.exam.Remaining_Seconds !== undefined) {
-          this.timer = res.data.exam.Remaining_Seconds
-        } else {
-          this.timer = this.exam.Duration_Minutes * 60
-        }
-        
+
+        this.timer = res.data.exam.Remaining_Seconds !== undefined
+          ? res.data.exam.Remaining_Seconds
+          : this.exam.Duration_Minutes * 60
+
         this.stage = 'instructions'
         this.clearInlineMessage()
       } catch (error) {
         this.examIdError = true
         if (error.response) {
-          const status = error.response.status
+          const status    = error.response.status
           const errorData = error.response.data
           switch (status) {
             case 425:
-              this.showInlineMessage(
-                errorData.error || 'Exam has not started yet. Please wait until the scheduled time.',
-                'error'
-              )
+              this.showInlineMessage(errorData.error || 'Exam has not started yet. Please wait until the scheduled time.', 'error')
               break
             case 410:
-              this.showInlineMessage(
-                errorData.error || 'Exam entry time has expired. You cannot start the exam after 10 minutes of exam start time.',
-                'error'
-              )
+              this.showInlineMessage(errorData.error || 'Exam entry time has expired. You cannot start the exam after 10 minutes of exam start time.', 'error')
               break
             case 403:
-              this.showInlineMessage(
-                errorData.error || 'Access Denied: You are not assigned to this exam',
-                'error'
-              )
+              this.showInlineMessage(errorData.error || 'Access Denied: You are not assigned to this exam', 'error')
               break
             case 409:
-              this.showInlineMessage(
-                errorData.error || 'You have already attempted this exam',
-                'error'
-              )
+              this.showInlineMessage(errorData.error || 'You have already attempted this exam', 'error')
               break
             case 404:
               this.showInlineMessage('Invalid Exam ID', 'error')
               break
             default:
-              this.showInlineMessage(
-                errorData.error || 'Failed to load exam. Please try again.',
-                'error'
-              )
+              this.showInlineMessage(errorData.error || 'Failed to load exam. Please try again.', 'error')
           }
         } else {
           this.showInlineMessage('Network error. Please check your connection.', 'error')
@@ -531,52 +599,41 @@ export default {
 
     async startExam() {
       try {
-        const res = await axios.post('http://localhost:5000/api/student/start-exam', {
+        const res = await axiosInstance.post('/student/start-exam', {
           applicant_id: this.applicantId,
-          exam_id: this.exam.Exam_Id
+          exam_id:      this.exam.Exam_Id
         })
 
-        if (res.data && res.data.attempt_id) {
+        if (res.data?.attempt_id) {
           this.examAttemptId = res.data.attempt_id
-          console.log('✅ Exam attempt created:', this.examAttemptId)
         }
 
         this.stage = 'exam'
         this.enterFullscreen()
-        
+
         this.interval = setInterval(() => {
           if (this.timer > 0) {
             this.timer--
-            if (this.timer === 300) {
-              this.showInlineMessage('⚠️ Only 5 minutes remaining!', 'warning')
-            } else if (this.timer === 60) {
-              this.showInlineMessage('🚨 Only 1 minute remaining!', 'warning')
-            }
+            if (this.timer === 300) this.showInlineMessage('⚠️ Only 5 minutes remaining!', 'warning')
+            else if (this.timer === 60) this.showInlineMessage('🚨 Only 1 minute remaining!', 'warning')
           } else {
             clearInterval(this.interval)
             this.handleTimerFinish()
           }
         }, 1000)
-        
+
         setTimeout(() => {
-          if (this.stage === 'exam' && !document.fullscreenElement) {
-            this.enterFullscreen()
-          }
+          if (this.stage === 'exam' && !document.fullscreenElement) this.enterFullscreen()
         }, 1000)
-      } catch (error) {
-        console.error('Failed to start exam attempt:', error)
+      } catch (err) {
+        console.error('Failed to start exam attempt:', err)
         this.showInlineMessage('Failed to start exam. Please try again.', 'error')
       }
     },
 
     handleTimerFinish() {
       this.answers = this.answers.map((ans, idx) => {
-        if (ans === null) {
-          return {
-            question_id: this.questions[idx].Question_Id,
-            selected_option: ''
-          }
-        }
+        if (ans === null) return { question_id: this.questions[idx].Question_Id, selected_option: '' }
         return ans
       })
       this.finishExam('⏰ Time is up!\nYour exam has been auto-submitted.')
@@ -584,7 +641,8 @@ export default {
 
     handleNext() {
       const type = this.currentQuestion.Question_Type
-      let value = null
+      let value  = null
+
       if (type === 'MCQ' || type === 'TF') {
         if (!this.selectedOption) {
           this.showInlineMessage('⚠️ Select an option first', 'warning')
@@ -598,34 +656,29 @@ export default {
         }
         value = this.textAnswer.trim()
       }
-      
+
       this.answers[this.currentIndex] = {
-        question_id: this.currentQuestion.Question_Id,
+        question_id:     this.currentQuestion.Question_Id,
         selected_option: value
       }
-      
+
       const last = this.currentIndex + 1 === this.questions.length
       if (last) {
         const anyUnanswered = this.answers.some(ans => ans === null)
         if (anyUnanswered) {
-          // Mark all unanswered questions as visited/skipped
           this.questions.forEach((_, idx) => {
             if (this.answers[idx] === null && !this.visitedQuestions.includes(idx)) {
               this.visitedQuestions.push(idx)
             }
           })
-          
-          // Wait a bit to show the yellow color change
-          setTimeout(() => {
-            this.showInlineMessage('⚠️ Please answer all questions.', 'warning')
-          }, 100)
+          setTimeout(() => this.showInlineMessage('⚠️ Please answer all questions.', 'warning'), 100)
           return
         }
         clearInterval(this.interval)
         this.finishExam('✅ All questions submitted!')
       } else {
-        this.selectedOption = null
-        this.textAnswer = ''
+        this.selectedOption        = null
+        this.textAnswer            = ''
         this.keyboardSelectedOption = null
         this.clearInlineMessage()
         this.currentIndex++
@@ -634,78 +687,70 @@ export default {
     },
 
     loadCurrentAnswer() {
-      const ans = this.answers[this.currentIndex]
+      const ans  = this.answers[this.currentIndex]
       const type = this.currentQuestion.Question_Type
       if (ans) {
         if (type === 'MCQ' || type === 'TF') this.selectedOption = ans.selected_option
         else this.textAnswer = ans.selected_option
       } else {
         this.selectedOption = null
-        this.textAnswer = ''
+        this.textAnswer     = ''
       }
       this.keyboardSelectedOption = null
       this.clearInlineMessage()
     },
 
     jumpToQuestion(idx) {
-      // Mark current question as visited before jumping
       if (!this.visitedQuestions.includes(this.currentIndex)) {
         this.visitedQuestions.push(this.currentIndex)
       }
-      
       this.currentIndex = idx
       this.loadCurrentAnswer()
     },
 
     async finishExam(msg) {
-      // Mark all unanswered questions as visited/skipped
       this.questions.forEach((_, idx) => {
         if (this.answers[idx] === null && !this.visitedQuestions.includes(idx)) {
           this.visitedQuestions.push(idx)
         }
       })
-      
-      this.stage = 'finished'
+
+      this.stage         = 'finished'
       this.finishMessage = msg
       window.removeEventListener('beforeunload', this.preventRefresh)
-
       clearInterval(this.interval)
+      clearInterval(this._keyLogFlushTimer)
+      this._keyLogFlushTimer = null
+
+      // Flush remaining key logs before final submit
+      await this._flushKeyLogs()
 
       try {
-        // 1️⃣ FIRST submit exam
-        const res = await axios.post('http://localhost:5000/api/student/submit', {
-          applicant_id: this.applicantId,
+        const res = await axiosInstance.post('/student/submit', {
+          applicant_id:  this.applicantId,
           exam_paper_id: this.exam.Exam_Paper_Id,
-          answers: this.answers,
-          attempt_id: this.examAttemptId
+          answers:       this.answers,
+          attempt_id:    this.examAttemptId
         })
 
         this.attemptId = res.data.Attempt_Id || this.examAttemptId || 'N/A'
 
-        // 2️⃣ THEN call logout API
         const email = localStorage.getItem('student_email')
         if (email) {
-          await axios.post('http://localhost:5000/api/logout', {
-            email: email,
-            role: 'Student'
-          })
+          await axiosInstance.post('/logout', { email, role: 'Student' })
         }
-
-      } catch (error) {
-        console.error('Submission error:', error)
+      } catch (err) {
+        console.error('Submission error:', err)
         this.attemptId = this.examAttemptId || 'N/A'
         this.showInlineMessage('Submission failed', 'error')
       }
 
-      // 3️⃣ THEN start redirect countdown
       this.startRedirectCountdown()
     },
 
     showInlineMessage(text, type = 'error') {
       this.inlineMessage = { text, type }
-      setTimeout(() => {
-        this.clearInlineMessage()
-      }, 5000)
+      setTimeout(() => this.clearInlineMessage(), 5000)
     },
 
     clearInlineMessage() {
