@@ -549,6 +549,14 @@ def create_student_routes(mysql):
             restriction_reason = data.get('restriction_reason', 'Academic misconduct detected')
 
             cur = mysql.connection.cursor()
+            cur.execute("SELECT Email FROM applicants WHERE Applicant_Id = %s", (applicant_id,))
+            email_row = cur.fetchone()
+
+            if not email_row:
+                cur.close()
+                return jsonify({"error": "Applicant not found"}), 404
+
+            student_email = email_row[0]
 
             end_time = datetime.now()
 

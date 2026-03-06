@@ -860,15 +860,22 @@ clearInlineMessage() {
 
   console.error("Submission failed, retrying...", retries)
 
-  this.showInlineMessage(
-    "⚠️ Internet problem. Retrying submission...",
-    "warning"
-  )
+  if (!err.response) {
+  this.showInlineMessage("⚠️ Internet connection lost. Retrying...", "warning")
+} else {
+  this.showInlineMessage("⚠️ Server error. Retrying submission...", "warning")
+}
 
   await new Promise(resolve => setTimeout(resolve, 5000))
 
 }
   }
+  if (!submitted) {
+  this.showInlineMessage(
+    "❌ Could not submit exam. Please try again or contact admin.",
+    "error"
+  )
+}
   }
   }  
 }
