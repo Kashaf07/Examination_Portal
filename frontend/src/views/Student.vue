@@ -709,44 +709,57 @@ export default {
     },
 
     async finishExam(msg) {
-      this.questions.forEach((_, idx) => {
-        if (this.answers[idx] === null && !this.visitedQuestions.includes(idx)) {
-          this.visitedQuestions.push(idx)
-        }
-      })
+  this.questions.forEach((_, idx) => {
+    if (this.answers[idx] === null && !this.visitedQuestions.includes(idx)) {
+      this.visitedQuestions.push(idx)
+    }
+  })
 
-      this.stage         = 'finished'
-      this.finishMessage = msg
-      window.removeEventListener('beforeunload', this.preventRefresh)
-      clearInterval(this.interval)
-      clearInterval(this._keyLogFlushTimer)
-      this._keyLogFlushTimer = null
+  this.stage = 'finished'
+  this.finishMessage = msg
 
-      // Flush remaining key logs before final submit
-      await this._flushKeyLogs()
+  window.removeEventListener('beforeunload', this.preventRefresh)
 
-      try {
-        const res = await axiosInstance.post('/student/submit', {
-          applicant_id:  this.applicantId,
-          exam_paper_id: this.exam.Exam_Paper_Id,
-          answers:       this.answers,
-          attempt_id:    this.examAttemptId
-        })
+  clearInterval(this.interval)
+  clearInterval(this._keyLogFlushTimer)
+  this._keyLogFlushTimer = null
 
-        this.attemptId = res.data.Attempt_Id || this.examAttemptId || 'N/A'
+  // Flush remaining key logs before final submit
+  await this._flushKeyLogs()
 
-        const email = localStorage.getItem('student_email')
-        if (email) {
-          await axiosInstance.post('/logout', { email, role: 'Student' })
-        }
-      } catch (err) {
-        console.error('Submission error:', err)
-        this.attemptId = this.examAttemptId || 'N/A'
-        this.showInlineMessage('Submission failed', 'error')
-      }
+  try {
+    // =========================
+    // SUBMIT EXAM
+    // =========================
+    const res = await axiosInstance.post('/student/submit', {
+      applicant_id: this.applicantId,
+      exam_paper_id: this.exam.Exam_Paper_Id,
+      answers: this.answers,
+      attempt_id: this.examAttemptId
+    })
 
-      this.startRedirectCountdown()
-    },
+    this.attemptId = res.data.Attempt_Id || this.examAttemptId || 'N/A'
+
+  } catch (err) {
+    console.error('Submission error:', err)
+    this.attemptId = this.examAttemptId || 'N/A'
+    this.showInlineMessage('Submission failed', 'error')
+  }
+
+  // =========================
+  // LOGOUT (ALWAYS EXECUTE)
+  // =========================
+  try {
+    await axiosInstance.post('/logout')
+  } catch (err) {
+    console.error('Logout error:', err)
+  }
+
+  // =========================
+  // REDIRECT
+  // =========================
+  this.startRedirectCountdown()
+},
 
     showInlineMessage(text, type = 'error') {
       this.inlineMessage = { text, type }
