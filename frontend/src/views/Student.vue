@@ -236,18 +236,6 @@ export default {
       }
     },
 
-    showInlineMessage(text, type = 'error') {
-  this.inlineMessage = { text, type }
-
-  setTimeout(() => {
-    this.inlineMessage = null
-  }, 5000)
-},
-
-clearInlineMessage() {
-  this.inlineMessage = null
-},
-
     async _flushKeyLogs() {
       if (!this._keyLogQueue.length) return
 
@@ -853,18 +841,24 @@ clearInlineMessage() {
   // =========================
   // REDIRECT
   // =========================
-  this.startRedirectCountdown()
-},
+ this.startRedirectCountdown()
 
-    showInlineMessage(text, type = 'error') {
-      this.inlineMessage = { text, type }
-      setTimeout(() => this.clearInlineMessage(), 5000)
-    },
+} catch (err) {
 
-    clearInlineMessage() {
-      this.inlineMessage = null
-    }
-  }
+  retries--
+
+  console.error("Submission failed, retrying...", retries)
+
+  this.showInlineMessage(
+    "⚠️ Internet problem. Retrying submission...",
+    "warning"
+  )
+
+  await new Promise(resolve => setTimeout(resolve, 5000))
+
 }
-
+  }
+  }
+  }  
+}
 </script>
