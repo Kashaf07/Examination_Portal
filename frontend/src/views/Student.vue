@@ -841,33 +841,29 @@ clearInlineMessage() {
         }
       }
 
-      this.startRedirectCountdown()
+  // =========================
+  // LOGOUT (ALWAYS EXECUTE)
+  // =========================
+  try {
+    await axiosInstance.post('/logout')
+  } catch (err) {
+    console.error('Logout error:', err)
+  }
 
-    } catch (err) {
+  // =========================
+  // REDIRECT
+  // =========================
+  this.startRedirectCountdown()
+},
 
-      retries--
+    showInlineMessage(text, type = 'error') {
+      this.inlineMessage = { text, type }
+      setTimeout(() => this.clearInlineMessage(), 5000)
+    },
 
-      console.error("Submission failed, retrying...", retries)
-
-      this.showInlineMessage(
-        "⚠️ Internet problem. Retrying submission...",
-        "warning"
-      )
-
-      await new Promise(resolve => setTimeout(resolve, 5000))
-
+    clearInlineMessage() {
+      this.inlineMessage = null
     }
-
-  }
-
-  if (!submitted) {
-    this.showInlineMessage(
-      "❌ Could not submit exam. Please refresh or contact admin.",
-      "error"
-    )
-  }
-
-}
   }
 }
 
