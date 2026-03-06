@@ -235,6 +235,17 @@ export default {
         }, 3000)
       }
     },
+    showInlineMessage(text, type = 'error') {
+  this.inlineMessage = { text, type }
+
+  setTimeout(() => {
+    this.inlineMessage = null
+  }, 5000)
+},
+
+clearInlineMessage() {
+  this.inlineMessage = null
+},
 
     async _flushKeyLogs() {
       if (!this._keyLogQueue.length) return
