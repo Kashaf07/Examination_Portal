@@ -138,6 +138,19 @@ export default {
       return this.questions[this.currentIndex]
     }
   },
+  watch: {
+  textAnswer(newVal) {
+    if (this.stage !== 'exam') return
+
+    this.answers[this.currentIndex] = {
+      question_id: this.currentQuestion.Question_Id,
+      selected_option: newVal
+    }
+
+    this.saveAnswersLocal()
+  }
+},
+
 
   mounted() {
     this.studentEmail = localStorage.getItem('student_email')
@@ -175,7 +188,9 @@ export default {
     // Flush any remaining queued key logs before unmounting
     this._flushKeyLogs()
 
-    clearInterval(this.interval)
+    if (this.autoSaveTimer) {
+  clearInterval(this.autoSaveTimer)
+}
     clearTimeout(this.fullscreenRecoveryTimeout)
     clearInterval(this.redirectTimer)
     clearInterval(this._keyLogFlushTimer)
@@ -220,6 +235,17 @@ export default {
         }, 3000)
       }
     },
+    showInlineMessage(text, type = 'error') {
+  this.inlineMessage = { text, type }
+
+  setTimeout(() => {
+    this.inlineMessage = null
+  }, 5000)
+},
+
+clearInlineMessage() {
+  this.inlineMessage = null
+},
 
     async _flushKeyLogs() {
       if (!this._keyLogQueue.length) return
@@ -261,6 +287,22 @@ export default {
         }
       }, 1000)
     },
+
+  saveAnswersLocal() {
+    if (!this.examAttemptId) return
+
+      const data = {
+      attempt_id: this.examAttemptId,
+      answers: this.answers,
+      timer: this.timer,
+      currentIndex: this.currentIndex
+      }
+
+      localStorage.setItem(
+      `exam_attempt_${this.examAttemptId}`,
+      JSON.stringify(data)
+      )
+  },
 
     handleBlur() {
       if (this.stage === 'exam') {
@@ -367,7 +409,11 @@ export default {
       this._keyLogFlushTimer = null
 
       // Flush remaining key logs before submitting
-      await this._flushKeyLogs()
+      try {
+  await this._flushKeyLogs()
+} catch (e) {
+  console.warn("Key log flush failed")
+}
 
       // Fill unanswered questions
       this.answers = this.questions.map((q, index) => {
@@ -537,8 +583,15 @@ export default {
       this.selectedOption = key
       this.keyboardSelectedOption = null
       this.clearInlineMessage()
-    },
 
+      // save immediately
+      this.answers[this.currentIndex] = {
+        question_id: this.currentQuestion.Question_Id,
+        selected_option: key
+      }
+
+      this.saveAnswersLocal()
+    },
     goBackToEntry() {
       this.stage        = 'enter'
       this.examIdError  = false
@@ -614,7 +667,19 @@ export default {
         }
 
         this.stage = 'exam'
+        const saved = localStorage.getItem(`exam_attempt_${this.examAttemptId}`)
+
+        if (saved) {
+          const parsed = JSON.parse(saved)
+
+          this.answers = parsed.answers || this.answers
+          this.timer = parsed.timer || this.timer
+          this.currentIndex = parsed.currentIndex || 0
+        }
         this.enterFullscreen()
+        this.autoSaveTimer = setInterval(() => {
+        this.saveAnswersLocal()
+        }, 10000)
 
         this.interval = setInterval(() => {
           if (this.timer > 0) {
@@ -666,6 +731,7 @@ export default {
         question_id:     this.currentQuestion.Question_Id,
         selected_option: value
       }
+      this.saveAnswersLocal()
 
       const last = this.currentIndex + 1 === this.questions.length
       if (last) {
@@ -713,54 +779,109 @@ export default {
       this.loadCurrentAnswer()
     },
 
-    async finishExam(msg) {
-      this.questions.forEach((_, idx) => {
-        if (this.answers[idx] === null && !this.visitedQuestions.includes(idx)) {
-          this.visitedQuestions.push(idx)
-        }
-      })
+  async finishExam(msg) {
 
-      this.stage         = 'finished'
-      this.finishMessage = msg
-      window.removeEventListener('beforeunload', this.preventRefresh)
-      clearInterval(this.interval)
-      clearInterval(this._keyLogFlushTimer)
-      this._keyLogFlushTimer = null
+  this.questions.forEach((_, idx) => {
+    if (this.answers[idx] === null && !this.visitedQuestions.includes(idx)) {
 
-      // Flush remaining key logs before final submit
-      await this._flushKeyLogs()
+      this.visitedQuestions.push(idx)
 
-      try {
-        const res = await axiosInstance.post('/student/submit', {
-          applicant_id:  this.applicantId,
-          exam_paper_id: this.exam.Exam_Paper_Id,
-          answers:       this.answers,
-          attempt_id:    this.examAttemptId
-        })
-
-        this.attemptId = res.data.Attempt_Id || this.examAttemptId || 'N/A'
-
-        const email = localStorage.getItem('student_email')
-        if (email) {
-          await axiosInstance.post('/logout', { email, role: 'Student' })
-        }
-      } catch (err) {
-        console.error('Submission error:', err)
-        this.attemptId = this.examAttemptId || 'N/A'
-        this.showInlineMessage('Submission failed', 'error')
+      this.answers[idx] = {
+        question_id: this.questions[idx].Question_Id,
+        selected_option: ''
       }
 
-      this.startRedirectCountdown()
-    },
-
-    showInlineMessage(text, type = 'error') {
-      this.inlineMessage = { text, type }
-      setTimeout(() => this.clearInlineMessage(), 5000)
-    },
-
-    clearInlineMessage() {
-      this.inlineMessage = null
     }
+  })
+
+  window.removeEventListener('beforeunload', this.preventRefresh)
+
+  clearInterval(this.interval)
+
+  if (this.autoSaveTimer) {
+    clearInterval(this.autoSaveTimer)
   }
+
+  if (this._keyLogFlushTimer) {
+    clearInterval(this._keyLogFlushTimer)
+    this._keyLogFlushTimer = null
+  }
+
+  try {
+    await this._flushKeyLogs()
+  } catch {
+    console.warn("Key log flush failed")
+  }
+
+  let retries = 3
+  let submitted = false
+
+  while (retries > 0 && !submitted) {
+
+    try {
+
+      const res = await axiosInstance.post('/student/submit', {
+        applicant_id: this.applicantId,
+        exam_paper_id: this.exam.Exam_Paper_Id,
+        answers: this.answers,
+        attempt_id: this.examAttemptId
+      })
+
+      this.attemptId = res.data.Attempt_Id || this.examAttemptId || 'N/A'
+      submitted = true
+
+      localStorage.removeItem(`exam_attempt_${this.examAttemptId}`)
+
+      this.stage = 'finished'
+      this.finishMessage = msg
+
+      const email = localStorage.getItem('student_email')
+
+      if (email) {
+        try {
+          await axiosInstance.post('/logout', { email, role: 'Student' })
+        } catch {
+          console.warn("Logout failed but exam submitted.")
+        }
+      }
+
+  // =========================
+  // LOGOUT (ALWAYS EXECUTE)
+  // =========================
+  try {
+    await axiosInstance.post('/logout')
+  } catch (err) {
+    console.error('Logout error:', err)
+  }
+
+  // =========================
+  // REDIRECT
+  // =========================
+ this.startRedirectCountdown()
+
+} catch (err) {
+
+  retries--
+
+  console.error("Submission failed, retrying...", retries)
+
+  if (!err.response) {
+  this.showInlineMessage("⚠️ Internet connection lost. Retrying...", "warning")
+} else {
+  this.showInlineMessage("⚠️ Server error. Retrying submission...", "warning")
+}
+
+  await new Promise(resolve => setTimeout(resolve, 5000))
+
+}
+  }
+  if (!submitted) {
+  this.showInlineMessage(
+    "❌ Could not submit exam. Please try again or contact admin.",
+    "error"
+  )
+}
+  }
+  }  
 }
 </script>
