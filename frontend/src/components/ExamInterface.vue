@@ -63,11 +63,25 @@
       </div>
     </div>
 
-    <!-- Warning Counter - Fixed Below Timer -->
+    <!-- Warning Counter - Fixed Below Timer (moved down) -->
     <div v-if="violationCount > 0 && violationCount < 3"
-         class="fixed top-36 left-6 z-40">
+         class="fixed top-48 left-6 z-40">
       <div class="bg-red-600 text-white px-4 py-2 rounded-lg shadow-xl text-sm font-semibold tracking-wide border border-red-700 flex items-center gap-2">
         ⚠️ Warning {{ violationCount }}/3
+      </div>
+    </div>
+
+    <!-- System Status - Fixed Bottom Right Corner -->
+    <div class="fixed bottom-6 right-6 z-40">
+      <div class="bg-white px-4 py-3 rounded-xl shadow-lg border border-indigo-200 space-y-2">
+        <div class="flex items-center gap-2 text-sm">
+          <span :class="batteryLevel > 20 ? 'text-green-600' : 'text-red-600'">🔋</span>
+          <span class="font-semibold text-gray-700">{{ batteryLevel }}%</span>
+        </div>
+        <div class="flex items-center gap-2 text-sm">
+          <span :class="isOnline ? 'text-green-600' : 'text-red-600'">📶</span>
+          <span class="font-semibold text-gray-700">{{ isOnline ? 'Connected' : 'Offline' }}</span>
+        </div>
       </div>
     </div>
 
@@ -233,7 +247,15 @@ const props = defineProps({
   inlineMessage: Object,
   outsideCountdown: Number,
   isOutsideScreen: Boolean,
-  visitedQuestions: Array
+  visitedQuestions: Array,
+  batteryLevel: {
+    type: Number,
+    default: 100
+  },
+  isOnline: {
+    type: Boolean,
+    default: true
+  }
 })
 
 const emit = defineEmits([

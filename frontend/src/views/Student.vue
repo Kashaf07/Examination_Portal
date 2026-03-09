@@ -66,6 +66,8 @@
         @handle-next="handleNext"
         :outside-countdown="outsideCountdown"
         :is-outside-screen="isOutsideScreen"
+        :battery-level="batteryLevel"
+        :is-online="isOnline"
       />
 
       <!-- Finished Stage -->
@@ -129,7 +131,12 @@ export default {
 
       // ── Key-log queue: batch-send every 3 seconds to reduce HTTP overhead ──
       _keyLogQueue: [],
-      _keyLogFlushTimer: null
+      _keyLogFlushTimer: null,
+
+      // ── System monitoring: battery and WiFi ──
+      batteryLevel: 100,
+      isOnline: navigator.onLine,
+      batteryMonitor: null
     }
   },
 
@@ -167,6 +174,11 @@ export default {
     window.addEventListener('popstate',         this.preventBack)
     document.addEventListener('contextmenu',    e => e.preventDefault())
 
+    // ─── Monitor battery and WiFi status ─────────────────────────────────────
+    window.addEventListener('online',  () => { this.isOnline = true })
+    window.addEventListener('offline', () => { this.isOnline = false })
+    this.startBatteryMonitoring()
+
     // ─── Copy / Paste / Cut — block + log ────────────────────────────────────
     document.addEventListener('cut',  this._handleCut  = (e) => {
       e.preventDefault()
@@ -194,6 +206,7 @@ export default {
     clearTimeout(this.fullscreenRecoveryTimeout)
     clearInterval(this.redirectTimer)
     clearInterval(this._keyLogFlushTimer)
+    clearInterval(this.batteryMonitor)
 
     window.removeEventListener('focus',           this.cancelOutsideCountdown)
     window.removeEventListener('keydown',         this.handleKeydown)
@@ -209,6 +222,28 @@ export default {
   },
 
   methods: {
+
+    // ─── Battery Monitoring ───────────────────────────────────────────────────
+    async startBatteryMonitoring() {
+      try {
+        if ('getBattery' in navigator) {
+          const battery = await navigator.getBattery()
+          this.batteryLevel = Math.round(battery.level * 100)
+
+          battery.addEventListener('levelchange', () => {
+            this.batteryLevel = Math.round(battery.level * 100)
+          })
+
+          // Update battery every 30 seconds
+          this.batteryMonitor = setInterval(async () => {
+            const bat = await navigator.getBattery()
+            this.batteryLevel = Math.round(bat.level * 100)
+          }, 30000)
+        }
+      } catch (err) {
+        console.warn('Battery API not supported')
+      }
+    },
 
     // ─── Keystroke Logger ─────────────────────────────────────────────────────
     // Queues key events and flushes them one-by-one every 3s to avoid

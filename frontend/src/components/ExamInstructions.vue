@@ -1,12 +1,12 @@
 <template>
-  <div class="max-w-4xl w-full mx-4 bg-white p-8 rounded-2xl shadow-2xl border border-indigo-100 mt-4 z-10">
-    <div class="text-center mb-8">
+  <div class="max-w-4xl w-full mx-4 bg-white p-6 rounded-2xl shadow-2xl border border-indigo-100 mt-4 z-10">
+    <div class="text-center mb-6">
       <h2 class="text-3xl font-bold text-indigo-700 tracking-tight mb-2">{{ exam.Exam_Name }}</h2>
       <div class="w-20 h-1 bg-gradient-to-r from-indigo-400 to-pink-500 mx-auto rounded-full"></div>
     </div>
     
     <!-- Exam Details Card -->
-    <div class="grid grid-cols-2 gap-4 text-lg bg-indigo-50 p-6 rounded-xl mb-8 shadow-sm border border-indigo-100">
+    <div class="grid grid-cols-2 gap-3 text-base bg-indigo-50 p-4 rounded-xl mb-6 shadow-sm border border-indigo-100">
       <div class="flex items-center text-gray-800">
         <span class="mr-2 text-indigo-600">🗓</span>
         <strong class="mr-1">Date:</strong> {{ exam.Exam_Date }}
@@ -26,40 +26,39 @@
     </div>
     
     <!-- Instructions Grid -->
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-5 mb-6">
       <!-- How to Attempt Section -->
-      <div class="bg-blue-50 border-l-4 border-blue-400 p-5 rounded-lg shadow">
-        <h3 class="font-bold text-blue-800 mb-3 flex items-center text-lg">
+      <div class="bg-blue-50 border-l-4 border-blue-400 p-4 rounded-lg shadow">
+        <h3 class="font-bold text-blue-800 mb-2 flex items-center text-base">
           <span class="mr-2">📋</span> How to Attempt
         </h3>
-        <ul class="list-disc list-inside text-gray-700 space-y-2 pl-2">
-          <li>Read each question carefully before answering</li>
-          <li>For MCQ/TF: Select one option using mouse or keyboard arrows</li>
-          <li>For Fill/OneWord: Type your answer in the text box</li>
-          <li>Use the question navigator to jump between questions</li>
+        <ul class="list-disc list-inside text-gray-700 space-y-1 pl-2 text-sm">
+          <li>Read carefully before answering • For MCQ/TF: Select using mouse/keyboard</li>
+          <li>For Fill/OneWord: Type in text box • Use navigator to jump between questions</li>
           <li>Answer all questions before submitting</li>
         </ul>
       </div>
       
       <!-- Restrictions Section -->
-      <div class="bg-red-50 border-l-4 border-red-400 p-5 rounded-lg shadow">
-        <h3 class="font-bold text-red-800 mb-3 flex items-center text-lg">
+      <div class="bg-red-50 border-l-4 border-red-400 p-4 rounded-lg shadow">
+        <h3 class="font-bold text-red-800 mb-2 flex items-center text-base">
           <span class="mr-2">🚫</span> Restrictions
         </h3>
-        <ul class="list-disc list-inside text-gray-700 space-y-2 pl-2">
-          <li>Strictly no page refresh/reload allowed</li>
-          <li>No switching tabs/windows (2 attempts max)</li>
-          <li>No right-click, copy/paste allowed</li>
+        <ul class="list-disc list-inside text-gray-700 space-y-1 pl-2 text-sm">
+          <li>No page refresh or reload allowed</li>
+          <li>No tab/window switching (maximum 2 attempts)</li>
+          <li>No right-click, copy, or paste allowed</li>
           <li>No developer tools access (F12/Ctrl+Shift+I)</li>
           <li>Must remain in fullscreen mode</li>
           <li>Exam will auto-submit when time ends</li>
           <li>Violations may force-submit your exam</li>
+          <li class="font-bold text-red-700">⚠️ Leaving screen for 5+ seconds will restrict your exam!</li>
         </ul>
       </div>
     </div>
     
     <!-- Confirmation Buttons -->
-    <div class="flex justify-between items-center mt-6 pt-5 border-t border-gray-200">
+    <div class="flex justify-between items-center mt-5 pt-4 border-t border-gray-200">
       <button 
         @click="$emit('go-back')" 
         class="flex items-center bg-gray-100 hover:bg-gray-200 text-gray-700 px-6 py-3 rounded-lg font-semibold transition-all duration-200 shadow"
