@@ -1,4 +1,5 @@
 import traceback
+import random
 
 from flask import Blueprint, request, jsonify
 from datetime import datetime, timedelta
@@ -12,6 +13,20 @@ def is_student_active(mysql, applicant_id):
     row = cur.fetchone()
     cur.close()
     return row and row[0] == 1
+
+def shuffle_questions_for_student(questions, exam_id, applicant_id):
+    """
+    Shuffle questions deterministically based on exam_id and applicant_id.
+    Each student gets the same shuffle order every time they access the exam.
+    """
+    # Create deterministic seed from exam_id and applicant_id
+    seed = hash(f"{exam_id}_{applicant_id}")
+    
+    # Create a copy and shuffle with seeded random
+    shuffled = list(questions)
+    random.Random(seed).shuffle(shuffled)
+    
+    return shuffled
 
 def create_student_routes(mysql):
     student_routes = Blueprint('student_routes', __name__)
@@ -330,6 +345,9 @@ def create_student_routes(mysql):
                 WHERE ep.Exam_Id = %s
             """, (exam_id,))
             questions = cur.fetchall()
+            
+            # Shuffle questions for this specific student
+            questions = shuffle_questions_for_student(questions, exam_id, applicant_id)
 
             # Get or create exam paper
             cur.execute("SELECT * FROM exam_paper WHERE Exam_Id = %s", (exam_id,))

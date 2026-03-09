@@ -297,6 +297,20 @@ export default {
     handleFullscreenChange() {
       if (this.stage === 'exam' && !document.fullscreenElement && !this.isProcessingViolation) {
         this.isProcessingViolation = true
+        
+        // Show warning immediately when fullscreen is exited
+        this.violationCount++
+        if (this.violationCount >= this.maxViolations) {
+          this.forceExit('Exited fullscreen mode (attempted to exit exam)')
+          return
+        }
+        
+        const left = this.maxViolations - this.violationCount
+        this.showInlineMessage(
+          `⚠️ Warning ${this.violationCount}/${this.maxViolations}: Fullscreen exited. You have ${left} attempt(s) left.`,
+          'warning'
+        )
+        
         setTimeout(() => {
           this.recoverFullscreen(100)
           this.isProcessingViolation = false
@@ -431,17 +445,8 @@ export default {
         event.preventDefault()
         event.stopPropagation()
         this.logKey('Escape', 'warning', event)
-        this.violationCount++
-        if (this.violationCount >= this.maxViolations) {
-          this.forceExit('ESC key pressed (attempted to exit fullscreen)')
-          return
-        }
-        const left = this.maxViolations - this.violationCount
-        this.showInlineMessage(
-          `⚠️ Warning ${this.violationCount}/${this.maxViolations}: ESC key pressed. You have ${left} attempt(s) left.`,
-          'warning'
-        )
-        setTimeout(() => this.enterFullscreen(), 100)
+        // Note: Violation counting is handled by handleFullscreenChange
+        // This just prevents the default ESC behavior and logs it
         return
       }
 
