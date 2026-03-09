@@ -46,25 +46,19 @@ def create_send_email_routes(mysql):
 
 You have been assigned the following exam:
 
-========================================
 EXAM DETAILS
-========================================
 
 Exam ID: {exam['Exam_Id']}
 Exam Name: {exam['Exam_Name']}
 Date: {exam['Exam_Date']}
 Time: {exam['Exam_Time']}
 
-========================================
 YOUR LOGIN CREDENTIALS
-========================================
 
 Email: {receiver_email}
 Password: {password}
 
-========================================
 LOGIN TO YOUR EXAM FROM THIS LINK
-========================================
 
 {login_link}
 
@@ -76,7 +70,6 @@ IMPORTANT INSTRUCTIONS:
 5. Do NOT switch tabs or windows during the exam
 6. Ensure stable internet connection
 
-========================================
 
 Good luck with your exam!
 
