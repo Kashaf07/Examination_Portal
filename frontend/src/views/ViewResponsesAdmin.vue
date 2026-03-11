@@ -15,7 +15,7 @@
         </div>
       </div>
       <div class="rounded-xl shadow-xl overflow-x-auto bg-white w-full">
-        <table class="w-full border-separate border-spacing-0 min-w-[980px]">
+        <table class="w-full border-separate border-spacing-0">
           <thead>
             <tr class="bg-gradient-to-r from-blue-200 to-purple-200 text-blue-900 font-bold text-sm">
               <th class="px-4 py-3 text-left">Attempt ID</th>
@@ -33,12 +33,11 @@
                 </div>
               </th>
               <th class="px-4 py-3 text-center">Max Marks</th>
-              <th class="px-4 py-3 text-center">
-                <div class="flex items-center justify-center gap-2">Status
+              <th class="px-4 py-3 text-left">
+                <div class="flex items-center gap-2">Status
                   <svg @click.stop="openFilter($event,'status')" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5 cursor-pointer" :class="filters.status ? 'text-blue-600' : 'text-gray-500 hover:text-blue-600'"><path d="M3 4h18l-7 8v6l-4 2v-8L3 4z"/></svg>
                 </div>
               </th>
-              <th class="px-4 py-3 text-center">Key Activity</th>
               <th class="px-4 py-3 text-center">Actions</th>
             </tr>
           </thead>
@@ -83,32 +82,10 @@
               </td>
             </tr>
             <tr v-if="filteredAttempts.length === 0">
-              <td colspan="10" class="text-center py-8 text-gray-500 italic">No matching attempts found.</td>
+              <td colspan="9" class="text-center py-8 text-gray-500 italic">No matching attempts found.</td>
             </tr>
           </tbody>
         </table>
-      </div>
-
-      <!-- KEY LOG DROPDOWN - OUTSIDE TABLE -->
-      <div v-for="attempt in paginatedAttempts" :key="'dropdown-' + attempt.Attempt_Id">
-        <div v-if="attempt._showKeys" class="fixed z-[9999] bg-white border border-gray-200 rounded-xl shadow-2xl p-4 min-w-[300px] max-w-[400px]" :style="dropdownPositions[attempt.Attempt_Id] || {}">
-          <div class="text-xs font-bold text-gray-500 mb-3 uppercase tracking-wide">Key Log Summary</div>
-          <div class="max-h-[350px] overflow-y-auto pr-2 custom-scrollbar">
-            <div v-for="(s, i) in attempt.key_log_summary" :key="i" class="flex items-center justify-between gap-3 py-2 border-b border-gray-50 last:border-0">
-              <span class="flex items-center gap-2 text-sm">
-                <span v-if="s.event_type === 'blocked'" class="text-red-500 text-lg">🚫</span>
-                <span v-else-if="s.event_type === 'warning'" class="text-amber-500 text-lg">⚠️</span>
-                <span v-else class="text-green-500 text-lg">✅</span>
-                <span class="font-medium text-gray-700">{{ s.key_label }}</span>
-              </span>
-              <span class="text-xs font-bold text-gray-400 ml-2">×{{ s.count }}</span>
-            </div>
-          </div>
-          <div class="mt-3 pt-3 border-t border-gray-100 flex justify-between text-xs text-gray-400">
-            <span>Total violations</span>
-            <span class="font-bold text-gray-600">{{ attempt.key_log_total }}</span>
-          </div>
-        </div>
       </div>
 
       <div v-if="totalPages > 1" class="flex justify-center items-center gap-3 mt-6">
@@ -173,33 +150,10 @@ const currentPage = ref(1)
 const itemsPerPage = ref(15)
 const activeFilter = ref(null)
 const popoverStyle = ref({})
-const dropdownPositions = ref({})
 const filters = ref({ studentId: '', minMarks: null, status: '', marksSort: '', studentSort: '' })
 
 const goToResult    = () => router.push({ name: 'ExamResult',    params: { examId: examId.value } })
 const goToAnalytics = () => router.push({ name: 'ExamAnalytics', params: { examId: examId.value } })
-
-// ✅ KEY FIX: Replace the whole object in the array so Vue 3 reactive system
-// detects the change. Direct mutation `attempt._showKeys = x` is NOT tracked
-// by Vue 3 on plain objects inside a ref([]) array.
-const toggleKeyLog = (attemptId, event) => {
-  // Store button position for this attempt
-  if (event?.target) {
-    const button = event.target.closest('button')
-    if (button) {
-      const rect = button.getBoundingClientRect()
-      dropdownPositions.value[attemptId] = {
-        top: `${rect.bottom + window.scrollY + 8}px`,
-        left: `${rect.left + window.scrollX}px`
-      }
-    }
-  }
-  
-  attempts.value = attempts.value.map(a => {
-    if (a.Attempt_Id === attemptId) return { ...a, _showKeys: !a._showKeys }
-    return a._showKeys ? { ...a, _showKeys: false } : a
-  })
-}
 
 const openFilter = (event, type) => {
   activeFilter.value = type
@@ -266,13 +220,20 @@ const fetchAttempts = async () => {
       const startDT = formatDateTime(a.Start_Time)
       const endDT = formatDateTime(a.End_Time)
       
+      // Generate restriction reason from key logs
+      let restrictionReason = ''
+      if (a.Status === 'Restricted' && a.key_log_summary && a.key_log_summary.length > 0) {
+        const reasons = a.key_log_summary.map(s => `${s.key_label} (${s.count})`).join(', ')
+        restrictionReason = reasons
+      }
+      
       return {
         ...a,
         Start_Date: startDT.date,
         Start_Time_Only: startDT.time,
         End_Date: endDT.date,
         End_Time_Only: endDT.time,
-        _showKeys: false
+        restriction_reason: restrictionReason
       }
     })
   } catch { error.value = 'Something went wrong.' }
