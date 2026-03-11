@@ -1,5 +1,11 @@
 <template>
   <div class="w-full h-full flex flex-col items-center px-4 py-4">
+    <!-- Exam Submission Confirmation Modal -->
+    <ExamSubmissionModal
+      v-if="showSubmissionModal"
+      @confirm="handleConfirmSubmission"
+      @cancel="handleCancelSubmission"
+    />
     <!-- Outside Screen Countdown Overlay -->
     <div v-if="isOutsideScreen"
         class="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50">
@@ -63,11 +69,25 @@
       </div>
     </div>
 
-    <!-- Warning Counter - Fixed Below Timer -->
+    <!-- Warning Counter - Fixed Below Timer (moved down) -->
     <div v-if="violationCount > 0 && violationCount < 3"
-         class="fixed top-36 left-6 z-40">
+         class="fixed top-48 left-6 z-40">
       <div class="bg-red-600 text-white px-4 py-2 rounded-lg shadow-xl text-sm font-semibold tracking-wide border border-red-700 flex items-center gap-2">
         ⚠️ Warning {{ violationCount }}/3
+      </div>
+    </div>
+
+    <!-- System Status - Fixed Bottom Right Corner -->
+    <div class="fixed bottom-6 right-6 z-40">
+      <div class="bg-white px-4 py-3 rounded-xl shadow-lg border border-indigo-200 space-y-2">
+        <div class="flex items-center gap-2 text-sm">
+          <span :class="batteryLevel > 20 ? 'text-green-600' : 'text-red-600'">🔋</span>
+          <span class="font-semibold text-gray-700">{{ batteryLevel }}%</span>
+        </div>
+        <div class="flex items-center gap-2 text-sm">
+          <span :class="isOnline ? 'text-green-600' : 'text-red-600'">📶</span>
+          <span class="font-semibold text-gray-700">{{ isOnline ? 'Connected' : 'Offline' }}</span>
+        </div>
       </div>
     </div>
 
@@ -148,6 +168,7 @@
                 ref="fillInput"
                 :value="textAnswer"
                 @input="$emit('update:textAnswer', $event.target.value)"
+                @keydown="handleInputKeydown"
                 type="text"
                 class="w-full p-3 border-2 border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-300 focus:border-indigo-400 text-lg"
                 placeholder="Type your answer here..."
@@ -163,6 +184,7 @@
                 ref="oneWordInput"
                 :value="textAnswer"
                 @input="$emit('update:textAnswer', $event.target.value)"
+                @keydown="handleInputKeydown"
                 type="text"
                 class="w-full p-3 border-2 border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-300 focus:border-indigo-400 text-lg"
                 placeholder="Type your answer here..."
@@ -176,7 +198,7 @@
             <div class="flex items-center">
               <button 
                 v-if="allAnswersFilled"
-                @click="$emit('finish-exam', 'All questions submitted!')"
+                @click="showSubmissionConfirmation"
                 class="bg-gradient-to-r from-purple-600 to-pink-500 hover:from-purple-700 hover:to-pink-600 text-white px-8 py-3 rounded-lg font-bold shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 text-lg tracking-wide transition-all duration-300"
               >
                 Submit Exam
@@ -204,7 +226,7 @@
             <!-- Next Button (Right) -->
             <div class="flex items-center">
               <button 
-                @click="$emit('handle-next')"
+                @click="handleNextClick"
                 class="bg-gradient-to-r from-indigo-500 via-pink-500 to-rose-500 text-white px-8 py-3 rounded-lg hover:from-indigo-600 hover:to-rose-600 transition-all duration-200 font-bold shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 text-lg tracking-wide"
               >
                 {{ currentIndex + 1 === questions.length ? 'Submit Exam' : 'Next Question' }}
@@ -218,7 +240,12 @@
 </template>
 
 <script setup>
-import { computed } from 'vue'
+import { computed, ref, watch, nextTick } from 'vue'
+import ExamSubmissionModal from './ExamSubmissionModal.vue'
+
+const showSubmissionModal = ref(false)
+const fillInput = ref(null)
+const oneWordInput = ref(null)
 
 const props = defineProps({
   timer: Number,
@@ -233,7 +260,15 @@ const props = defineProps({
   inlineMessage: Object,
   outsideCountdown: Number,
   isOutsideScreen: Boolean,
-  visitedQuestions: Array
+  visitedQuestions: Array,
+  batteryLevel: {
+    type: Number,
+    default: 100
+  },
+  isOnline: {
+    type: Boolean,
+    default: true
+  }
 })
 
 const emit = defineEmits([
@@ -243,6 +278,54 @@ const emit = defineEmits([
   'finish-exam',
   'handle-next'
 ])
+
+const showSubmissionConfirmation = () => {
+  showSubmissionModal.value = true
+}
+
+const handleConfirmSubmission = () => {
+  showSubmissionModal.value = false
+  emit('finish-exam', 'All questions submitted!')
+}
+
+const handleCancelSubmission = () => {
+  showSubmissionModal.value = false
+}
+
+const handleNextClick = () => {
+  if (props.currentIndex + 1 === props.questions.length) {
+    // Last question - show confirmation modal
+    showSubmissionConfirmation()
+  } else {
+    // Regular next question
+    emit('handle-next')
+  }
+}
+
+// Expose the showSubmissionConfirmation method so parent can call it
+defineExpose({
+  showSubmissionConfirmation
+})
+
+// Auto-focus text inputs when question changes
+watch(() => props.currentIndex, async () => {
+  await nextTick()
+  const questionType = props.currentQuestion?.Question_Type
+  if (questionType === 'Fill' && fillInput.value) {
+    fillInput.value.focus()
+  } else if (questionType === 'OneWord' && oneWordInput.value) {
+    oneWordInput.value.focus()
+  }
+}, { immediate: true })
+
+// Handle Enter key in text inputs
+const handleInputKeydown = (event) => {
+  if (event.key === 'Enter') {
+    event.preventDefault()
+    // Don't call handleNextClick directly, emit to parent to handle properly
+    emit('handle-next')
+  }
+}
 
 const minutes = computed(() => String(Math.floor(props.timer / 60)).padStart(2, '0'))
 const seconds = computed(() => String(props.timer % 60).padStart(2, '0'))

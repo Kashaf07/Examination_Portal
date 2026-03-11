@@ -48,6 +48,7 @@
       <!-- Exam Stage -->
       <ExamInterface
         v-if="stage === 'exam'"
+        ref="examInterface"
         :timer="timer"
         :questions="questions"
         :current-index="currentIndex"
@@ -66,6 +67,8 @@
         @handle-next="handleNext"
         :outside-countdown="outsideCountdown"
         :is-outside-screen="isOutsideScreen"
+        :battery-level="batteryLevel"
+        :is-online="isOnline"
       />
 
       <!-- Finished Stage -->
@@ -129,7 +132,12 @@ export default {
 
       // ── Key-log queue: batch-send every 3 seconds to reduce HTTP overhead ──
       _keyLogQueue: [],
-      _keyLogFlushTimer: null
+      _keyLogFlushTimer: null,
+
+      // ── System monitoring: battery and WiFi ──
+      batteryLevel: 100,
+      isOnline: navigator.onLine,
+      batteryMonitor: null
     }
   },
 
@@ -167,6 +175,11 @@ export default {
     window.addEventListener('popstate',         this.preventBack)
     document.addEventListener('contextmenu',    e => e.preventDefault())
 
+    // ─── Monitor battery and WiFi status ─────────────────────────────────────
+    window.addEventListener('online',  () => { this.isOnline = true })
+    window.addEventListener('offline', () => { this.isOnline = false })
+    this.startBatteryMonitoring()
+
     // ─── Copy / Paste / Cut — block + log ────────────────────────────────────
     document.addEventListener('cut',  this._handleCut  = (e) => {
       e.preventDefault()
@@ -194,6 +207,7 @@ export default {
     clearTimeout(this.fullscreenRecoveryTimeout)
     clearInterval(this.redirectTimer)
     clearInterval(this._keyLogFlushTimer)
+    clearInterval(this.batteryMonitor)
 
     window.removeEventListener('focus',           this.cancelOutsideCountdown)
     window.removeEventListener('keydown',         this.handleKeydown)
@@ -209,6 +223,28 @@ export default {
   },
 
   methods: {
+
+    // ─── Battery Monitoring ───────────────────────────────────────────────────
+    async startBatteryMonitoring() {
+      try {
+        if ('getBattery' in navigator) {
+          const battery = await navigator.getBattery()
+          this.batteryLevel = Math.round(battery.level * 100)
+
+          battery.addEventListener('levelchange', () => {
+            this.batteryLevel = Math.round(battery.level * 100)
+          })
+
+          // Update battery every 30 seconds
+          this.batteryMonitor = setInterval(async () => {
+            const bat = await navigator.getBattery()
+            this.batteryLevel = Math.round(bat.level * 100)
+          }, 30000)
+        }
+      } catch (err) {
+        console.warn('Battery API not supported')
+      }
+    },
 
     // ─── Keystroke Logger ─────────────────────────────────────────────────────
     // Queues key events and flushes them one-by-one every 3s to avoid
@@ -573,7 +609,43 @@ clearInlineMessage() {
         this.selectOption(this.keyboardSelectedOption)
         this.keyboardSelectedOption = null
       } else if (this.selectedOption || this.textAnswer) {
-        this.handleNext()
+        // For text-based questions, use handleNext logic
+        const type = this.currentQuestion.Question_Type
+        if (type === 'Fill' || type === 'OneWord') {
+          if (!this.textAnswer.trim()) {
+            this.showInlineMessage('⚠️ Please provide an answer', 'warning')
+            return
+          }
+          // Save the answer
+          this.answers[this.currentIndex] = {
+            question_id: this.currentQuestion.Question_Id,
+            selected_option: this.textAnswer.trim()
+          }
+          this.saveAnswersLocal()
+        }
+        
+        // Check if it's the last question
+        const isLastQuestion = this.currentIndex + 1 === this.questions.length
+        if (isLastQuestion) {
+          // Check if all answers are filled
+          const anyUnanswered = this.answers.some(ans => ans === null)
+          if (anyUnanswered) {
+            this.questions.forEach((_, idx) => {
+              if (this.answers[idx] === null && !this.visitedQuestions.includes(idx)) {
+                this.visitedQuestions.push(idx)
+              }
+            })
+            setTimeout(() => this.showInlineMessage('⚠️ Please answer all questions.', 'warning'), 100)
+            return
+          }
+          // Show confirmation modal
+          if (this.$refs.examInterface) {
+            this.$refs.examInterface.showSubmissionConfirmation()
+          }
+        } else {
+          // Regular next question - use handleNext
+          this.handleNext()
+        }
       } else {
         this.showInlineMessage('⚠️ Select or enter an answer first', 'warning')
       }
