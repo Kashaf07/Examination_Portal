@@ -386,156 +386,170 @@
                 <h2 class="text-2xl font-semibold mb-4 text-gray-800">Created Exams</h2>
                 <div class="bg-white rounded-xl shadow-lg overflow-hidden">
                   <table class="min-w-full">
-                    <thead class="bg-gradient-to-r from-blue-50 to-indigo-50">
-                      <tr>
-                        <th class="px-3 py-4 text-left text-sm font-bold text-gray-700 whitespace-nowrap">Exam Name</th>
-                        <th class="px-3 py-4 text-left text-sm font-bold text-gray-700 whitespace-nowrap">Date</th>
-                        <th class="px-3 py-4 text-left text-sm font-bold text-gray-700 whitespace-nowrap">Time</th>
-                        <th class="px-3 py-4 text-left text-sm font-bold text-gray-700 whitespace-nowrap">Duration</th>
-                        <th class="px-2 py-4 text-left text-sm font-bold text-gray-700">Questions</th>
-                        <th class="px-2 py-4 text-left text-sm font-bold text-gray-700">Max Marks</th>
-                        <th class="px-2 py-4 text-center text-sm font-bold text-gray-700">QR Code</th>
-                        <th class="px-6 py-4 text-center text-sm font-bold text-gray-700 min-w-[420px]">Actions</th>
-                        <th class="px-2 py-4 text-center text-sm font-bold text-gray-700">Delete</th>
-                      </tr>
-                    </thead>
-                    <tbody class="divide-y divide-gray-200">
-                      <tr v-for="exam in createdExams" :key="exam.Exam_Id" class="hover:bg-gray-50 transition">
-                        <td class="px-3 py-4 text-sm text-gray-800 font-medium">{{ exam.Exam_Name }}</td>
-                        <td class="px-3 py-4 text-sm text-gray-600 whitespace-nowrap">{{ exam.Exam_Date }}</td>
-                        <td class="px-3 py-4 text-sm text-gray-600 whitespace-nowrap">{{ exam.Exam_Time }}</td>
-                        <td class="px-3 py-4 text-sm text-gray-600 whitespace-nowrap">{{ exam.Duration_Minutes }} min</td>
-                        <td class="px-2 py-4 text-sm text-gray-600 text-center">{{ exam.Total_Questions }}</td>
-                        <td class="px-2 py-4 text-sm text-gray-600 text-center">{{ exam.Max_Marks }}</td>
-                        
-                        <!-- QR Code Column -->
-                        <td class="px-2 py-4 text-center">
-                          <button
-                            @click="openQRModal(exam.Exam_Id, exam.Exam_Name)"
-                            class="inline-flex items-center justify-center w-10 h-10 bg-indigo-500 hover:bg-indigo-600 rounded-lg transition-all duration-200 shadow-md hover:shadow-lg hover:scale-110"
-                            title="Generate QR Code"
-                          >
-                            <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z" />
-                            </svg>
-                          </button>
-                        </td>
-                        
-                        <!-- Actions Column -->
-                        <td class="px-6 py-4">  
-                          <div class="flex items-center justify-center gap-2.5">
-                            
-                            <!-- Add Students -->
-                            <div class="relative">
-                              <button
-                                @click.stop="addStudents(exam.Exam_Id)"
-                                class="bg-blue-400 hover:bg-blue-500 text-white px-3.5 py-2 rounded-lg text-xs font-semibold shadow-md hover:shadow-lg transition-all duration-200 hover:scale-105 whitespace-nowrap"
-                              >
-                                Add Students
-                              </button>
-                              <!-- Status Indicator for Students -->
-                              <span
-                                v-if="hasAssignedStudents(exam)"
-                                class="absolute -top-0.5 -right-0.5 
-                                      text-green-600 text-xs font-bold
-                                      border-2 border-green-500 
-                                      bg-white
-                                      rounded-full w-[18px] h-[18px]
-                                      flex items-center justify-center
-                                      shadow"
-                              >
-                                ✔
-                              </span>
-                              <span
-                                v-else
-                                class="absolute -top-0.5 -right-0.5 
-                                      text-yellow-600 text-sm 
-                                      leading-none flip-vertical"
-                              >
-                                ⏳
-                              </span>
-                            </div>
 
-                            <!-- Question Bank -->
-                            <div class="relative">
-                              <button
-                                @click="navigateTo('AddQuestion', exam.Exam_Id)"
-                                class="bg-green-500 hover:bg-green-600 text-white px-3.5 py-2 rounded-lg text-xs font-semibold shadow-md hover:shadow-lg transition-all duration-200 hover:scale-105 whitespace-nowrap"
-                              >
-                                Question Bank
-                              </button>
-                              <!-- Status Indicator for Question Bank -->
-                              <span
-                                v-if="hasQuestionBank(exam)"
-                                class="absolute -top-0.5 -right-0.5 
-                                      text-green-600 text-xs font-bold
-                                      border-2 border-green-500 
-                                      bg-white
-                                      rounded-full w-[18px] h-[18px]
-                                      flex items-center justify-center
-                                      shadow"
-                              >
-                                ✔
-                              </span>
-                              <span
-                                v-else
-                                class="absolute -top-0.5 -right-0.5 
-                                      text-yellow-600 text-sm 
-                                      leading-none flip-vertical"
-                              >
-                                ⏳
-                              </span>
-                            </div>
+<!-- TABLE HEADER -->
+<thead class="bg-gradient-to-r from-blue-50 to-indigo-50">
+<tr>
+<th class="px-3 py-4 text-left text-sm font-bold text-gray-700">Exam Name</th>
+<th class="px-3 py-4 text-left text-sm font-bold text-gray-700">Date</th>
+<th class="px-3 py-4 text-left text-sm font-bold text-gray-700">Time</th>
+<th class="px-3 py-4 text-left text-sm font-bold text-gray-700">Duration</th>
+<th class="px-2 py-4 text-left text-sm font-bold text-gray-700">Questions</th>
+<th class="px-2 py-4 text-left text-sm font-bold text-gray-700">Max Marks</th>
+<th class="px-2 py-4 text-center text-sm font-bold text-gray-700">QR Code</th>
+<th class="px-6 py-4 text-center text-sm font-bold text-gray-700">Actions</th>
+<th class="px-2 py-4 text-center text-sm font-bold text-gray-700">Delete</th>
+<th class="px-4 py-4 text-center text-sm font-bold text-gray-700">Exam Status</th>
+</tr>
+</thead>
 
-                            <!-- Question Paper -->
-                            <div class="relative">
-                              <button
-                                @click="navigateTo('MakeQuestionPaper', exam.Exam_Id)"
-                                class="bg-purple-500 hover:bg-purple-600 text-white px-3.5 py-2 rounded-lg text-xs font-semibold shadow-md hover:shadow-lg transition-all duration-200 hover:scale-105 whitespace-nowrap"
-                              >
-                                Question Paper
-                              </button>
-                              <!-- Status Indicator for Question Paper -->
-                              <span
-                                v-if="hasQuestionPaper(exam)"
-                                class="absolute -top-0.5 -right-0.5 
-                                      text-green-600 text-xs font-bold
-                                      border-2 border-green-500 
-                                      bg-white
-                                      rounded-full w-[18px] h-[18px]
-                                      flex items-center justify-center
-                                      shadow"
-                              >
-                                ✔
-                              </span>
-                              <span
-                                v-else
-                                class="absolute -top-0.5 -right-0.5 
-                                      text-yellow-600 text-sm 
-                                      leading-none flip-vertical"
-                              >
-                                ⏳
-                              </span>
-                            </div>
+<!-- TABLE BODY -->
+<tbody class="divide-y divide-gray-200">
 
-                          </div>
-                        </td>
+<tr v-for="exam in createdExams" :key="exam.Exam_Id" class="hover:bg-gray-50 transition">
 
-                        <!-- Delete Column -->
-                        <td class="px-2 py-4 text-center">
-                          <button
-                            @click="deleteExam(exam.Exam_Id)"
-                            class="inline-flex items-center justify-center w-10 h-10 bg-red-500 hover:bg-red-600 rounded-lg transition-all duration-200 shadow-md hover:shadow-lg hover:scale-110"
-                            title="Delete Exam"
-                          >
-                            <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                            </svg>
-                          </button>
-                        </td>
-                      </tr>
-                    </tbody>
-                  </table>
+<td class="px-3 py-4 text-sm text-gray-800 font-medium">
+{{ exam.Exam_Name }}
+</td>
+
+<td class="px-3 py-4 text-sm text-gray-600">
+{{ exam.Exam_Date }}
+</td>
+
+<td class="px-3 py-4 text-sm text-gray-600">
+{{ exam.Exam_Time }}
+</td>
+
+<td class="px-3 py-4 text-sm text-gray-600">
+{{ exam.Duration_Minutes }} min
+</td>
+
+<td class="px-2 py-4 text-sm text-gray-600 text-center">
+{{ exam.Total_Questions }}
+</td>
+
+<td class="px-2 py-4 text-sm text-gray-600 text-center">
+{{ exam.Max_Marks }}
+</td>
+
+<!-- QR -->
+<td class="px-2 py-4 text-center">
+<button
+@click="openQRModal(exam.Exam_Id, exam.Exam_Name)"
+class="inline-flex items-center justify-center w-11 h-11 bg-indigo-500 hover:bg-indigo-600 rounded-lg shadow-md hover:shadow-lg transition hover:scale-105"
+>
+QR
+</button>
+</td>
+
+<!-- Actions -->
+<td class="px-6 py-4">
+<div class="flex items-center justify-center gap-3">
+
+<!-- Add Students -->
+<div class="relative">
+<button
+@click.stop="addStudents(exam.Exam_Id)"
+class="bg-blue-400 hover:bg-blue-500 text-white px-3.5 py-2 rounded-lg text-xs font-semibold shadow-md hover:shadow-lg transition hover:scale-105 whitespace-nowrap"
+>
+Add Students
+</button>
+
+<span
+v-if="hasAssignedStudents(exam)"
+class="absolute -top-1 -right-1 text-green-600 text-xs font-bold border-2 border-green-500 bg-white rounded-full w-[18px] h-[18px] flex items-center justify-center shadow"
+>
+✔
+</span>
+
+<span
+v-else
+class="absolute -top-1 -right-1 text-yellow-600 text-sm flip-vertical"
+>
+⏳
+</span>
+</div>
+
+<!-- Question Bank -->
+<div class="relative">
+<button
+@click="navigateTo('AddQuestion', exam.Exam_Id)"
+class="bg-green-500 hover:bg-green-600 text-white px-3.5 py-2 rounded-lg text-xs font-semibold shadow-md hover:shadow-lg transition hover:scale-105 whitespace-nowrap"
+>
+Question Bank
+</button>
+
+<span
+v-if="hasQuestionBank(exam)"
+class="absolute -top-1 -right-1 text-green-600 text-xs font-bold border-2 border-green-500 bg-white rounded-full w-[18px] h-[18px] flex items-center justify-center shadow"
+>
+✔
+</span>
+
+<span
+v-else
+class="absolute -top-1 -right-1 text-yellow-600 text-sm flip-vertical"
+>
+⏳
+</span>
+</div>
+
+<!-- Question Paper -->
+<div class="relative">
+<button
+@click="navigateTo('MakeQuestionPaper', exam.Exam_Id)"
+class="bg-purple-500 hover:bg-purple-600 text-white px-3.5 py-2 rounded-lg text-xs font-semibold shadow-md hover:shadow-lg transition hover:scale-105 whitespace-nowrap"
+>
+Question Paper
+</button>
+
+<span
+v-if="hasQuestionPaper(exam)"
+class="absolute -top-1 -right-1 text-green-600 text-xs font-bold border-2 border-green-500 bg-white rounded-full w-[18px] h-[18px] flex items-center justify-center shadow"
+>
+✔
+</span>
+
+<span
+v-else
+class="absolute -top-1 -right-1 text-yellow-600 text-sm flip-vertical"
+>
+⏳
+</span>
+</div>
+
+</div>
+</td>
+<!-- Delete -->
+<td class="px-2 py-4 text-center">
+<button
+@click="deleteExam(exam.Exam_Id)"
+class="inline-flex items-center justify-center w-10 h-10 bg-red-500 hover:bg-red-600 rounded-lg transition-all duration-200 shadow-md hover:shadow-lg hover:scale-110"
+>
+🗑
+</button>
+</td>
+
+<!-- Status -->
+<td class="px-4 py-4 text-center">
+<button
+@click="toggleExamStatus(exam)"
+:class="[
+'px-4 py-2 rounded-lg text-white font-semibold',
+exam.exam_status === 'ON'
+? 'bg-green-600 hover:bg-green-700'
+: 'bg-gray-500 hover:bg-gray-600'
+]"
+>
+{{ exam.exam_status === 'ON' ? 'ON' : 'OFF' }}
+</button>
+</td>
+
+</tr>
+
+</tbody>
+
+</table>
                 </div>
               </div>
               <div v-else class="mt-8 text-gray-500 text-center text-lg py-12 bg-white rounded-xl shadow">
@@ -553,7 +567,7 @@
                         <th class="px-6 py-4 text-left text-sm font-bold text-gray-700">Date</th>
                         <th class="px-6 py-4 text-left text-sm font-bold text-gray-700">Total Applicants</th>
                         <th class="px-6 py-4 text-left text-sm font-bold text-gray-700">Attempted</th>
-                        <th class="px-6 py-4 text-center text-sm font-bold text-gray-700">Actions</th>
+                        <th class="px-8 py-4 text-center text-sm font-bold text-gray-700 min-w-[420px]">Actions</th>
                       </tr>
                     </thead>
                     <tbody class="divide-y divide-gray-200">
@@ -824,6 +838,24 @@ const notificationContainer = ref(null)
 const toast = ref({ message: "", type: "" })
 let timer
 
+
+const toggleExamStatus = async (exam) => {
+  try {
+    const newStatus = exam.exam_status === 'ON' ? 'OFF' : 'ON'
+
+    const res = await axios.put(`/exam/toggle/${exam.Exam_Id}`, {
+      status: newStatus
+    })
+
+    if (res.data.success) {
+      exam.exam_status = newStatus
+      fetchExamsAndCategorize()
+    }
+
+  } catch (err) {
+    console.error("Toggle failed", err)
+  }
+}
 const showToast = (message, type = "success") => {
   toast.value = { message, type }
   clearTimeout(timer)
@@ -1075,20 +1107,23 @@ const loadExamStatuses = async (exams) => {
 const fetchExamsAndCategorize = async () => {
   try {
     const res = await axios.get(`/exam/get_exams/${facultyEmail}`)
+
     if (res.data.success) {
-      const now = new Date()
       const exams = res.data.exams || []
 
-      createdExams.value = exams.filter(e => now < getExamEndTime(e))
-      conductedExams.value = exams.filter(e => now >= getExamEndTime(e))
+      // Created exams
+      createdExams.value = exams.filter(e => e.was_started === 0 || e.exam_status === "ON")
+
+      // Conducted exams
+      conductedExams.value = exams.filter(e => e.was_started === 1 && e.exam_status === "OFF")
 
       await loadExamStatuses(createdExams.value)
     }
+
   } catch (err) {
     console.error("Failed to fetch exams", err)
   }
 }
-
 const submitExam = async () => {
   try {
     const res = await axios.post('/exam/create', exam.value)

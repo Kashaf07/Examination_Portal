@@ -51,9 +51,9 @@ def create_exam_routes(mysql):
             cursor = mysql.connection.cursor()
             cursor.execute("""
                 INSERT INTO Entrance_Exam
-                (Exam_Name, Exam_Date, Exam_Time, Duration_Minutes,
-                 Total_Questions, Max_Marks, Faculty_Email)
-                VALUES (%s, %s, %s, %s, %s, %s, %s)
+(Exam_Name, Exam_Date, Exam_Time, Duration_Minutes,
+ Total_Questions, Max_Marks, Faculty_Email, exam_status)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, 'OFF')
             """, (
                 exam_name, exam_date, exam_time,
                 duration, total_questions, max_marks, faculty_email
@@ -77,11 +77,13 @@ def create_exam_routes(mysql):
             cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
 
             cursor.execute("""
-                SELECT Exam_Id, Exam_Name, Exam_Date, Exam_Time,
-                       Duration_Minutes, Total_Questions, Max_Marks
-                FROM Entrance_Exam
-                WHERE Faculty_Email = %s
-            """, (faculty_email,))
+                    SELECT Exam_Id, Exam_Name, Exam_Date, Exam_Time,
+                        Duration_Minutes, Total_Questions, Max_Marks,
+                        exam_status, was_started
+                    FROM Entrance_Exam
+                    WHERE Faculty_Email = %s
+                    ORDER BY Exam_Id DESC
+                    """, (faculty_email,))
             exams = cursor.fetchall()
 
             exam_list = []
@@ -113,6 +115,8 @@ def create_exam_routes(mysql):
                     "Duration_Minutes": str(exam["Duration_Minutes"]),
                     "Total_Questions": exam["Total_Questions"],
                     "Max_Marks": exam["Max_Marks"],
+                    "exam_status": exam["exam_status"],
+                    "was_started": exam["was_started"],
                     "total_applicants": total_applicants,
                     "attempted_applicants": attempted_applicants
                 })
@@ -124,6 +128,31 @@ def create_exam_routes(mysql):
             print("❌ Get exams error:", e)
             traceback.print_exc()
             return jsonify(success=False, message="Server error"), 500
+
+    @exam_bp.route("/toggle/<exam_id>", methods=["PUT"])
+    def toggle_exam(exam_id):
+        data = request.json
+        status = data.get("status")
+
+        cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+
+        if status == "ON":
+            cursor.execute("""
+                UPDATE Entrance_Exam
+                SET exam_status = 'ON', was_started = 1
+                WHERE Exam_Id = %s
+            """, (exam_id,))
+        else:
+            cursor.execute("""
+                UPDATE Entrance_Exam
+                SET exam_status = 'OFF'
+                WHERE Exam_Id = %s
+            """, (exam_id,))
+
+        mysql.connection.commit()
+        cursor.close()
+
+        return jsonify(success=True)
 
     # ✅ GET EXAM BY ID (FIXED)
     @exam_bp.route('/get_exam_by_id/<int:exam_id>', methods=['GET'])
