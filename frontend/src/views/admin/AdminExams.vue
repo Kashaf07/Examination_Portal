@@ -125,30 +125,36 @@
     <div v-if="upcomingExams.length" class="mt-8">
       <h2 class="text-2xl font-semibold mb-4 text-gray-800">Created Exams</h2>
       <div class="bg-white rounded-xl shadow-lg overflow-hidden">
-        <table class="min-w-full">
-          <thead class="bg-gradient-to-r from-blue-50 to-indigo-50">
-            <tr>
-              <th class="px-3 py-4 text-left text-sm font-bold text-gray-700 whitespace-nowrap">Exam Name</th>
-              <th class="px-3 py-4 text-left text-sm font-bold text-gray-700 whitespace-nowrap">Date</th>
-              <th class="px-3 py-4 text-left text-sm font-bold text-gray-700 whitespace-nowrap">Time</th>
-              <th class="px-3 py-4 text-left text-sm font-bold text-gray-700 whitespace-nowrap">Duration</th>
-              <th class="px-2 py-4 text-left text-sm font-bold text-gray-700">Questions</th>
-              <th class="px-2 py-4 text-left text-sm font-bold text-gray-700">Max Marks</th>
-              <th class="px-2 py-4 text-center text-sm font-bold text-gray-700">QR Code</th>
-              <th class="px-6 py-4 text-center text-sm font-bold text-gray-700 min-w-[420px]">Actions</th>
-              <th class="px-2 py-4 text-center text-sm font-bold text-gray-700">Delete</th>
-              <th class="px-4 py-4 text-center text-sm font-bold text-gray-700">Exam Status</th>
-            </tr>
-          </thead>
-          <tbody class="divide-y divide-gray-200">
-            <tr v-for="exam in upcomingExams" :key="exam.Exam_Id" class="hover:bg-gray-50 transition">
-              <td class="px-3 py-4 text-sm text-gray-800 font-medium">{{ exam.Exam_Name }}</td>
-              <td class="px-3 py-4 text-sm text-gray-600 whitespace-nowrap">{{ exam.Exam_Date }}</td>
-              <td class="px-3 py-4 text-sm text-gray-600 whitespace-nowrap">{{ exam.Exam_Time }}</td>
-              <td class="px-3 py-4 text-sm text-gray-600 whitespace-nowrap">{{ exam.Duration_Minutes }} min</td>
-              <td class="px-2 py-4 text-sm text-gray-600 text-center">{{ exam.Total_Questions }}</td>
-              <td class="px-2 py-4 text-sm text-gray-600 text-center">{{ exam.Max_Marks }}</td>
-              
+        <div class="overflow-x-auto">
+          <table class="min-w-full">
+            <thead class="bg-gradient-to-r from-blue-50 to-indigo-50">
+              <tr>
+                <th class="px-3 py-4 text-left text-sm font-bold text-gray-700 whitespace-nowrap">Exam Name</th>
+                <th class="px-3 py-4 text-left text-sm font-bold text-gray-700 whitespace-nowrap">Date</th>
+                <th class="px-3 py-4 text-left text-sm font-bold text-gray-700 whitespace-nowrap">Time</th>
+                <th class="px-3 py-4 text-left text-sm font-bold text-gray-700 whitespace-nowrap">Duration</th>
+                <th class="px-2 py-4 text-left text-sm font-bold text-gray-700">Questions</th>
+                <th class="px-2 py-4 text-left text-sm font-bold text-gray-700">Max Marks</th>
+                <th class="px-2 py-4 text-center text-sm font-bold text-gray-700">QR Code</th>
+                <th class="px-6 py-4 text-center text-sm font-bold text-gray-700 min-w-[420px]">Actions</th>
+                <th class="px-2 py-4 text-center text-sm font-bold text-gray-700">Delete</th>
+                <th class="px-4 py-4 text-center text-sm font-bold text-gray-700">Exam Status</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-200">
+              <tr v-for="exam in upcomingExams" :key="exam.Exam_Id" class="hover:bg-gray-50 transition">
+                <td class="px-3 py-4 text-sm text-gray-800 font-medium">
+                  <div class="leading-tight">
+                    <div v-for="(word, index) in exam.Exam_Name.split(' ')" :key="index" class="block">
+                      {{ word }}
+                    </div>
+                  </div>
+                </td>
+                <td class="px-3 py-4 text-sm text-gray-600 whitespace-nowrap">{{ exam.Exam_Date }}</td>
+                <td class="px-3 py-4 text-sm text-gray-600 whitespace-nowrap">{{ exam.Exam_Time }}</td>
+                <td class="px-3 py-4 text-sm text-gray-600 whitespace-nowrap">{{ exam.Duration_Minutes }} min</td>
+                <td class="px-2 py-4 text-sm text-gray-600 text-center">{{ exam.Total_Questions }}</td>
+                <td class="px-2 py-4 text-sm text-gray-600 text-center">{{ exam.Max_Marks }}</td>
               <!-- QR Code Column -->
               <td class="px-2 py-4 text-center">
                 <button
@@ -280,21 +286,29 @@
 
               <!-- Status Column -->
               <td class="px-4 py-4 text-center">
-              <button
-              @click="toggleExamStatus(exam)"
-              :class="[
-              'px-4 py-2 rounded-lg text-white font-semibold',
-              exam.exam_status === 'ON'
-              ? 'bg-green-600 hover:bg-green-700'
-              : 'bg-gray-500 hover:bg-gray-600'
-              ]"
-              >
-              {{ exam.exam_status === 'ON' ? 'ON' : 'OFF' }}
-              </button>
+                <button
+                  @click="toggleExamStatus(exam)"
+                  :class="[
+                    'relative inline-flex h-6 w-11 items-center rounded-full transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2',
+                    exam.exam_status === 'ON'
+                      ? 'bg-green-600'
+                      : 'bg-gray-300'
+                  ]"
+                >
+                  <span
+                    :class="[
+                      'inline-block h-4 w-4 transform rounded-full bg-white transition-transform duration-200 ease-in-out',
+                      exam.exam_status === 'ON'
+                        ? 'translate-x-6'
+                        : 'translate-x-1'
+                    ]"
+                  />
+                </button>
               </td>
             </tr>
           </tbody>
         </table>
+        </div>
       </div>
     </div>
     <div v-else class="mt-8 text-gray-500 text-center text-lg py-12 bg-white rounded-xl shadow">
@@ -305,33 +319,41 @@
     <div v-if="conductedExams && conductedExams.length" class="mt-12">
       <h2 class="text-2xl font-semibold mb-4 text-gray-800">Conducted Exams</h2>
       <div class="bg-white rounded-xl shadow-lg overflow-hidden">
-        <table class="min-w-full">
-          <thead class="bg-gradient-to-r from-blue-50 to-indigo-50">
-            <tr>
-              <th class="px-6 py-4 text-left text-sm font-bold text-gray-700">Exam Name</th>
-              <th class="px-6 py-4 text-left text-sm font-bold text-gray-700">Date</th>
-              <th class="px-6 py-4 text-left text-sm font-bold text-gray-700">Total Applicants</th>
-              <th class="px-6 py-4 text-left text-sm font-bold text-gray-700">Attempted</th>
-              <th class="px-6 py-4 text-center text-sm font-bold text-gray-700">Actions</th>
-            </tr>
-          </thead>
-          <tbody class="divide-y divide-gray-200">
-            <tr v-for="exam in paginatedConductedExams" :key="exam.Exam_Id" class="hover:bg-gray-50 transition">
-              <td class="px-6 py-4 text-sm text-gray-800 font-medium">{{ exam.Exam_Name || 'N/A' }}</td>
-              <td class="px-6 py-4 text-sm text-gray-600">{{ formatDate(exam.Exam_Date) }}</td>
-              <td class="px-6 py-4 text-sm text-gray-600">{{ exam.total_applicants || 0 }}</td>
-              <td class="px-6 py-4 text-sm text-gray-600">{{ exam.attempted_applicants || 0 }}</td>
-              <td class="px-6 py-4 text-center">
-                <button
-                  @click="navigateTo('ViewResponsesAdmin', exam.Exam_Id)"
-                  class="bg-purple-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-purple-700 shadow-md hover:shadow-lg transition font-semibold"
-                >
-                  View Responses
-                </button>
-              </td>
-            </tr>
-          </tbody>
-        </table>
+        <div class="overflow-x-auto">
+          <table class="min-w-full">
+            <thead class="bg-gradient-to-r from-blue-50 to-indigo-50">
+              <tr>
+                <th class="px-6 py-4 text-left text-sm font-bold text-gray-700">Exam Name</th>
+                <th class="px-6 py-4 text-left text-sm font-bold text-gray-700">Date</th>
+                <th class="px-6 py-4 text-left text-sm font-bold text-gray-700">Total Applicants</th>
+                <th class="px-6 py-4 text-left text-sm font-bold text-gray-700">Attempted</th>
+                <th class="px-6 py-4 text-center text-sm font-bold text-gray-700">Actions</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-200">
+              <tr v-for="exam in paginatedConductedExams" :key="exam.Exam_Id" class="hover:bg-gray-50 transition">
+                <td class="px-6 py-4 text-sm text-gray-800 font-medium">
+                  <div class="leading-tight">
+                    <div v-for="(word, index) in (exam.Exam_Name || 'N/A').split(' ')" :key="index" class="block">
+                      {{ word }}
+                    </div>
+                  </div>
+                </td>
+                <td class="px-6 py-4 text-sm text-gray-600">{{ formatDate(exam.Exam_Date) }}</td>
+                <td class="px-6 py-4 text-sm text-gray-600">{{ exam.total_applicants || 0 }}</td>
+                <td class="px-6 py-4 text-sm text-gray-600">{{ exam.attempted_applicants || 0 }}</td>
+                <td class="px-6 py-4 text-center">
+                  <button
+                    @click="navigateTo('ViewResponsesAdmin', exam.Exam_Id)"
+                    class="bg-purple-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-purple-700 shadow-md hover:shadow-lg transition font-semibold"
+                  >
+                    View Responses
+                  </button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
       </div>
 
       <!-- Pagination for Conducted Exams -->
@@ -400,6 +422,56 @@
       @close="closeQRModal"
     />
 
+    <!-- Confirmation Modal for Turning OFF Exam -->
+    <div
+      v-if="showConfirmModal"
+      class="fixed inset-0 z-50 flex items-center justify-center"
+    >
+      <!-- Blurred Background -->
+      <div class="absolute inset-0 bg-black/60 backdrop-blur-md"></div>
+      
+      <!-- Modal Content -->
+      <div class="relative bg-white/95 backdrop-blur-sm rounded-3xl shadow-2xl p-8 max-w-md w-full mx-4 transform transition-all animate-pulse-slow">
+        <div class="text-center">
+          <!-- Warning Icon with Gradient -->
+          <div class="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-gradient-to-br from-red-100 to-pink-100 mb-6">
+            <svg class="h-8 w-8 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
+            </svg>
+          </div>
+          
+          <!-- Title -->
+          <h3 class="text-xl font-bold text-gray-900 mb-3">Turn OFF Exam</h3>
+          
+          <!-- Message -->
+          <p class="text-sm text-gray-600 mb-8 leading-relaxed">
+            Are you sure you want to turn OFF the exam 
+            <span class="font-bold text-gray-800 bg-gray-100 px-2 py-1 rounded-lg">"{{ selectedExamForConfirm?.Exam_Name }}"</span>?
+            <br><br>
+            This action will stop the exam for all students.
+          </p>
+          
+          <!-- Buttons -->
+          <div class="flex gap-4 justify-center">
+            <!-- Cancel Button -->
+            <button
+              @click="cancelConfirmation"
+              class="px-8 py-3 bg-white text-gray-700 border border-gray-300 rounded-full hover:bg-gray-50 hover:border-gray-400 transition-all duration-300 font-semibold shadow-lg hover:shadow-xl transform hover:scale-105 active:scale-95"
+            >
+              Cancel
+            </button>
+            
+            <!-- OK Button -->
+            <button
+              @click="confirmTurnOff"
+              class="px-8 py-3 bg-blue-600 text-white rounded-full hover:bg-blue-700 transition-all duration-300 font-semibold shadow-lg hover:shadow-xl transform hover:scale-105 active:scale-95"
+            >
+              OK
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
 
   </div>
 </template>
@@ -422,6 +494,10 @@ const examStatus = ref({});
 // QR Code Modal State
 const showQRModal = ref(false);
 const selectedExamForQR = ref(null);
+
+// Confirmation Modal State
+const showConfirmModal = ref(false);
+const selectedExamForConfirm = ref(null);
 
 const adminEmail = localStorage.getItem("admin_email") || localStorage.getItem("email") || "";
 
@@ -472,18 +548,49 @@ const closeQRModal = () => {
   selectedExamForQR.value = null;
 };
 const toggleExamStatus = async (exam) => {
-  try {
-    const newStatus = exam.exam_status === "ON" ? "OFF" : "ON";
+  // If turning ON, do it immediately
+  if (exam.exam_status === "OFF") {
+    try {
+      const res = await axios.put(`${API}/exam/toggle/${exam.Exam_Id}`, {
+        status: "ON"
+      });
 
-    const res = await axios.put(`${API}/exam/toggle/${exam.Exam_Id}`, {
-      status: newStatus
+      if (res.data.success) {
+        exam.exam_status = "ON";
+
+        emit("toast", {
+          message: `Exam turned ON`,
+          type: "success"
+        });
+
+        fetchExams();
+        fetchConducted();
+      }
+
+    } catch (err) {
+      emit("toast", {
+        message: "Failed to update exam status",
+        type: "error"
+      });
+    }
+  } else {
+    // If turning OFF, show confirmation modal
+    selectedExamForConfirm.value = exam;
+    showConfirmModal.value = true;
+  }
+};
+
+const confirmTurnOff = async () => {
+  try {
+    const res = await axios.put(`${API}/exam/toggle/${selectedExamForConfirm.value.Exam_Id}`, {
+      status: "OFF"
     });
 
     if (res.data.success) {
-      exam.exam_status = newStatus;
+      selectedExamForConfirm.value.exam_status = "OFF";
 
       emit("toast", {
-        message: `Exam turned ${newStatus}`,
+        message: `Exam turned OFF`,
         type: "success"
       });
 
@@ -491,12 +598,22 @@ const toggleExamStatus = async (exam) => {
       fetchConducted();
     }
 
+    showConfirmModal.value = false;
+    selectedExamForConfirm.value = null;
+
   } catch (err) {
     emit("toast", {
       message: "Failed to update exam status",
       type: "error"
     });
+    showConfirmModal.value = false;
+    selectedExamForConfirm.value = null;
   }
+};
+
+const cancelConfirmation = () => {
+  showConfirmModal.value = false;
+  selectedExamForConfirm.value = null;
 };
 
 /* ================= EXAM FILTERING ================= */
@@ -708,5 +825,19 @@ button:active:not(:disabled) {
 
 .flip-vertical {
   animation: flipVertical 1.2s infinite ease-in-out;
+}
+
+/* Subtle pulse animation for modal */
+@keyframes pulse-slow {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.02);
+  }
+}
+
+.animate-pulse-slow {
+  animation: pulse-slow 3s ease-in-out infinite;
 }
 </style>
