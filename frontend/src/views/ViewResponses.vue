@@ -108,7 +108,7 @@
                 <span :class="{
                   'text-green-600 font-semibold': attempt.Status === 'Pass',
                   'text-red-500 font-semibold':   attempt.Status === 'Fail',
-                  'text-black font-semibold':  attempt.Status === 'Restricted'
+                  'text-amber-600 font-semibold':  attempt.Status === 'Restricted'
                 }">{{ attempt.Status }}</span>
               </td>
 

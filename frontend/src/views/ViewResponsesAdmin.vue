@@ -63,7 +63,7 @@
               <td class="px-4 py-2.5 text-center">{{ attempt.Marks_Obtained }}</td>
               <td class="px-4 py-2.5 text-center">{{ attempt.Max_Marks }}</td>
               <td class="px-4 py-2.5 text-center">
-                <span :class="{'text-green-600 font-semibold': attempt.Status === 'Pass','text-red-500 font-semibold': attempt.Status === 'Fail','text-black font-semibold': attempt.Status === 'Restricted'}">{{ attempt.Status || '-' }}</span>
+                <span :class="{'text-green-600 font-semibold': attempt.Status === 'Pass','text-red-500 font-semibold': attempt.Status === 'Fail','text-amber-600 font-semibold': attempt.Status === 'Restricted'}">{{ attempt.Status || '-' }}</span>
               </td>
               <td class="px-4 py-2.5 text-center">
                 <div v-if="!attempt.key_log_total || attempt.key_log_total === 0" class="text-gray-400 text-sm italic">None</div>

@@ -137,6 +137,7 @@
               <th class="px-2 py-4 text-center text-sm font-bold text-gray-700">QR Code</th>
               <th class="px-6 py-4 text-center text-sm font-bold text-gray-700 min-w-[420px]">Actions</th>
               <th class="px-2 py-4 text-center text-sm font-bold text-gray-700">Delete</th>
+              <th class="px-4 py-4 text-center text-sm font-bold text-gray-700">Exam Status</th>
             </tr>
           </thead>
           <tbody class="divide-y divide-gray-200">
@@ -275,6 +276,21 @@
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                   </svg>
                 </button>
+              </td>
+
+              <!-- Status Column -->
+              <td class="px-4 py-4 text-center">
+              <button
+              @click="toggleExamStatus(exam)"
+              :class="[
+              'px-4 py-2 rounded-lg text-white font-semibold',
+              exam.exam_status === 'ON'
+              ? 'bg-green-600 hover:bg-green-700'
+              : 'bg-gray-500 hover:bg-gray-600'
+              ]"
+              >
+              {{ exam.exam_status === 'ON' ? 'ON' : 'OFF' }}
+              </button>
               </td>
             </tr>
           </tbody>
@@ -455,6 +471,33 @@ const closeQRModal = () => {
   showQRModal.value = false;
   selectedExamForQR.value = null;
 };
+const toggleExamStatus = async (exam) => {
+  try {
+    const newStatus = exam.exam_status === "ON" ? "OFF" : "ON";
+
+    const res = await axios.put(`${API}/exam/toggle/${exam.Exam_Id}`, {
+      status: newStatus
+    });
+
+    if (res.data.success) {
+      exam.exam_status = newStatus;
+
+      emit("toast", {
+        message: `Exam turned ${newStatus}`,
+        type: "success"
+      });
+
+      fetchExams();
+      fetchConducted();
+    }
+
+  } catch (err) {
+    emit("toast", {
+      message: "Failed to update exam status",
+      type: "error"
+    });
+  }
+};
 
 /* ================= EXAM FILTERING ================= */
 const isExamEnded = (exam) => {
@@ -468,10 +511,16 @@ const isExamEnded = (exam) => {
 };
 
 const upcomingExams = computed(() =>
-  examsList.value.filter((exam) => !isExamEnded(exam))
+  examsList.value.filter(
+    exam => exam.was_started === 0 || exam.exam_status === "ON"
+  )
 );
 
-const conductedExams = computed(() => conductedList.value);
+const conductedExams = computed(() =>
+  examsList.value.filter(
+    exam => exam.was_started === 1 && exam.exam_status === "OFF"
+  )
+);
 
 const hasAssignedStudents = (exam) => {
   return exam.total_applicants && exam.total_applicants > 0;
