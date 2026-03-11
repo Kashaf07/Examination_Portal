@@ -31,12 +31,68 @@
           {{ examName }} Result
         </h1>
 
+        <div class="relative">
+
+        <!-- Main Button -->
         <button
-          @click="downloadPDF"
-          class="bg-blue-500 hover:bg-blue-600 text-white font-semibold px-6 py-3 rounded-full shadow-lg transition-all hover:scale-105"
+          @click="showDownload = !showDownload"
+          class="flex items-center gap-2 px-6 py-3 rounded-full
+                bg-gradient-to-r from-blue-500 to-purple-500
+                hover:from-blue-600 hover:to-purple-600
+                text-white font-semibold shadow-md
+                transition-all duration-200"
         >
           Download Result
+
+          <svg xmlns="http://www.w3.org/2000/svg"
+              class="w-4 h-4 transition-transform"
+              :class="showDownload ? 'rotate-180' : ''"
+              fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round"
+                  stroke-width="2" d="M19 9l-7 7-7-7"/>
+          </svg>
         </button>
+
+        <!-- Dropdown -->
+        <div
+          v-if="showDownload"
+          class="absolute right-0 mt-2 w-52
+                bg-white/90 backdrop-blur
+                border border-gray-200
+                rounded-xl shadow-lg
+                overflow-hidden z-20"
+        >
+
+          <!-- PDF -->
+          <button
+            @click="downloadPDF"
+            class="flex items-center gap-3 w-full px-4 py-3 hover:bg-blue-50 transition"
+          >
+            <img src="/pdf_icon.png" class="w-6 h-6 object-contain" />
+
+            <span class="font-medium text-gray-700">
+              Download PDF
+            </span>
+          </button>
+
+          <!-- Divider -->
+          <div class="border-t border-gray-100"></div>
+
+          <!-- Excel -->
+          <button
+            @click="downloadExcel"
+            class="flex items-center gap-3 w-full px-4 py-3 hover:bg-purple-50 transition"
+          >
+            <img src="/excel_icon.png" class="w-6 h-6 object-contain" />
+
+            <span class="font-medium text-gray-700">
+              Download Excel
+            </span>
+          </button>
+
+        </div>
+
+      </div>
 
       </div>
 
@@ -59,7 +115,14 @@
             >
               <td class="px-6 py-3">{{ student.Applicant_Id }}</td>
               <td class="px-6 py-3">{{ student.Student_Name }}</td>
-              <td class="px-6 py-3 text-right">{{ student.Marks_Obtained }}</td>
+              <td class="px-6 py-3 text-right">
+                <span v-if="student.Status === 'Restricted'">
+                  {{ Number(student.Marks_Obtained).toFixed(2) }} (On Hold)
+                </span>
+                <span v-else>
+                  {{ Number(student.Marks_Obtained).toFixed(2) }}
+                </span>
+              </td>
             </tr>
 
             <tr v-if="results.length === 0">
@@ -128,6 +191,7 @@ import { useRoute, useRouter } from 'vue-router'
 import axios from '../utils/axiosInstance'
 import jsPDF from 'jspdf'
 import autoTable from 'jspdf-autotable'
+import * as XLSX from "xlsx"
 
 const route = useRoute()
 const router = useRouter()
@@ -137,6 +201,7 @@ const results = ref([])
 const examName = ref("Exam")
 const examDate = ref("")
 const examTime = ref("")
+const showDownload = ref(false)
 
 // Pagination
 const currentPage = ref(1)
@@ -258,7 +323,9 @@ const downloadPDF = () => {
     body: sortedResults.map(s => [
       s.Applicant_Id,
       s.Student_Name,
-      s.Marks_Obtained
+      s.Status === "Restricted"
+        ? `${Number(s.Marks_Obtained).toFixed(2)} (On Hold)`
+        : Number(s.Marks_Obtained).toFixed(2)
     ]),
 
     theme: "grid",
@@ -297,6 +364,39 @@ const downloadPDF = () => {
   doc.save(`${examName.value.replace(/\s+/g, "_")}_Exam_Result.pdf`)
 }
 
+const downloadExcel = () => {
+
+  if (!results.value.length) {
+    alert("No results available")
+    return
+  }
+
+  const sortedResults = [...results.value].sort(
+    (a, b) => a.Applicant_Id - b.Applicant_Id
+  )
+
+  const excelData = sortedResults.map(s => ({
+    "Student ID": s.Applicant_Id,
+    "Student Name": s.Student_Name,
+    "Marks":
+      s.Status === "Restricted"
+        ? `${Number(s.Marks_Obtained).toFixed(2)} (On Hold)`
+        : Number(s.Marks_Obtained).toFixed(2)
+  }))
+
+  const worksheet = XLSX.utils.json_to_sheet(excelData)
+  const workbook = XLSX.utils.book_new()
+
+  XLSX.utils.book_append_sheet(workbook, worksheet, "Exam Result")
+
+  XLSX.writeFile(
+    workbook,
+    `${examName.value.replace(/\s+/g, "_")}_Exam_Result.xlsx`
+  )
+
+  showDownload.value = false
+}
+
 </script>
 
 <style scoped>
@@ -304,6 +404,21 @@ const downloadPDF = () => {
 .bg-clip-text {
   -webkit-background-clip: text;
   background-clip: text;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fadeIn {
+  animation: fadeIn 0.18s ease-out;
 }
 
 </style>
