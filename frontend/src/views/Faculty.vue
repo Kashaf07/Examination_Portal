@@ -776,6 +776,18 @@
     @clear="clearToast"
   />
 
+  <!-- Confirmation Modal -->
+  <ConfirmationModal
+    :is-open="showConfirmationModal"
+    :title="confirmationTitle"
+    :message="confirmationMessage"
+    :confirm-text="confirmationConfirmText"
+    :cancel-text="confirmationCancelText"
+    @confirm="handleConfirmation"
+    @cancel="handleCancelConfirmation"
+    @close="showConfirmationModal = false"
+  />
+
 </template>
 
 <script setup>
@@ -788,6 +800,7 @@ import UploadStudents from './UploadStudents.vue'
 import Groups from './Groups.vue'
 import QRCodeModal from '../components/QRCodeModal.vue'
 import NotificationToast from "@/components/admin/NotificationToast.vue"
+import ConfirmationModal from '@/components/ConfirmationModal.vue'
 
 const now = ref(new Date())
 let countdownTimer = null
@@ -830,6 +843,15 @@ const handleApplicantSaved = () => {
 // QR Code Modal State
 const showQRModal = ref(false)
 const selectedExamForQR = ref(null)
+
+// Confirmation Modal State
+const showConfirmationModal = ref(false)
+const confirmationTitle = ref('')
+const confirmationMessage = ref('')
+const confirmationConfirmText = ref('Confirm')
+const confirmationCancelText = ref('Cancel')
+const pendingAction = ref(null)
+const pendingExamId = ref(null)
 
 const toggleNotifications = () => {
   showNotifications.value = !showNotifications.value
@@ -1091,7 +1113,17 @@ const submitExam = async () => {
 }
 
 const deleteExam = async (examId) => {
-  if (!confirm("Delete this exam?")) return
+  // Show confirmation modal instead of browser confirm
+  confirmationTitle.value = 'Delete Exam';
+  confirmationMessage.value = 'Are you sure you want to delete this exam? This action cannot be undone.';
+  confirmationConfirmText.value = 'Yes, Delete';
+  confirmationCancelText.value = 'Cancel';
+  pendingAction.value = 'deleteExam';
+  pendingExamId.value = examId;
+  showConfirmationModal.value = true;
+}
+
+const executeDeleteExam = async (examId) => {
   try {
     const res = await axios.delete(
       `/faculty/exam/delete/${examId}`,
@@ -1104,12 +1136,23 @@ const deleteExam = async (examId) => {
 
     if (res.data.success) {
       fetchExamsAndCategorize()
+      toast.value = { message: "Exam deleted successfully!", type: "success" };
+      setTimeout(() => {
+        toast.value = { message: "", type: "" };
+      }, 3000);
     } else {
-      alert(res.data.message || "Failed to delete exam")
+      toast.value = { message: res.data.message || "Failed to delete exam", type: "error" };
+      setTimeout(() => {
+        toast.value = { message: "", type: "" };
+      }, 4000);
     }
 
   } catch (err) {
     console.error("Delete failed", err)
+    toast.value = { message: "Failed to delete exam", type: "error" };
+    setTimeout(() => {
+      toast.value = { message: "", type: "" };
+    }, 4000);
   }
 }
 
@@ -1118,7 +1161,10 @@ const addStudents = (examId) => {
   console.log("Add Students clicked for exam:", examId)
 
   if (!examId) {
-    alert("Invalid exam ID")
+    toast.value = { message: "Invalid exam ID", type: "error" };
+    setTimeout(() => {
+      toast.value = { message: "", type: "" };
+    }, 3000);
     return
   }
 
@@ -1133,7 +1179,10 @@ const navigateTo = (routeName, examId) => {
   console.log("Navigating to:", routeName, examId)
 
   if (!examId) {
-    alert("Invalid exam ID")
+    toast.value = { message: "Invalid exam ID", type: "error" };
+    setTimeout(() => {
+      toast.value = { message: "", type: "" };
+    }, 3000);
     return
   }
 
@@ -1173,8 +1222,25 @@ const logout = async () => {
 
   } catch (err) {
     console.error("Logout failed:", err)
-    alert('Logout failed')
+    toast.value = { message: "Logout failed", type: "error" };
+    setTimeout(() => {
+      toast.value = { message: "", type: "" };
+    }, 3000);
   }
+}
+
+/* ================= CONFIRMATION MODAL HANDLERS ================= */
+const handleConfirmation = () => {
+  if (pendingAction.value === 'deleteExam' && pendingExamId.value) {
+    executeDeleteExam(pendingExamId.value);
+  }
+  pendingAction.value = null;
+  pendingExamId.value = null;
+}
+
+const handleCancelConfirmation = () => {
+  pendingAction.value = null;
+  pendingExamId.value = null;
 }
 </script>
 

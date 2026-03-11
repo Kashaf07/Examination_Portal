@@ -1,5 +1,6 @@
 <template>
-  <div v-if="isAuthorized" class="min-h-screen p-10 bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50">
+  <div>
+    <div v-if="isAuthorized" class="min-h-screen p-10 bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50">
     
     <!-- Back Button -->
     <button
@@ -34,8 +35,11 @@
       <div class="flex flex-wrap justify-center gap-3">
 
         <button @click="randomizeQuestions"
-        class="action-btn randomize-btn text-sm">
-          🎲 Randomize Questions
+        class="action-btn randomize-btn text-sm flex items-center gap-2">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+          </svg>
+          Randomize Questions
         </button>
         <button @click="savePaper"
         class="action-btn text-sm" 
@@ -55,7 +59,11 @@
     <p v-if="currentTotalMarks > examTotalMarks" class="text-red-600 font-semibold mt-2 mb-2 text-center">
       ❌ You must reduce marks before saving.
     </p>
-    <p v-if="successMessage" class="text-green-600 mt-4 mb-4 font-medium text-center">{{ successMessage }} </p>
+    <p v-if="successMessage" 
+       class="mt-4 mb-4 font-medium text-center"
+       :class="successMessage.includes('❌') ? 'text-red-600' : 'text-green-600'">
+      {{ successMessage }}
+    </p>
       
 
     <!-- Marks Summary -->
@@ -111,40 +119,59 @@
         </li>
       </ul>
     </div>
-  </div>
-  <!-- UNAUTHORIZED UI -->
-<div
-  v-else
-  class="min-h-screen flex items-center justify-center bg-red-50"
->
-  <div class="bg-white shadow-xl rounded-xl p-8 text-center w-full max-w-md">
-    
-    <h2 class="text-2xl font-bold text-red-600 mb-4">
-      Unauthorized Access
-    </h2>
-
-    <p class="text-gray-600 mb-6">
-      You are not allowed to access this exam.
-    </p>
-
-    <!-- Go Back Button -->
-    <button
-      @click="$router.back()"
-      class="bg-red-600 hover:bg-red-700 text-white px-6 py-2 rounded-lg font-semibold shadow-md transition"
+    </div>
+  
+    <!-- UNAUTHORIZED UI -->
+    <div
+      v-else
+      class="min-h-screen flex items-center justify-center bg-red-50"
     >
-      Go Back
-    </button>
+      <div class="bg-white shadow-xl rounded-xl p-8 text-center w-full max-w-md">
+        
+        <h2 class="text-2xl font-bold text-red-600 mb-4">
+          Unauthorized Access
+        </h2>
 
+        <p class="text-gray-600 mb-6">
+          You are not allowed to access this exam.
+        </p>
+
+        <!-- Go Back Button -->
+        <button
+          @click="$router.back()"
+          class="bg-red-600 hover:bg-red-700 text-white px-6 py-2 rounded-lg font-semibold shadow-md transition"
+        >
+          Go Back
+        </button>
+
+      </div>
+    </div>
+
+    <!-- Confirmation Modal -->
+    <ConfirmationModal
+      :is-open="showConfirmationModal"
+      :title="confirmationTitle"
+      :message="confirmationMessage"
+      :confirm-text="confirmationConfirmText"
+      :cancel-text="confirmationCancelText"
+      :icon-type="pendingAction === 'randomize' ? 'randomize' : 'question'"
+      @confirm="handleConfirmation"
+      @cancel="handleCancelConfirmation"
+      @close="showConfirmationModal = false"
+    />
   </div>
-</div>
 </template>
 
 <script>
 import axios from 'axios';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
+import ConfirmationModal from '@/components/ConfirmationModal.vue';
 
 export default {
+  components: {
+    ConfirmationModal
+  },
   data() {
     return {
       isAuthorized: true,
@@ -160,6 +187,13 @@ export default {
       examName: '',
       examDate: '',
       examTime: '',
+      // Confirmation modal state
+      showConfirmationModal: false,
+      confirmationTitle: '',
+      confirmationMessage: '',
+      confirmationConfirmText: 'Confirm',
+      confirmationCancelText: 'Cancel',
+      pendingAction: null
     };
   },
 
@@ -296,7 +330,11 @@ export default {
       
       const newTotal = this.currentTotalMarks + question.Marks;
       if (newTotal > this.examTotalMarks) {
-        alert(`❌ Cannot add this question. Total marks would exceed ${this.examTotalMarks}.`);
+        // Show error message instead of alert
+        this.successMessage = `❌ Cannot add this question. Total marks would exceed ${this.examTotalMarks}.`;
+        setTimeout(() => {
+          this.successMessage = '';
+        }, 4000);
         return;
       }
         this.selectedQuestions.push(question);
@@ -307,12 +345,15 @@ export default {
     savePaper() {
       // client-side guard: only allow save if exact equality
       if (!this.isPaperComplete) {
-        // Provide a helpful message
+        // Provide a helpful message using the success message area
         if (this.currentTotalMarks > this.examTotalMarks) {
-          alert(`❌ Total marks exceed the allowed ${this.examTotalMarks}. Please remove or reduce questions.`);
+          this.successMessage = `❌ Total marks exceed the allowed ${this.examTotalMarks}. Please remove or reduce questions.`;
         } else {
-          alert(`❌ Total marks must be exactly ${this.examTotalMarks} to save the paper. Current total: ${this.currentTotalMarks}.`);
+          this.successMessage = `❌ Total marks must be exactly ${this.examTotalMarks} to save the paper. Current total: ${this.currentTotalMarks}.`;
         }
+        setTimeout(() => {
+          this.successMessage = '';
+        }, 5000);
         return;
       }
       const payload = {
@@ -339,10 +380,23 @@ export default {
         })
         .catch(err => {
           console.error('❌ Error saving paper:', err);
-          alert('❌ Failed to save the paper.');
+          this.successMessage = '❌ Failed to save the paper.';
+          setTimeout(() => {
+            this.successMessage = '';
+          }, 4000);
         });
     },
     async randomizeQuestions() {
+      // Show confirmation modal instead of direct execution
+      this.confirmationTitle = 'Randomize Questions';
+      this.confirmationMessage = 'This will randomly select questions for your exam. Do you want to continue?';
+      this.confirmationConfirmText = 'Yes, Continue';
+      this.confirmationCancelText = 'Cancel';
+      this.pendingAction = 'randomize';
+      this.showConfirmationModal = true;
+    },
+    
+    async executeRandomizeQuestions() {
       try {
         const res = await fetch(
           `http://localhost:5000/api/paper/randomize/${this.examId}?email=${localStorage.getItem("email")}&role=${localStorage.getItem("active_role")}`,
@@ -350,18 +404,38 @@ export default {
             method: 'POST'
           }
         );
-      const data = await res.json();
-      this.selectedQuestions = data;
-      alert('🎲 Random questions selected!');
-    } catch (err) {
-      console.error("❌ Failed to randomize:", err);
-      alert("Failed to randomize questions");
-    }
-  },
+        const data = await res.json();
+        this.selectedQuestions = data;
+        this.successMessage = '🎲 Random questions selected successfully!';
+        setTimeout(() => {
+          this.successMessage = '';
+        }, 3000);
+      } catch (err) {
+        console.error("❌ Failed to randomize:", err);
+        this.successMessage = "❌ Failed to randomize questions";
+        setTimeout(() => {
+          this.successMessage = '';
+        }, 3000);
+      }
+    },
+    
+    handleConfirmation() {
+      if (this.pendingAction === 'randomize') {
+        this.executeRandomizeQuestions();
+      }
+      this.pendingAction = null;
+    },
+    
+    handleCancelConfirmation() {
+      this.pendingAction = null;
+    },
   async downloadPDF() {
     const questions = await this.fetchPaperQuestionsForPDF()
     if (!questions.length) {
-      alert("No questions found for paper")
+      this.successMessage = "❌ No questions found for paper";
+      setTimeout(() => {
+        this.successMessage = '';
+      }, 4000);
       return
     }
 
@@ -460,10 +534,15 @@ export default {
 }
 
 .randomize-btn {
-  background: linear-gradient(to right, #9449da, #6b1ab1); /* purple */
+  background: linear-gradient(135deg, #a855f7, #7c3aed, #6366f1); /* vibrant purple gradient */
+  box-shadow: 0 4px 15px rgba(168, 85, 247, 0.3);
+  transform: translateY(0);
+  transition: all 0.3s ease;
 }
 .randomize-btn:hover {
-  background: linear-gradient(to right, #6b21a8, #581c87);
+  background: linear-gradient(135deg, #9333ea, #6d28d9, #5b21b6);
+  box-shadow: 0 6px 20px rgba(168, 85, 247, 0.4);
+  transform: translateY(-2px);
 }
 
 input {
