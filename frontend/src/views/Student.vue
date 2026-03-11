@@ -48,6 +48,7 @@
       <!-- Exam Stage -->
       <ExamInterface
         v-if="stage === 'exam'"
+        ref="examInterface"
         :timer="timer"
         :questions="questions"
         :current-index="currentIndex"
@@ -608,7 +609,43 @@ clearInlineMessage() {
         this.selectOption(this.keyboardSelectedOption)
         this.keyboardSelectedOption = null
       } else if (this.selectedOption || this.textAnswer) {
-        this.handleNext()
+        // For text-based questions, use handleNext logic
+        const type = this.currentQuestion.Question_Type
+        if (type === 'Fill' || type === 'OneWord') {
+          if (!this.textAnswer.trim()) {
+            this.showInlineMessage('⚠️ Please provide an answer', 'warning')
+            return
+          }
+          // Save the answer
+          this.answers[this.currentIndex] = {
+            question_id: this.currentQuestion.Question_Id,
+            selected_option: this.textAnswer.trim()
+          }
+          this.saveAnswersLocal()
+        }
+        
+        // Check if it's the last question
+        const isLastQuestion = this.currentIndex + 1 === this.questions.length
+        if (isLastQuestion) {
+          // Check if all answers are filled
+          const anyUnanswered = this.answers.some(ans => ans === null)
+          if (anyUnanswered) {
+            this.questions.forEach((_, idx) => {
+              if (this.answers[idx] === null && !this.visitedQuestions.includes(idx)) {
+                this.visitedQuestions.push(idx)
+              }
+            })
+            setTimeout(() => this.showInlineMessage('⚠️ Please answer all questions.', 'warning'), 100)
+            return
+          }
+          // Show confirmation modal
+          if (this.$refs.examInterface) {
+            this.$refs.examInterface.showSubmissionConfirmation()
+          }
+        } else {
+          // Regular next question - use handleNext
+          this.handleNext()
+        }
       } else {
         this.showInlineMessage('⚠️ Select or enter an answer first', 'warning')
       }
