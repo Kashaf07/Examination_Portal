@@ -237,35 +237,28 @@ def create_student_routes(mysql):
             cur = mysql.connection.cursor()
             
             # Check if exam exists
-            cur.execute("SELECT * FROM entrance_exam WHERE Exam_Id = %s", (exam_id,))
+            cur.execute("""
+                SELECT Exam_Id, Exam_Name, Exam_Date, Exam_Time, Duration_Minutes, 
+                       Total_Questions, Max_Marks, Faculty_Email, exam_status
+                FROM entrance_exam WHERE Exam_Id = %s
+            """, (exam_id,))
             exam = cur.fetchone()
 
             if not exam:
                 cur.close()
                 return jsonify({"message": "Invalid Exam ID"}), 404
 
-            # Time validation
-            exam_date = exam[2]
-            exam_time = exam[3]
-            duration_minutes = exam[4]
-            
-            exam_datetime = get_exam_datetime(exam_date, exam_time)
-            exam_end_entry_window = exam_datetime + timedelta(minutes=10)
-            current_time = datetime.now()
-
-            # Not started
-            if current_time < exam_datetime:
+            # Exam status validation - only check if exam is OFF
+            exam_status = exam[8]  # exam_status is now at index 8 in our specific SELECT
+            if exam_status == 'OFF':
                 cur.close()
                 return jsonify({
-                    "error": f"Exam has not started yet. Please wait until {exam_datetime.strftime('%Y-%m-%d %H:%M:%S')}"
+                    "error": "Exam is over"
                 }), 425
 
-           # Entry window over (10-minute rule)
-            if current_time > exam_end_entry_window:
-                cur.close()
-                return jsonify({
-                    "error": "Exam entry time has expired. You cannot start the exam after 10 minutes of exam start time."
-                }), 410
+            # When exam is ON, skip all time validations and allow access
+            duration_minutes = exam[4]  # Still need duration for timer calculations
+            current_time = datetime.now()  # Still needed for attempt timeout logic
 
 
             # Check if student is assigned
@@ -798,35 +791,29 @@ def create_student_routes(mysql):
 
         try:
             cur = mysql.connection.cursor()
-            cur.execute("SELECT * FROM entrance_exam WHERE Exam_Id = %s", (exam_id,))
+            cur.execute("""
+                SELECT Exam_Id, Exam_Name, Exam_Date, Exam_Time, Duration_Minutes, 
+                       Total_Questions, Max_Marks, Faculty_Email, exam_status
+                FROM entrance_exam WHERE Exam_Id = %s
+            """, (exam_id,))
             exam = cur.fetchone()
 
             if not exam:
                 cur.close()
                 return jsonify({"error": "Exam not found"}), 404
 
-            exam_date = exam[2]
-            exam_time = exam[3]
-            duration_minutes = exam[4]
-            if isinstance(exam_time, timedelta):
-                exam_datetime = datetime.combine(exam_date, (datetime.min + exam_time).time())
-            else:
-                exam_datetime = datetime.combine(exam_date, exam_time)
+            # Check exam status first
+            exam_status = exam[8]  # exam_status is now at index 8 in our specific SELECT
+            if exam_status == 'OFF':
+                cur.close()
+                return jsonify({
+                    "status": "EXAM_OVER",
+                    "message": "Exam is over"
+                }), 200
 
-            exam_end_entry_window = exam_datetime + timedelta(minutes=10)
-            current_time = datetime.now()
-
-            status = "NOT_STARTED"
-            message = f"Exam will start at {exam_datetime.strftime('%Y-%m-%d %H:%M:%S')}"
-            
-            if current_time > exam_datetime:
-                if current_time > exam_end_entry_window:
-                    status = "EXPIRED"
-                    message = "Exam entry time expired."
-                else:
-                    status = "ACTIVE"
-                    remaining_seconds = int((exam_end_entry_window - current_time).total_seconds())
-                    message = f"Exam entry window is active. {remaining_seconds} seconds remaining."
+            # When exam is ON, always show as ACTIVE (no time restrictions)
+            status = "ACTIVE"
+            message = "Exam is available"
 
             # Check for existing attempts (submitted or restricted)
             cur.execute("""
@@ -859,10 +846,7 @@ def create_student_routes(mysql):
             cur.close()
             return jsonify({
                 "status": status,
-                "message": message,
-                "exam_datetime": exam_datetime.strftime('%Y-%m-%d %H:%M:%S'),
-                "exam_end_entry_window": exam_end_entry_window.strftime('%Y-%m-%d %H:%M:%S'),
-                "current_time": current_time.strftime('%Y-%m-%d %H:%M:%S')
+                "message": message
             })
         except Exception as e:
             return jsonify({"error": str(e)}), 500

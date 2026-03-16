@@ -322,8 +322,14 @@ watch(() => props.currentIndex, async () => {
 const handleInputKeydown = (event) => {
   if (event.key === 'Enter') {
     event.preventDefault()
-    // Don't call handleNextClick directly, emit to parent to handle properly
-    emit('handle-next')
+    // Check if it's the last question and should show confirmation
+    if (props.currentIndex + 1 === props.questions.length) {
+      // Last question - show confirmation modal
+      showSubmissionConfirmation()
+    } else {
+      // Regular next question
+      emit('handle-next')
+    }
   }
 }
 
