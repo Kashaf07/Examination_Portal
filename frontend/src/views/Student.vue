@@ -65,6 +65,7 @@
         @select-option="selectOption"
         @finish-exam="finishExam"
         @handle-next="handleNext"
+        @show-inline-message="showInlineMessage"
         :outside-countdown="outsideCountdown"
         :is-outside-screen="isOutsideScreen"
         :battery-level="batteryLevel"
