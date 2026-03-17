@@ -194,10 +194,10 @@
 
           <!-- Action Buttons -->
           <div class="flex justify-between items-center mt-10">
-            <!-- Submit Button (Left) -->
+            <!-- Submit Button (Left) - Only show when all answers filled and NOT on last question -->
             <div class="flex items-center">
               <button 
-                v-if="allAnswersFilled"
+                v-if="allAnswersFilled && currentIndex + 1 !== questions.length"
                 @click="showSubmissionConfirmation"
                 class="bg-gradient-to-r from-purple-600 to-pink-500 hover:from-purple-700 hover:to-pink-600 text-white px-8 py-3 rounded-lg font-bold shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 text-lg tracking-wide transition-all duration-300"
               >
@@ -276,10 +276,28 @@ const emit = defineEmits([
   'select-option',
   'update:textAnswer',
   'finish-exam',
-  'handle-next'
+  'handle-next',
+  'show-inline-message'
 ])
 
 const showSubmissionConfirmation = () => {
+  // Check if there are any unanswered questions first
+  const unansweredQuestions = []
+  props.answers.forEach((answer, index) => {
+    if (answer === null) {
+      unansweredQuestions.push(index + 1)
+    }
+  })
+  
+  if (unansweredQuestions.length > 0) {
+    // Show error message for unanswered questions but don't jump
+    const questionText = unansweredQuestions.length === 1 ? 'question' : 'questions'
+    const questionNumbers = unansweredQuestions.join(', ')
+    emit('show-inline-message', `⚠️ Please answer all questions before submitting. Remaining ${questionText}: ${questionNumbers}`, 'error')
+    return
+  }
+  
+  // All questions answered, show confirmation modal
   showSubmissionModal.value = true
 }
 
@@ -294,7 +312,23 @@ const handleCancelSubmission = () => {
 
 const handleNextClick = () => {
   if (props.currentIndex + 1 === props.questions.length) {
-    // Last question - show confirmation modal
+    // Last question - check for unanswered questions first
+    const unansweredQuestions = []
+    props.answers.forEach((answer, index) => {
+      if (answer === null) {
+        unansweredQuestions.push(index + 1)
+      }
+    })
+    
+    if (unansweredQuestions.length > 0) {
+      // Show error message for unanswered questions but don't jump
+      const questionText = unansweredQuestions.length === 1 ? 'question' : 'questions'
+      const questionNumbers = unansweredQuestions.join(', ')
+      emit('show-inline-message', `⚠️ Please answer all questions before submitting. Remaining ${questionText}: ${questionNumbers}`, 'error')
+      return
+    }
+    
+    // All questions answered, show confirmation modal
     showSubmissionConfirmation()
   } else {
     // Regular next question
@@ -322,9 +356,25 @@ watch(() => props.currentIndex, async () => {
 const handleInputKeydown = (event) => {
   if (event.key === 'Enter') {
     event.preventDefault()
-    // Check if it's the last question and should show confirmation
+    // Check if it's the last question
     if (props.currentIndex + 1 === props.questions.length) {
-      // Last question - show confirmation modal
+      // Last question - check for unanswered questions first
+      const unansweredQuestions = []
+      props.answers.forEach((answer, index) => {
+        if (answer === null) {
+          unansweredQuestions.push(index + 1)
+        }
+      })
+      
+      if (unansweredQuestions.length > 0) {
+        // Show error message for unanswered questions but don't jump
+        const questionText = unansweredQuestions.length === 1 ? 'question' : 'questions'
+        const questionNumbers = unansweredQuestions.join(', ')
+        emit('show-inline-message', `⚠️ Please answer all questions before submitting. Remaining ${questionText}: ${questionNumbers}`, 'error')
+        return
+      }
+      
+      // All questions answered, show confirmation modal
       showSubmissionConfirmation()
     } else {
       // Regular next question
