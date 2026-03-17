@@ -74,8 +74,6 @@
                   </svg>
                 </div>
               </th>
-
-              <th class="px-4 py-3 text-center">Key Activity</th>
               <th class="px-4 py-3 text-center">Actions</th>
             </tr>
           </thead>
@@ -113,28 +111,6 @@
               </td>
 
               <td class="px-4 py-2.5 text-center">
-                <div v-if="!attempt.key_log_total || attempt.key_log_total === 0"
-                     class="text-gray-400 text-sm italic">None</div>
-
-                <div v-else class="relative flex flex-col items-center">
-                  <button
-                    @click.stop="toggleKeyLog(attempt.Attempt_Id, $event)"
-                    class="inline-flex items-center gap-1 px-3 py-1 rounded-full text-sm font-semibold border transition-all duration-200"
-                    :class="attempt._showKeys
-                      ? 'bg-indigo-600 text-white border-indigo-600 shadow-md'
-                      : 'bg-white text-indigo-600 border-indigo-300 hover:bg-indigo-50'"
-                  >
-                    🔑 {{ attempt.key_log_total }}
-                    <svg class="w-3 h-3 transition-transform duration-200"
-                      :class="attempt._showKeys ? 'rotate-180' : ''"
-                      fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3">
-                      <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/>
-                    </svg>
-                  </button>
-                </div>
-              </td>
-
-              <td class="px-4 py-2.5 text-center">
                 <button @click="viewAnswers(attempt.Attempt_Id)"
                   class="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-full text-sm font-semibold shadow">
                   View Answers
@@ -149,38 +125,6 @@
         </table>
       </div>
 
-      <!-- KEY LOG DROPDOWN - OUTSIDE TABLE -->
-      <div
-        v-for="attempt in filteredAttempts"
-        :key="'dropdown-' + attempt.Attempt_Id"
-      >
-        <div
-          v-if="attempt._showKeys"
-          class="fixed z-[9999] bg-white border border-gray-200 rounded-xl shadow-2xl p-4 min-w-[300px] max-w-[400px]"
-          :style="dropdownPositions[attempt.Attempt_Id] || {}"
-        >
-          <div class="text-xs font-bold text-gray-500 mb-3 uppercase tracking-wide">Key Log Summary</div>
-          <div class="max-h-[350px] overflow-y-auto pr-2 custom-scrollbar">
-            <div
-              v-for="(s, i) in attempt.key_log_summary"
-              :key="i"
-              class="flex items-center justify-between gap-3 py-2 border-b border-gray-50 last:border-0"
-            >
-              <span class="flex items-center gap-2 text-sm">
-                <span v-if="s.event_type === 'blocked'"  class="text-red-500 text-lg">🚫</span>
-                <span v-else-if="s.event_type === 'warning'" class="text-amber-500 text-lg">⚠️</span>
-                <span v-else class="text-green-500 text-lg">✅</span>
-                <span class="font-medium text-gray-700">{{ s.key_label }}</span>
-              </span>
-              <span class="text-xs font-bold text-gray-400 ml-2">×{{ s.count }}</span>
-            </div>
-          </div>
-          <div class="mt-3 pt-3 border-t border-gray-100 flex justify-between text-xs text-gray-400">
-            <span>Total violations</span>
-            <span class="font-bold text-gray-600">{{ attempt.key_log_total }}</span>
-          </div>
-        </div>
-      </div>
     </div>
   </div>
 
@@ -267,31 +211,6 @@ const filters = ref({
   marksSort: '',
   studentSort: ''
 })
-
-// ✅ KEY FIX: Replace the whole object in the array so Vue 3 reactive system
-// detects the change. Direct property mutation (attempt._showKeys = x) is NOT
-// tracked by Vue 3's reactivity on plain objects inside a ref([]) array.
-const toggleKeyLog = (attemptId, event) => {
-  // Store button position for this attempt
-  if (event?.target) {
-    const button = event.target.closest('button')
-    if (button) {
-      const rect = button.getBoundingClientRect()
-      dropdownPositions.value[attemptId] = {
-        top: `${rect.bottom + window.scrollY + 8}px`,
-        left: `${rect.left + window.scrollX}px`
-      }
-    }
-  }
-  
-  attempts.value = attempts.value.map(a => {
-    if (a.Attempt_Id === attemptId) {
-      return { ...a, _showKeys: !a._showKeys }
-    }
-    // Close all others
-    return a._showKeys ? { ...a, _showKeys: false } : a
-  })
-}
 
 const openFilter = (event, type) => {
   activeFilter.value = type
