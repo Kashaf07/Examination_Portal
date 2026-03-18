@@ -38,7 +38,7 @@
         <button
           @click="login"
           :disabled="!email || !password"
-          class="w-full bg-blue-500 disabled:bg-gray-400 text-white py-2 rounded-lg font-semibold"
+          class="w-full bg-blue-500 disabled:bg-blue-300 text-white py-2 rounded-lg font-semibold"
         >
           Login
         </button>
