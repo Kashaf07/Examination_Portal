@@ -37,7 +37,8 @@
 
         <button
           @click="login"
-          class="w-full bg-blue-500 hover:bg-[#386dcd] text-white py-2 rounded-lg font-semibold transition"
+          :disabled="!email || !password"
+          class="w-full bg-blue-500 disabled:bg-gray-400 text-white py-2 rounded-lg font-semibold"
         >
           Login
         </button>
@@ -71,13 +72,30 @@ const showMessage = (text, duration = 3500) => {
 }
 
 const login = async () => {
+
+  // ✅ FRONTEND VALIDATION
+  if (!email.value && !password.value) {
+    showMessage("Email and Password cannot be empty")
+    return
+  }
+
+  if (!email.value) {
+    showMessage("Email cannot be empty")
+    return
+  }
+
+  if (!password.value) {
+    showMessage("Password cannot be empty")
+    return
+  }
+
   try {
     const response = await axios.post('/auth/login', {
       email: email.value,
       password: password.value
     })
 
-    const res = response.data       // << FIX: NOW res IS DEFINED
+    const res = response.data
     console.log("LOGIN RESPONSE:", res)
 
     if (res.status !== "success") {
@@ -85,31 +103,17 @@ const login = async () => {
       return
     }
 
-    // --------------------------
-    // SAVE DATA TO LOCAL STORAGE
-    // --------------------------
+    // SAVE DATA
     localStorage.setItem("token", res.token)
     localStorage.setItem("roles", JSON.stringify(res.roles))
     localStorage.setItem("active_role", res.active_role)
     localStorage.setItem("email", res.email)
     localStorage.setItem("name", res.name)
-    localStorage.setItem("student_email", res.email)
-    localStorage.setItem("student_name", res.name)
 
-    if (res.applicant_id) {
-      localStorage.setItem("applicant_id", res.applicant_id)
-    }
+    if (res.applicant_id) localStorage.setItem("applicant_id", res.applicant_id)
+    if (res.faculty_id) localStorage.setItem("faculty_id", res.faculty_id)
+    if (res.admin_id) localStorage.setItem("admin_id", res.admin_id)
 
-    if (res.faculty_id) {
-      localStorage.setItem("faculty_id", res.faculty_id)
-    }
-
-    if (res.admin_id) {
-      localStorage.setItem("admin_id", res.admin_id)
-    }
-    // --------------------------
-    // REDIRECT BASED ON ROLE
-    // --------------------------
     const activeRole = res.active_role.toLowerCase()
     setTimeout(() => {
       router.push(`/${activeRole}`)
@@ -118,8 +122,7 @@ const login = async () => {
   } catch (e) {
     console.error("LOGIN ERROR:", e)
 
-    if (e.response && e.response.data && e.response.data.message) {
-      // show backend message (disabled, invalid, etc.)
+    if (e.response?.data?.message) {
       showMessage(e.response.data.message)
     } else {
       showMessage("Unable to login. Please try again.")
