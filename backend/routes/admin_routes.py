@@ -1127,7 +1127,7 @@ def create_admin_routes(mysql):
                     ee.faculty_email,
                     COUNT(DISTINCT aea.Applicant_Id) AS total_applicants,
                     COALESCE(attempts.attempted_applicants, 0) AS attempted_applicants
-                FROM Entrance_Exam ee
+                FROM entrance_exam ee
                 LEFT JOIN applicant_exam_assign aea ON ee.Exam_Id = aea.Exam_Id
                 LEFT JOIN (
                     SELECT ep.Exam_Id, COUNT(DISTINCT aa.Applicant_Id) AS attempted_applicants
@@ -1166,7 +1166,7 @@ def create_admin_routes(mysql):
                     ee.Exam_Date,
                     COUNT(DISTINCT aea.Applicant_Id) AS total_applicants,
                     COALESCE(attempts.attempted_applicants, 0) AS attempted_applicants
-                FROM Entrance_Exam ee
+                FROM entrance_exam ee
                 LEFT JOIN applicant_exam_assign aea ON ee.Exam_Id = aea.Exam_Id
                 LEFT JOIN (
                     SELECT ep.Exam_Id, COUNT(DISTINCT aa.Applicant_Id) AS attempted_applicants
@@ -1220,7 +1220,7 @@ def create_admin_routes(mysql):
             cursor.execute("DELETE FROM exam_paper WHERE Exam_Id = %s",(exam_id,))
 
             #  FINALLY delete exam
-            cursor.execute("DELETE FROM Entrance_Exam WHERE Exam_Id = %s",(exam_id,))
+            cursor.execute("DELETE FROM entrance_exam WHERE Exam_Id = %s",(exam_id,))
 
             mysql.connection.commit()
             cursor.close()

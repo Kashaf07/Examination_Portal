@@ -1,0 +1,59 @@
+services:
+
+  db:
+    image: izma7681/exam-db:latest
+    container_name: exam_mysql_db
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: entrance_database
+    volumes:
+      - exam_db_data:/var/lib/mysql
+    ports:
+      - "3309:3306"
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-proot"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - exam_network
+
+  backend:
+    image: izma7681/exam-backend:latest
+    container_name: exam_flask_backend
+    restart: always
+    ports:
+      - "5000:5000"
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      - DB_HOST=exam_mysql_db
+      - DB_PORT=3306
+      - DB_USER=root
+      - DB_PASSWORD=root
+      - DB_NAME=entrance_database
+      - MAIL_USERNAME=examinationportal2025@gmail.com
+      - MAIL_PASSWORD=zwdp rwro piku dwib
+      - FRONTEND_URL=http://69.49.230.69:1111
+    networks:
+      - exam_network
+
+  frontend:
+    image: izma7681/exam-frontend:latest
+    container_name: exam_vue_frontend
+    restart: always
+    ports:
+      - "1111:80"
+    depends_on:
+      - backend
+    networks:
+      - exam_network
+
+networks:
+  exam_network:
+    driver: bridge
+
+volumes:
+  exam_db_data:

@@ -235,7 +235,7 @@ export default {
     async fetchQuestions() {
       try {
         const res = await axios.get(
-          `http://localhost:5000/api/paper/questionbank/all/${this.examId}`,
+          `http://${window.location.hostname}:5000/api/paper/questionbank/all/${this.examId}`,
           {
             params: {
               email: localStorage.getItem("email"),
@@ -255,7 +255,7 @@ export default {
     async fetchPaperQuestionsForPDF() {
       try {
         const res = await axios.get(
-          `http://localhost:5000/api/paper/selected/${this.examId}`,
+          `http://${window.location.hostname}:5000/api/paper/selected/${this.examId}`,
           {
             params: {
               email: localStorage.getItem("email"),
@@ -277,7 +277,7 @@ export default {
     async fetchSelectedQuestions() {
       try {
         const res = await axios.get(
-          `http://localhost:5000/api/paper/selected/${this.examId}`,
+          `http://${window.location.hostname}:5000/api/paper/selected/${this.examId}`,
           {
             params: {
               email: localStorage.getItem("email"),
@@ -293,7 +293,7 @@ export default {
     async fetchExamDetails() {
       try {
         const res = await axios.get(
-          `http://localhost:5000/api/paper/exam/details/${this.examId}`,
+          `http://${window.location.hostname}:5000/api/paper/exam/details/${this.examId}`,
           {
             params: {
               email: localStorage.getItem("email"),
@@ -363,7 +363,7 @@ export default {
         role: localStorage.getItem("active_role")
       };
       
-      fetch('http://localhost:5000/api/paper/save-question-paper', {
+      fetch(`http://${window.location.hostname}:5000/api/paper/save-question-paper`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -399,7 +399,7 @@ export default {
     async executeRandomizeQuestions() {
       try {
         const res = await fetch(
-          `http://localhost:5000/api/paper/randomize/${this.examId}?email=${localStorage.getItem("email")}&role=${localStorage.getItem("active_role")}`,
+          `http://${window.location.hostname}:5000/api/paper/randomize/${this.examId}?email=${localStorage.getItem("email")}&role=${localStorage.getItem("active_role")}`,
           {
             method: 'POST'
           }

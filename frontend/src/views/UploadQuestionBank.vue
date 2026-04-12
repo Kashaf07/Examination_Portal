@@ -6,7 +6,7 @@
     <div class="text-center text-sm text-gray-700 mb-6">
       Need a format?
       <a
-        href="http://localhost:5000/static/sample_question_bank.csv"
+        href="http://127.0.0.1:5000/static/sample_question_bank.csv"
         download
         class="ml-1 text-blue-600 underline hover:text-blue-800 transition"
       >
@@ -101,7 +101,7 @@ export default {
 
       try {
         const res = await fetch(
-          'http://localhost:5000/api/questions/upload-csv',
+          `http://${window.location.hostname}:5000/api/questions/upload-csv`,
           { method: 'POST', body: formData }
         );
         const result = await res.json();

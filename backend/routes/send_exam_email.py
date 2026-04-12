@@ -1,5 +1,6 @@
 from flask import Blueprint, request, jsonify
 import smtplib
+import os
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 
@@ -36,10 +37,7 @@ def create_send_email_routes(mysql):
                 receiver_email = db_applicant['Email']
                 password = db_applicant['Password']
 
-                # 🔗 LOGIN PAGE LINK (Update this when you deploy to production)
-                # For localhost: http://localhost:5173
-                # For production: https://yourdomain.com
-                login_link = "http://localhost:5173"  # 👈 Change this to your production URL later
+                login_link = os.getenv("FRONTEND_URL", "http://127.0.0.1:5173")
 
                 # 📧 EMAIL BODY WITH LOGIN LINK
                 body = f"""Dear {full_name},

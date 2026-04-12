@@ -50,7 +50,7 @@ def create_exam_routes(mysql):
 
             cursor = mysql.connection.cursor()
             cursor.execute("""
-                INSERT INTO Entrance_Exam
+                INSERT INTO entrance_exam
 (Exam_Name, Exam_Date, Exam_Time, Duration_Minutes,
  Total_Questions, Max_Marks, Faculty_Email, exam_status)
                 VALUES (%s, %s, %s, %s, %s, %s, %s, 'OFF')
@@ -80,7 +80,7 @@ def create_exam_routes(mysql):
                     SELECT Exam_Id, Exam_Name, Exam_Date, Exam_Time,
                         Duration_Minutes, Total_Questions, Max_Marks,
                         exam_status, was_started
-                    FROM Entrance_Exam
+                    FROM entrance_exam
                     WHERE Faculty_Email = %s
                     ORDER BY Exam_Id DESC
                     """, (faculty_email,))
@@ -138,13 +138,13 @@ def create_exam_routes(mysql):
 
         if status == "ON":
             cursor.execute("""
-                UPDATE Entrance_Exam
+                UPDATE entrance_exam
                 SET exam_status = 'ON', was_started = 1
                 WHERE Exam_Id = %s
             """, (exam_id,))
         else:
             cursor.execute("""
-                UPDATE Entrance_Exam
+                UPDATE entrance_exam
                 SET exam_status = 'OFF'
                 WHERE Exam_Id = %s
             """, (exam_id,))
@@ -162,7 +162,7 @@ def create_exam_routes(mysql):
 
             cursor.execute("""
                 SELECT Exam_Id, Exam_Name, Exam_Date, Exam_Time, Duration_Minutes
-                FROM Entrance_Exam
+                FROM entrance_exam
                 WHERE Exam_Id = %s
             """, (exam_id,))
 
@@ -244,7 +244,7 @@ def create_exam_routes(mysql):
                         Exam_Time,
                         Faculty_Email,
                         DATEDIFF(Exam_Date, CURDATE()) AS days_left
-                    FROM Entrance_Exam
+                    FROM entrance_exam
                     WHERE Exam_Date >= CURDATE()
                     ORDER BY Exam_Date ASC
                     LIMIT 10
@@ -262,7 +262,7 @@ def create_exam_routes(mysql):
                         Exam_Time,
                         Faculty_Email,
                         DATEDIFF(Exam_Date, CURDATE()) AS days_left
-                    FROM Entrance_Exam
+                    FROM entrance_exam
                     WHERE Faculty_Email = %s
                       AND Exam_Date >= CURDATE()
                     ORDER BY Exam_Date ASC
@@ -308,7 +308,7 @@ def create_exam_routes(mysql):
 
             cursor.execute("""
                 SELECT Faculty_Email
-                FROM Entrance_Exam
+                FROM entrance_exam
                 WHERE Exam_Id = %s
             """, (exam_id,))
             exam = cursor.fetchone()

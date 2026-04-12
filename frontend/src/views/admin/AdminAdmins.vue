@@ -191,7 +191,7 @@ const InputField = {
 };
 
 // ---------------- DATA ----------------
-const API = "http://localhost:5000/api";
+const API = `http://${window.location.hostname}:5000/api`;
 
 const admins = ref([]);
 const showModal = ref(false);

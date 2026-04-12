@@ -219,7 +219,7 @@ import axios from "axios";
 // PARENT TOAST CONNECT
 const emit = defineEmits(["toast"]);
 
-const API = "http://localhost:5000/api";
+const API = `http://${window.location.hostname}:5000/api`;
 
 // Data
 const facultyList = ref([]);

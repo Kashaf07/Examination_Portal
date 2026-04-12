@@ -1,0 +1,13 @@
+flask
+flask-cors
+flask-mail
+flask-mysqldb
+mysqlclient
+pandas
+apscheduler
+numpy
+openpyxl
+PyJWT
+arrow
+pytz
+Werkzeug

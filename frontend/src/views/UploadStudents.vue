@@ -77,12 +77,16 @@ const uploadFile = async () => {
     })
 
     if (res.data.success) {
-      message.value = `${res.data.message} (Inserted: ${res.data.inserted})`
+      const inserted = res.data.inserted || 0
+
+      message.value =
+        res.data.message ||
+        (inserted === 1
+          ? "1 student uploaded successfully!"
+          : `${inserted} students uploaded successfully!`)
+
       error.value = ""
       selectedFile.value = null
-    } else {
-      error.value = res.data.message || "Upload failed"
-      message.value = ""
     }
 
   } catch (err) {

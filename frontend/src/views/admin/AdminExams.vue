@@ -484,7 +484,7 @@ import QRCodeModal from "@/components/QRCodeModal.vue";
 
 const emit = defineEmits(["toast"]);
 const router = useRouter();
-const API = "http://localhost:5000/api";
+const API = `http://${window.location.hostname}:5000/api`;
 
 /* ================= STATE ================= */
 const examsList = ref([]);
@@ -750,7 +750,7 @@ const deleteExam = async (id) => {
   if (!confirm("Delete this exam?")) return;
 
   try {
-    const res = await axios.delete(`http://localhost:5000/api/admin/exam/delete/${id}`);
+    const res = await axios.delete(`http://${window.location.hostname}:5000/api/admin/exam/delete/${id}`);
     if (res.data.success) {
       emit("toast", { message: "Exam deleted successfully!", type: "success" });
       fetchExams();

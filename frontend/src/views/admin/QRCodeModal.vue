@@ -105,7 +105,7 @@ const qrContainer = ref(null)
 const successMessage = ref('')
 const qrCodeInstance = ref(null)
 
-// Automatically detect the base URL (localhost or production)
+// Automatically detect the base URL (127.0.0.1 or production)
 const baseUrl = window.location.origin
 const examLink = ref(`${baseUrl}/student?examId=${props.examId}`)
 

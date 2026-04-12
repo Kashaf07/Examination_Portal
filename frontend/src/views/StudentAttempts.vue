@@ -267,7 +267,7 @@ const activeFilter = ref(null)
 const popoverStyle = ref({})
 
 // ✅ CHANGE THIS if your backend runs on a different port/host
-const API_BASE = 'http://localhost:5000/api'
+const API_BASE = '`http://${window.location.hostname}:5000/api`'
 
 const filters = ref({
   studentId: '', minMarks: null, status: '', marksSort: '', studentSort: ''

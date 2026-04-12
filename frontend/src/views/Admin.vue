@@ -438,7 +438,7 @@ const getAdminTabFromPath = (path) => {
 // Check if admin can switch to faculty role
 const checkFacultyRole = async () => {
   try {
-    const response = await axios.get(`http://localhost:5000/api/admin/check-faculty-role/${adminEmail}`)
+    const response = await axios.get(`http://${window.location.hostname}:5000/api/admin/check-faculty-role/${adminEmail}`)
     if (response.data.success) {
       canSwitch.value = response.data.isFaculty
     }
@@ -531,7 +531,7 @@ const selectRole = (roleId) => {
 const loadExamReminders = async () => {
   try {
     const res = await axios.get(
-      "http://localhost:5000/api/admin/notifications"
+      `http://${window.location.hostname}:5000/api/admin/notifications`
     )
 
     if (res.data.success) {
@@ -562,7 +562,7 @@ const logout = async () => {
     console.error("No email found in localStorage.");
   } else {
     try {
-      await axios.post("http://localhost:5000/api/admin/logout", {
+      await axios.post(`http://${window.location.hostname}:5000/api/admin/logout`, {
         email: email
       });
       console.log("Logout time saved for:", email);

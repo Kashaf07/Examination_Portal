@@ -28,7 +28,7 @@ def create_view_answers_bp(mysql):
                 FROM applicant_attempt aa
                 JOIN exam_paper ep 
                     ON aa.Exam_Paper_Id = ep.Exam_Paper_Id
-                JOIN Entrance_Exam ee 
+                JOIN entrance_exam ee 
                     ON ep.Exam_Id = ee.Exam_Id
                 WHERE aa.Attempt_Id = %s
             """, (attempt_id,))

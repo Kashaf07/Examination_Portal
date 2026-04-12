@@ -101,8 +101,7 @@ import { ref, onMounted } from "vue";
 import axios from "axios";
 
 const emit = defineEmits(["toast"]);
-const API = "http://localhost:5000/api/admin";
-
+const API = `http://${window.location.hostname}:5000/api/admin`;
 // STATE
 const tableData = ref([]);
 const rolesList = ref([]);

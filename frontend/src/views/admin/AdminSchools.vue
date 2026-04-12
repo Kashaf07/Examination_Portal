@@ -165,7 +165,7 @@ import axios from "axios";
 // Toast emitter to parent Admin.vue
 const emit = defineEmits(["toast"]);
 
-const API = "http://localhost:5000/api";
+const API = `http://${window.location.hostname}:5000/api`;
 
 const schoolsList = ref([]);
 

@@ -52,7 +52,7 @@ def create_faculty_routes(mysql):
         email = current_user["email"]
 
         cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
-        cursor.execute("SELECT F_ID, F_Name, F_Email FROM Mst_Faculty WHERE F_Email = %s", (email,))
+        cursor.execute("SELECT F_ID, F_Name, F_Email FROM mst_faculty WHERE F_Email = %s", (email,))
         faculty = cursor.fetchone()
         cursor.close()
 
@@ -76,7 +76,7 @@ def create_faculty_routes(mysql):
                     ee.Exam_Date,
                     COUNT(DISTINCT aea.Applicant_Id) AS total_applicants,
                     COALESCE(attempts.attempted_applicants, 0) AS attempted_applicants
-                FROM Entrance_Exam ee
+                FROM entrance_exam ee
                 LEFT JOIN applicant_exam_assign aea ON ee.Exam_Id = aea.Exam_Id
                 LEFT JOIN (
                     SELECT ep.Exam_Id, COUNT(DISTINCT aa.Applicant_Id) AS attempted_applicants
@@ -118,7 +118,7 @@ def create_faculty_routes(mysql):
                     ee.Exam_Date,
                     COUNT(DISTINCT aea.Applicant_Id) AS total_applicants,
                     COALESCE(attempts.attempted_applicants, 0) AS attempted_applicants
-                FROM Entrance_Exam ee
+                FROM entrance_exam ee
                 LEFT JOIN applicant_exam_assign aea ON ee.Exam_Id = aea.Exam_Id
                 LEFT JOIN (
                     SELECT ep.Exam_Id, COUNT(DISTINCT aa.Applicant_Id) AS attempted_applicants
@@ -155,7 +155,7 @@ def create_faculty_routes(mysql):
                     ee.Exam_Name,
                     COUNT(DISTINCT aea.Applicant_Id) AS total_applicants,
                     COALESCE(attempts.attempted_applicants, 0) AS attempted_applicants
-                FROM Entrance_Exam ee
+                FROM entrance_exam ee
                 LEFT JOIN applicant_exam_assign aea ON ee.Exam_Id = aea.Exam_Id
                 LEFT JOIN (
                     SELECT ep.Exam_Id, COUNT(DISTINCT aa.Applicant_Id) AS attempted_applicants
@@ -188,7 +188,7 @@ def create_faculty_routes(mysql):
             cursor = mysql.connection.cursor()
 
             # 🔐 1️⃣ Verify exam belongs to this faculty
-            cursor.execute("SELECT Exam_Id FROM Entrance_Exam WHERE Exam_Id = %s AND faculty_email = %s",(exam_id, faculty_email))
+            cursor.execute("SELECT Exam_Id FROM entrance_exam WHERE Exam_Id = %s AND faculty_email = %s",(exam_id, faculty_email))
             exam = cursor.fetchone()
 
             if not exam:
@@ -224,7 +224,7 @@ def create_faculty_routes(mysql):
             cursor.execute("DELETE FROM exam_paper WHERE Exam_Id = %s",(exam_id,))
 
             # 9️⃣ Finally delete exam
-            cursor.execute("DELETE FROM Entrance_Exam WHERE Exam_Id = %s",(exam_id,))
+            cursor.execute("DELETE FROM entrance_exam WHERE Exam_Id = %s",(exam_id,))
 
             mysql.connection.commit()
             cursor.close()

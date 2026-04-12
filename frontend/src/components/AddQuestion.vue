@@ -205,7 +205,7 @@ export default {
     async checkAuthorization() {
       try {
         const res = await fetch(
-          `http://localhost:5000/api/questions/questionbank/all/${this.$route.params.examId}?email=${localStorage.getItem("email")}&role=${localStorage.getItem("active_role")}`
+          `http://${window.location.hostname}:5000/api/questions/questionbank/all/${this.$route.params.examId}?email=${localStorage.getItem("email")}&role=${localStorage.getItem("active_role")}`
         );
 
         if (res.status === 403) {
@@ -270,7 +270,7 @@ export default {
         return;
       }
       try {
-        const response = await fetch('http://localhost:5000/api/questions/add', {
+        const response = await fetch('`http://${window.location.hostname}:5000/api`/questions/add', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({

@@ -266,7 +266,7 @@ import axios from "axios";
 
 const emit = defineEmits(["toast"]);
 
-const API = "http://localhost:5000/api";
+const API = `http://${window.location.hostname}:5000/api`;
 
 // Pagination State (for main table)
 const logs = ref([]);

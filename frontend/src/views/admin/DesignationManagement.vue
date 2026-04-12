@@ -185,7 +185,7 @@ export default {
   methods: {
     async fetchDesignations() {
       const res = await axios.get(
-        "http://localhost:5000/api/admin/designations"
+        `http://${window.location.hostname}:5000/api/admin/designations`
       );
       this.designations = res.data.data;
     },
@@ -210,13 +210,13 @@ export default {
       try {
         if (this.isEdit) {
           await axios.put(
-            `http://localhost:5000/api/admin/designations/${this.modalData.id}`,
+            `http://${window.location.hostname}:5000/api/admin/designations/${this.modalData.id}`,
             { name: this.modalData.name }
           );
           this.$emit("toast", { message: "Designation updated!", type: "success" });
         } else {
           await axios.post(
-            "http://localhost:5000/api/admin/designations",
+            `http://${window.location.hostname}:5000/api/admin/designations`,
             { name: this.modalData.name }
           );
           this.$emit("toast", { message: "Designation added!", type: "success" });
@@ -237,7 +237,7 @@ export default {
       if (!confirm(`Are you sure you want to ${action} this designation?`)) return;
 
       await axios.put(
-        `http://localhost:5000/api/admin/designations/toggle-status/${d.id}`
+        `http://${window.location.hostname}:5000/api/admin/designations/toggle-status/${d.id}`
       );
 
       this.$emit("toast", {

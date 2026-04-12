@@ -92,7 +92,7 @@ const logout = async () => {
   const email = localStorage.getItem("admin_email");
 
   try {
-    await fetch("http://localhost:5000/api/auth/logout", {
+    await fetch(`http://${window.location.hostname}:5000/api/auth/logout`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ email, role: "Admin" }),

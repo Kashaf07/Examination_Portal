@@ -144,7 +144,12 @@ def create_add_students_bp(mysql):
             success=True,
             inserted=success_count,
             failed=len(failed_rows),
-            errors=failed_rows
+            errors=failed_rows,
+            message=(
+                "1 student uploaded successfully"
+                if success_count == 1
+                else f"{success_count} students uploaded successfully"
+            )
         ), 200
 
     return add_students_bp
