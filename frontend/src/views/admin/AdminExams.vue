@@ -319,6 +319,18 @@
     <div v-if="conductedExams && conductedExams.length" class="mt-12">
       <h2 class="text-2xl font-semibold mb-4 text-gray-800">Conducted Exams</h2>
       <div class="bg-white rounded-xl shadow-lg overflow-hidden">
+        
+        <!-- SEARCH FILTER INPUT -->
+        <div class="mb-6 flex gap-3 p-6 pb-0">
+          <input
+            v-model="conductedSearchQuery"
+            placeholder="🔍 Search exams..."
+            class="w-full max-w-xs px-4 py-3 rounded-xl border-2 border-black bg-purple-50
+                   focus:bg-white focus:ring-2 focus:ring-blue-400 outline-none transition 
+                   text-sm font-medium placeholder:text-gray-600"
+          />
+        </div>
+
         <div class="overflow-x-auto">
           <table class="min-w-full">
             <thead class="bg-gradient-to-r from-blue-50 to-indigo-50">
@@ -504,6 +516,7 @@ const adminEmail = localStorage.getItem("admin_email") || localStorage.getItem("
 /* ================= PAGINATION STATE ================= */
 const itemsPerPage = ref(15);
 const currentConductedPage = ref(1);
+const conductedSearchQuery = ref("");
 
 /* ================= FORM STATE ================= */
 const showCreateForm = ref(false);
@@ -644,13 +657,30 @@ const hasAssignedStudents = (exam) => {
 };
 
 /* ================= CONDUCTED EXAMS PAGINATION ================= */
-const totalConductedExams = computed(() => conductedExams.value.length);
+const filteredConductedExams = computed(() => {
+  const conducted = examsList.value.filter(
+    exam => exam.was_started === 1 && exam.exam_status === "OFF"
+  );
+  
+  if (!conductedSearchQuery.value.trim()) {
+    return conducted;
+  }
+  
+  const query = conductedSearchQuery.value.toLowerCase();
+  return conducted.filter(exam =>
+    exam.Exam_Name?.toLowerCase().includes(query) ||
+    exam.Exam_Date?.toLowerCase().includes(query) ||
+    String(exam.Exam_Id || '').includes(query)
+  );
+});
+
+const totalConductedExams = computed(() => filteredConductedExams.value.length);
 const totalConductedPages = computed(() => Math.ceil(totalConductedExams.value / itemsPerPage.value));
 
 const paginatedConductedExams = computed(() => {
   const start = (currentConductedPage.value - 1) * itemsPerPage.value;
   const end = start + itemsPerPage.value;
-  return conductedExams.value.slice(start, end);
+  return filteredConductedExams.value.slice(start, end);
 });
 
 const conductedStartIndex = computed(() => (currentConductedPage.value - 1) * itemsPerPage.value);

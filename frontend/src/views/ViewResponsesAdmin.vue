@@ -14,6 +14,18 @@
           <button @click="goToAnalytics" class="bg-purple-500 hover:bg-purple-600 text-white font-semibold px-6 py-3 rounded-full shadow-lg transition-all duration-200 hover:scale-105">Analytics</button>
         </div>
       </div>
+
+      <!-- SEARCH BOX -->
+      <div class="mb-6 bg-white rounded-xl shadow-lg p-6">
+        <input
+          v-model="searchQuery"
+          placeholder="🔍 Search by Student ID or Email..."
+          class="w-full max-w-lg px-4 py-3 rounded-xl border-2 border-black bg-purple-50
+                 focus:bg-white focus:ring-2 focus:ring-blue-400 outline-none transition 
+                 text-sm font-medium placeholder:text-gray-600"
+        />
+      </div>
+
       <div class="rounded-xl shadow-xl overflow-x-auto bg-white w-full">
         <table class="w-full border-separate border-spacing-0">
           <thead>
@@ -137,6 +149,7 @@ const currentPage = ref(1)
 const itemsPerPage = ref(15)
 const activeFilter = ref(null)
 const popoverStyle = ref({})
+const searchQuery = ref('')
 const filters = ref({ studentId: '', minMarks: null, status: '', marksSort: '', studentSort: '' })
 
 const goToResult    = () => router.push({ name: 'ExamResult',    params: { examId: examId.value } })
@@ -163,6 +176,15 @@ onBeforeUnmount(() => { document.removeEventListener('click', handleClickOutside
 
 const filteredAttempts = computed(() => {
   let result = attempts.value.filter(a => {
+    // Search query filter (Student ID or Email)
+    if (searchQuery.value.trim()) {
+      const query = searchQuery.value.toLowerCase()
+      const matchesId = String(a.Applicant_Id).toLowerCase().includes(query)
+      const matchesEmail = (a.Student_Email || '').toLowerCase().includes(query)
+      if (!matchesId && !matchesEmail) return false
+    }
+    
+    // Column filters
     if (filters.value.studentId && !String(a.Applicant_Id).includes(filters.value.studentId)) return false
     if (filters.value.minMarks !== null && a.Marks_Obtained < filters.value.minMarks) return false
     if (filters.value.status && a.Status !== filters.value.status) return false

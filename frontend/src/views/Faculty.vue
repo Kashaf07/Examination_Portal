@@ -200,7 +200,7 @@
       ]"
     >
       <!-- Main Content Area -->
-      <div class="p-8 pt-1 max-w-full overflow-x-hidden"> 
+      <div class="px-8 py-6 w-full"> 
 
         <!-- Welcome Screen (shown when activeTab is null) -->
         <div
@@ -225,7 +225,7 @@
         <!-- Content Area (shown when specific tab is selected) -->
         <div v-else>
           <!-- My Exams View -->
-          <div v-if="activeTab === 'my-exams'">
+          <div v-if="activeTab === 'my-exams'" class="w-full space-y-6">
             <div class="mb-8">
               <h1 class="text-4xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-purple-600">
                 My Exams
@@ -380,7 +380,7 @@
             </div>
 
             <!-- Exam Tables Only Visible When on Dashboard -->
-            <div v-if="currentTab === 'Dashboard'">
+            <div v-if="currentTab === 'Dashboard'" class="w-full">
               <!-- Created Exams Table -->
               <div v-if="createdExams.length" class="mt-8">
                 <h2 class="text-2xl font-semibold mb-4 text-gray-800">Created Exams</h2>
@@ -576,9 +576,20 @@ class="absolute -top-1 -right-1 text-yellow-600 text-sm flip-vertical"
               </div>
 
               <!-- Conducted Exams Table -->
-              <div v-if="conductedExams && conductedExams.length" class="mt-12">
+              <div v-if="conductedExams && conductedExams.length" class="mt-12 w-full">
                 <h2 class="text-2xl font-semibold mb-4 text-gray-800">Conducted Exams</h2>
-                <div class="bg-white rounded-xl shadow-lg overflow-hidden">
+                <div class="w-full bg-white rounded-xl shadow-lg overflow-hidden">
+                  
+                  <!-- SEARCH FILTER INPUT -->
+              <div class="p-6 pb-0">
+  <input
+    v-model="conductedSearchQuery"
+    placeholder="🔍 Search exams..."
+    class="w-full max-w-xs px-4 py-3 rounded-xl border-2 border-black bg-purple-50
+           focus:bg-white focus:ring-2 focus:ring-blue-400 outline-none transition 
+           text-sm font-medium placeholder:text-gray-600"
+  />
+</div>
                   <div class="overflow-x-auto">
                     <table class="min-w-full">
                       <thead class="bg-gradient-to-r from-blue-50 to-indigo-50">
@@ -587,7 +598,7 @@ class="absolute -top-1 -right-1 text-yellow-600 text-sm flip-vertical"
                           <th class="px-6 py-4 text-left text-sm font-bold text-gray-700">Date</th>
                           <th class="px-6 py-4 text-left text-sm font-bold text-gray-700">Total Applicants</th>
                           <th class="px-6 py-4 text-left text-sm font-bold text-gray-700">Attempted</th>
-                          <th class="px-8 py-4 text-center text-sm font-bold text-gray-700 min-w-[420px]">Actions</th>
+                          <th class="px-6 py-4 text-center text-sm font-bold text-gray-700">Actions</th>
                         </tr>
                       </thead>
                       <tbody class="divide-y divide-gray-200">
@@ -1125,19 +1136,33 @@ const exam = ref({
 
 /* ================= PAGINATION STATE ================= */
 const itemsPerPage = ref(15)
+const conductedSearchQuery = ref("")
 
 // Conducted Exams Pagination
 const currentConductedPage = ref(1)
 
 /* ================= CONDUCTED EXAMS PAGINATION ================= */
-const totalConductedExams = computed(() => conductedExams.value.length)
+const filteredConductedExams = computed(() => {
+  if (!conductedSearchQuery.value.trim()) {
+    return conductedExams.value
+  }
+  
+  const query = conductedSearchQuery.value.toLowerCase()
+  return conductedExams.value.filter(exam =>
+    exam.Exam_Name?.toLowerCase().includes(query) ||
+    exam.Exam_Date?.toLowerCase().includes(query) ||
+    String(exam.Exam_Id || '').includes(query)
+  )
+})
+
+const totalConductedExams = computed(() => filteredConductedExams.value.length)
 const totalConductedPages = computed(() =>
   Math.ceil(totalConductedExams.value / itemsPerPage.value)
 )
 
 const paginatedConductedExams = computed(() => {
   const start = (currentConductedPage.value - 1) * itemsPerPage.value
-  return conductedExams.value.slice(start, start + itemsPerPage.value)
+  return filteredConductedExams.value.slice(start, start + itemsPerPage.value)
 })
 
 const conductedStartIndex = computed(() =>
@@ -1405,7 +1430,6 @@ body, html {
 .p-6 {
   padding: 1.5rem;
   background: transparent !important;
-  min-height: 100vh;
   font-family: 'Inter', sans-serif;
 }
 
