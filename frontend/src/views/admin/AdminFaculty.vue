@@ -221,12 +221,23 @@
       </div>
     </div>
 
+    <!-- Confirmation Modal -->
+    <ConfirmationModal
+      :is-open="showConfirmModal"
+      :title="confirmModalConfig.title"
+      :message="confirmModalConfig.message"
+      :variant="confirmModalConfig.variant"
+      @confirm="confirmModalConfig.onConfirm"
+      @close="showConfirmModal = false"
+    />
+
   </div>
 </template>
 
 <script setup>
 import { ref, onMounted, computed } from "vue";
 import axios from "axios";
+import ConfirmationModal from "@/components/ConfirmationModal.vue";
 
 // PARENT TOAST CONNECT
 const emit = defineEmits(["toast"]);
@@ -242,6 +253,15 @@ const designationsList = ref([]);
 const showModal = ref(false);
 const isEdit = ref(false);
 const filterMode = ref('active');
+
+// Confirmation Modal State
+const showConfirmModal = ref(false);
+const confirmModalConfig = ref({
+  title: '',
+  message: '',
+  variant: 'default',
+  onConfirm: null
+});
 
 const filteredFaculty = computed(() => {
   if (filterMode.value === 'active') {
@@ -365,28 +385,35 @@ const updateFaculty = async () => {
 };
 
 // Disable/Enable Faculty
-const toggleFacultyStatus = async (faculty) => {
+const toggleFacultyStatus = (faculty) => {
   const action = faculty.Is_Active ? "disable" : "enable";
 
-  if (!confirm(`Are you sure you want to ${action} this faculty?`)) return;
+  confirmModalConfig.value = {
+    title: `${action.charAt(0).toUpperCase() + action.slice(1)} Faculty`,
+    message: `Are you sure you want to ${action} this faculty member?`,
+    variant: action === 'disable' ? 'danger' : 'default',
+    onConfirm: async () => {
+      try {
+        await axios.put(
+          `${API}/admin/faculty/toggle-status/${faculty.Faculty_Id}`
+        );
 
-  try {
-    await axios.put(
-      `${API}/admin/faculty/toggle-status/${faculty.Faculty_Id}`
-    );
+        await fetchFaculty();
 
-    await fetchFaculty();
+        emit("toast", {
+          message: `Faculty ${action}d successfully`,
+          type: "success"
+        });
+      } catch (err) {
+        emit("toast", {
+          message: "Failed to update faculty status",
+          type: "error"
+        });
+      }
+    }
+  };
 
-    emit("toast", {
-      message: `Faculty ${action}d successfully`,
-      type: "success"
-    });
-  } catch (err) {
-    emit("toast", {
-      message: "Failed to update faculty status",
-      type: "error"
-    });
-  }
+  showConfirmModal.value = true;
 };
 
 onMounted(() => {
