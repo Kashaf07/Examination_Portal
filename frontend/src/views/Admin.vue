@@ -416,7 +416,7 @@ const tabs = [
   { id: "designations", name: "Designations", icon: "designations" },
   { id: "role-assignment", name: "Role Assignment", icon: "role-assignment" },
   { id: "groups", name: "Groups", icon: "groups" },
-  { id: "applicants", name: "Students", icon: "applicants" },
+  { id: "applicants", name: "Student", icon: "applicants" },
   { id: "exams", name: "Exams", icon: "exams" },
   { id: "admins", name: "Admins", icon: "admins" },
   { id: "logs", name: "Login Logs", icon: "logs" }

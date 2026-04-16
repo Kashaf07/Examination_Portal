@@ -37,7 +37,7 @@
 
         <button
           @click="login"
-          :disabled="!email || !password"
+          :disabled="!email || !password || !validateEmail(email)"
           class="w-full bg-blue-500 disabled:bg-blue-300 text-white py-2 rounded-lg font-semibold"
         >
           Login
@@ -86,6 +86,11 @@ const showMessage = (text, duration = 3500) => {
   }, duration)
 }
 
+const validateEmail = (email) => {
+  const pattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+  return pattern.test(email)
+}
+
 const login = async () => {
 
   // ✅ FRONTEND VALIDATION
@@ -96,6 +101,12 @@ const login = async () => {
 
   if (!email.value) {
     showMessage("Email cannot be empty")
+    return
+  }
+
+  // ✅ NEW EMAIL FORMAT VALIDATION
+  if (!validateEmail(email.value)) {
+    showMessage("Please enter a valid email address")
     return
   }
 
