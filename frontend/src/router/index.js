@@ -185,11 +185,22 @@ router.beforeEach((to, from, next) => {
   const token = localStorage.getItem('token')
   const activeRole = localStorage.getItem('active_role')
 
+  // 🔐 Not authenticated → always send to login
+  if (to.meta.requiresAuth && !token) {
+    // Replace history so forward arrow can't go back to protected page
+    return next({ path: '/', replace: true })
+  }
+
+  // ✅ Already logged in trying to visit login → redirect to their dashboard
+  if (to.path === '/' && token && activeRole) {
+    return next({ path: `/${activeRole.toLowerCase()}`, replace: true })
+  }
+
   const routeMeta = to.matched.find(r => r.meta && r.meta.role)
   const requiredRole = routeMeta ? routeMeta.meta.role : null
 
   if (!requiredRole) return next()
-  if (!token || !activeRole) return next('/')
+  if (!activeRole) return next({ path: '/', replace: true })
 
   const requiredRoles = Array.isArray(requiredRole)
     ? requiredRole.map(r => r.toLowerCase())
@@ -197,7 +208,7 @@ router.beforeEach((to, from, next) => {
 
   if (!requiredRoles.includes(activeRole.toLowerCase())) {
     alert('Access denied!')
-    return next(`/${activeRole.toLowerCase()}`)
+    return next({ path: `/${activeRole.toLowerCase()}`, replace: true })
   }
 
   next()

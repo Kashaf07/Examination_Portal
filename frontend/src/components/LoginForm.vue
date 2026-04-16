@@ -37,7 +37,7 @@
 
         <button
           @click="login"
-          :disabled="!email || !password"
+          :disabled="!email || !password || !validateEmail(email)"
           class="w-full bg-blue-500 disabled:bg-blue-300 text-white py-2 rounded-lg font-semibold"
         >
           Login
@@ -48,7 +48,7 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import axios from '../utils/axiosInstance'
 
@@ -57,6 +57,21 @@ const password = ref("")
 const message = ref("")
 const router = useRouter()
 let messageTimer = null
+
+onMounted(() => {
+  const token = localStorage.getItem('token')
+  if (token) {
+    const role = localStorage.getItem('active_role')
+    if (role) {
+      router.replace(`/${role.toLowerCase()}`)
+    }
+  }
+
+  // Kill forward-arrow re-entry: wipe history so there's nothing to go forward to
+  history.replaceState(null, '', '/')
+  // Push a sentinel so the back-button listener has a state to intercept
+  history.pushState(null, '', '/')
+})
 
 const showMessage = (text, duration = 3500) => {
   message.value = text
@@ -71,6 +86,11 @@ const showMessage = (text, duration = 3500) => {
   }, duration)
 }
 
+const validateEmail = (email) => {
+  const pattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+  return pattern.test(email)
+}
+
 const login = async () => {
 
   // ✅ FRONTEND VALIDATION
@@ -81,6 +101,12 @@ const login = async () => {
 
   if (!email.value) {
     showMessage("Email cannot be empty")
+    return
+  }
+
+  // ✅ NEW EMAIL FORMAT VALIDATION
+  if (!validateEmail(email.value)) {
+    showMessage("Please enter a valid email address")
     return
   }
 
@@ -116,7 +142,7 @@ const login = async () => {
 
     const activeRole = res.active_role.toLowerCase()
     setTimeout(() => {
-      router.push(`/${activeRole}`)
+      router.replace(`/${activeRole}`)
     }, 50)
 
   } catch (e) {
