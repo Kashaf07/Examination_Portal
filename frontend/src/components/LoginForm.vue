@@ -37,10 +37,10 @@
 
         <button
           @click="login"
-          :disabled="!email || !password || !validateEmail(email)"
+          :disabled="loading || !email || !password || !validateEmail(email)"
           class="w-full bg-blue-500 disabled:bg-blue-300 text-white py-2 rounded-lg font-semibold"
         >
-          Login
+          {{ loading ? "Please wait..." : "Login" }}
         </button>
       </div>
     </div>
@@ -52,6 +52,7 @@ import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import axios from '../utils/axiosInstance'
 
+const loading = ref(false)
 const email = ref("")
 const password = ref("")
 const message = ref("")
@@ -115,6 +116,8 @@ const login = async () => {
     return
   }
 
+  loading.value = true
+
   try {
     const response = await axios.post('/auth/login', {
       email: email.value,
@@ -126,6 +129,7 @@ const login = async () => {
 
     if (res.status !== "success") {
       showMessage(res.message || "Invalid credentials")
+      loading.value = false 
       return
     }
 
@@ -153,6 +157,9 @@ const login = async () => {
     } else {
       showMessage("Unable to login. Please try again.")
     }
+  } finally {
+    // 🔥 ALWAYS STOP LOADING (VERY IMPORTANT)
+    loading.value = false
   }
 }
 </script>
