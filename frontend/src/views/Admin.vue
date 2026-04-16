@@ -487,6 +487,8 @@ onUnmounted(() => {
 
 
 onMounted(() => {
+  // Arm the back-button trap ONCE at the layout level
+  history.pushState(null, '', window.location.href)
   activeTab.value = getAdminTabFromPath(route.path)
   checkFacultyRole()
 
