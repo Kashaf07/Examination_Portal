@@ -872,7 +872,7 @@ def create_admin_routes(mysql):
             # ✔ FIXED VERSION
             cursor.execute("""
                 UPDATE login_log
-                SET Logout_Time = NOW()
+                SET Logout_Time = CONVERT_TZ(NOW(), '+00:00', '+05:30')
                 WHERE Log_ID = (
                     SELECT Log_ID FROM (
                         SELECT Log_ID

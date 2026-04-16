@@ -123,9 +123,6 @@ def create_auth_routes(mysql):
         if not password_matched:
             return jsonify({"status": "fail", "message": "Invalid credentials"}), 401
 
-        # ===== LOGIN SUCCESS =====
-        login_time = datetime.now()
-
         # Determine User_Id properly
         user_id = None
 
@@ -147,8 +144,8 @@ def create_auth_routes(mysql):
         # Insert into login_log with User_Id
         cursor.execute("""
             INSERT INTO login_log (User_Email, User_Id, Role, Login_Time)
-            VALUES (%s, %s, %s, %s)
-        """, (email, user_id, selected_role, login_time))
+            VALUES (%s, %s, %s, CONVERT_TZ(NOW(), '+00:00', '+05:30'))
+        """, (email, user_id, selected_role))
 
         mysql.connection.commit()
 
@@ -168,7 +165,6 @@ def create_auth_routes(mysql):
             "active_role": selected_role,
             "name": user_name,
             "email": email,
-            "login_time": login_time.strftime("%Y-%m-%d %H:%M:%S")
         }
 
         if selected_role == "Student":
