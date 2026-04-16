@@ -14,10 +14,10 @@
           
           <div class="flex items-center bg-gray-100 rounded-full p-1 shadow-inner">
             <button
-              @click="showDisabled = false"
+              @click="filterMode = 'active'"
               :class="[
                 'px-4 py-2 text-sm font-semibold rounded-full transition-all',
-                !showDisabled
+                filterMode === 'active'
                   ? 'bg-white text-blue-600 shadow'
                   : 'text-gray-600 hover:text-gray-800'
               ]"
@@ -26,22 +26,34 @@
             </button>
 
             <button
-              @click="showDisabled = true"
+              @click="filterMode = 'all'"
               :class="[
                 'px-4 py-2 text-sm font-semibold rounded-full transition-all',
-                showDisabled
+                filterMode === 'all'
                   ? 'bg-white text-blue-600 shadow'
                   : 'text-gray-600 hover:text-gray-800'
               ]"
             >
               All Faculty
             </button>
+
+            <button
+              @click="filterMode = 'inactive'"
+              :class="[
+                'px-4 py-2 text-sm font-semibold rounded-full transition-all',
+                filterMode === 'inactive'
+                  ? 'bg-white text-blue-600 shadow'
+                  : 'text-gray-600 hover:text-gray-800'
+              ]"
+            >
+              Inactive Only
+            </button>
           </div> 
         </div>
       </div>
       <transition name="fade">
         <p
-          v-if="showDisabled"
+          v-if="filterMode === 'all'"
           class="text-xs text-gray-500 mb-2 text-right transition-opacity"
         >
           Disabled faculty are shown in grey
@@ -251,15 +263,15 @@ const designationsList = ref([]);
 // Modal
 const showModal = ref(false);
 const isEdit = ref(false);
-const showDisabled = ref(false);
+const filterMode = ref('active');
 
 const filteredFaculty = computed(() => {
-  if (showDisabled.value) {
-    return facultyList.value;
+  if (filterMode.value === 'active') {
+    return facultyList.value.filter(f => Number(f.Is_Active) === 1);
+  } else if (filterMode.value === 'inactive') {
+    return facultyList.value.filter(f => Number(f.Is_Active) === 0);
   }
-  return facultyList.value.filter(
-    f => Number(f.Is_Active) === 1
-  );
+  return facultyList.value;
 });
 
 const handleBack = async () => {

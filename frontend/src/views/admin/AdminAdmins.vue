@@ -17,27 +17,36 @@
           <div class="flex flex-col items-start">
             <div class="flex items-center bg-gray-100 rounded-full p-1 shadow-inner">
               <button
-                @click="showDisabled = false"
+                @click="filterMode = 'active'"
                 :class="[
                   'px-4 py-2 text-sm font-semibold rounded-full transition-all',
-                  !showDisabled ? 'bg-white text-blue-600 shadow' : 'text-gray-600'
+                  filterMode === 'active' ? 'bg-white text-blue-600 shadow' : 'text-gray-600'
                 ]">
                 Active Only
               </button>
 
               <button
-                @click="showDisabled = true"
+                @click="filterMode = 'all'"
                 :class="[
                   'px-4 py-2 text-sm font-semibold rounded-full transition-all',
-                  showDisabled ? 'bg-white text-blue-600 shadow' : 'text-gray-600'
+                  filterMode === 'all' ? 'bg-white text-blue-600 shadow' : 'text-gray-600'
                 ]">
                 All Admins
+              </button>
+
+              <button
+                @click="filterMode = 'inactive'"
+                :class="[
+                  'px-4 py-2 text-sm font-semibold rounded-full transition-all',
+                  filterMode === 'inactive' ? 'bg-white text-blue-600 shadow' : 'text-gray-600'
+                ]">
+                Inactive Only
               </button>
             </div>
 
             <!-- ✅ Helper text exactly below toggle -->
             <p
-              v-if="showDisabled"
+              v-if="filterMode === 'all'"
               class="mt-1 text-xs text-gray-500 pl-2">
               Disabled admins are shown in grey
             </p>
@@ -165,11 +174,15 @@ import axios from "axios";
 // Parent toast emitter
 const emit = defineEmits(["toast"]);
 
-const showDisabled = ref(false)
+const filterMode = ref('active')
 
 const filteredAdmins = computed(() => {
-  if (showDisabled.value) return admins.value
-  return admins.value.filter(a => Number(a.Is_Active) === 1)
+  if (filterMode.value === 'active') {
+    return admins.value.filter(a => Number(a.Is_Active) === 1)
+  } else if (filterMode.value === 'inactive') {
+    return admins.value.filter(a => Number(a.Is_Active) === 0)
+  }
+  return admins.value
 })
 
 // Simple reusable input component

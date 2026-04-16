@@ -4,6 +4,18 @@
     <div class="bg-white/80 backdrop-blur-sm shadow-xl rounded-2xl p-8 border border-white/20">
       <h2 class="text-2xl font-bold text-gray-800 mb-6">Login Logs</h2>
 
+      <!-- Search Box and Role Filter -->
+      <div class="mb-6 flex gap-4 items-center">
+        <!-- Search Input -->
+        <input
+          v-model="searchQuery"
+          placeholder="🔍 Search by name or role..."
+          class="w-full max-w-xs px-4 py-3 rounded-xl border-2 border-black bg-purple-50
+                 focus:bg-white focus:ring-2 focus:ring-blue-400 outline-none transition 
+                 text-sm font-medium placeholder:text-gray-600"
+        />
+      </div>
+
       <!-- Logs Table -->
       <div class="bg-white rounded-2xl shadow-lg border border-gray-200 overflow-hidden">
         <div class="overflow-x-auto">
@@ -13,7 +25,21 @@
                 <th class="py-4 px-6 text-left font-semibold text-blue-900">ID</th>
                 <th class="py-4 px-6 text-left font-semibold text-blue-900">Name</th>
                 <th class="py-4 px-6 text-left font-semibold text-blue-900">Email</th>
-                <th class="py-4 px-6 text-left font-semibold text-blue-900">Role</th>
+                <th class="py-4 px-6 text-left font-semibold text-blue-900 relative">
+                  <div class="flex items-center gap-2">
+                    <span>Role</span>
+                    <svg 
+                      @click.stop="toggleRoleFilter"
+                      xmlns="http://www.w3.org/2000/svg" 
+                      viewBox="0 0 24 24" 
+                      fill="currentColor"
+                      class="w-5 h-5 cursor-pointer transition"
+                      :class="selectedRole ? 'text-blue-600' : 'text-gray-500 hover:text-blue-600'"
+                    >
+                      <path d="M3 4h18l-7 8v6l-4 2v-8L3 4z"/>
+                    </svg>
+                  </div>
+                </th>
                 <th class="py-4 px-6 text-left font-semibold text-blue-900">Actions</th>
               </tr>
             </thead>
@@ -21,16 +47,16 @@
             <tbody class="bg-white divide-y divide-gray-100">
               <tr
                 v-for="(log, i) in paginatedLogs"
-                :key="log.Log_ID"
+                :key="log.User_Email"
                 class="hover:bg-gray-50 transition"
               >
                 <td class="py-4 px-6">{{ (currentPage - 1) * itemsPerPage + i + 1 }}</td>
 
                 <!-- Name -->
-                <td class="py-4 px-6">{{ log.User_Name || 'Unknown' }}</td>
+                <td class="py-4 px-6 font-medium text-gray-900">{{ log.User_Name || 'Unknown' }}</td>
 
                 <!-- Email -->
-                <td class="py-4 px-6">{{ log.User_Email }}</td>
+                <td class="py-4 px-6 text-gray-700">{{ log.User_Email }}</td>
 
                 <!-- Role -->
                 <td class="py-4 px-6">
@@ -147,6 +173,64 @@
       </div>
     </div>
 
+    <!-- Role Filter Popover -->
+    <transition name="fade">
+      <div
+        v-if="showRoleFilter"
+        :style="roleFilterStyle"
+        class="fixed bg-white shadow-2xl border border-gray-200 rounded-xl p-4 w-64 z-[9999]"
+      >
+        <h4 class="text-base font-bold text-gray-800 mb-3">Filter by Role</h4>
+        
+        <div class="space-y-2 mb-3">
+          <button
+            @click="selectRoleAndClose('Admin')"
+            class="w-full px-3 py-2 rounded-lg border-2 font-semibold transition text-center text-sm"
+            :class="selectedRole === 'Admin' 
+              ? 'bg-purple-600 text-white border-purple-600' 
+              : 'bg-white text-purple-600 border-purple-400 hover:bg-purple-50'"
+          >
+            Admin
+          </button>
+          
+          <button
+            @click="selectRoleAndClose('Faculty')"
+            class="w-full px-3 py-2 rounded-lg border-2 font-semibold transition text-center text-sm"
+            :class="selectedRole === 'Faculty' 
+              ? 'bg-blue-600 text-white border-blue-600' 
+              : 'bg-white text-blue-600 border-blue-400 hover:bg-blue-50'"
+          >
+            Faculty
+          </button>
+          
+          <button
+            @click="selectRoleAndClose('Student')"
+            class="w-full px-3 py-2 rounded-lg border-2 font-semibold transition text-center text-sm"
+            :class="selectedRole === 'Student' 
+              ? 'bg-green-600 text-white border-green-600' 
+              : 'bg-white text-green-600 border-green-400 hover:bg-green-50'"
+          >
+            Student
+          </button>
+        </div>
+
+        <div class="flex justify-between pt-2 border-t border-gray-200">
+          <button
+            @click="applyRoleFilter"
+            class="text-xs text-blue-600 font-semibold hover:text-blue-800 transition"
+          >
+            Apply
+          </button>
+          <button
+            @click="clearRoleFilter"
+            class="text-xs text-red-500 font-semibold hover:text-red-700 transition"
+          >
+            Clear
+          </button>
+        </div>
+      </div>
+    </transition>
+
     <!-- View Logs Modal -->
     <div
       v-if="showModal"
@@ -261,7 +345,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from "vue";
+import { ref, computed, onMounted, onBeforeUnmount } from "vue";
 import axios from "axios";
 
 const emit = defineEmits(["toast"]);
@@ -270,8 +354,15 @@ const API = `http://${window.location.hostname}:5000/api`;
 
 // Pagination State (for main table)
 const logs = ref([]);
+const allLogs = ref([]); // Store all raw logs
 const currentPage = ref(1);
 const itemsPerPage = ref(20);
+
+// Search and Filter State
+const searchQuery = ref('');
+const showRoleFilter = ref(false);
+const selectedRole = ref('');
+const roleFilterStyle = ref({});
 
 // Modal State
 const showModal = ref(false);
@@ -280,8 +371,54 @@ const userLogs = ref([]);
 const showAllLogs = ref(false);
 const initialLogsToShow = ref(10);
 
+// Group logs by user (unique email) - show only latest login
+const groupedLogs = computed(() => {
+  const grouped = {};
+  
+  allLogs.value.forEach(log => {
+    const email = log.User_Email;
+    if (!grouped[email]) {
+      grouped[email] = {
+        User_Email: email,
+        User_Name: log.User_Name,
+        Role: log.Role,
+        Latest_Login: log.Login_Time
+      };
+    } else {
+      // Keep the latest login time
+      if (new Date(log.Login_Time) > new Date(grouped[email].Latest_Login)) {
+        grouped[email].Latest_Login = log.Login_Time;
+      }
+    }
+  });
+  
+  return Object.values(grouped);
+});
+
+// Filter logs based on search query and role filter
+const filteredLogs = computed(() => {
+  let result = groupedLogs.value;
+  
+  // Apply search filter
+  if (searchQuery.value.trim()) {
+    const query = searchQuery.value.toLowerCase();
+    result = result.filter(log => {
+      const name = (log.User_Name || '').toLowerCase();
+      const role = (log.Role || '').toLowerCase();
+      return name.includes(query) || role.includes(query);
+    });
+  }
+  
+  // Apply role filter
+  if (selectedRole.value) {
+    result = result.filter(log => log.Role === selectedRole.value);
+  }
+  
+  return result;
+});
+
 // Computed - Total Logs
-const totalLogs = computed(() => logs.value.length);
+const totalLogs = computed(() => filteredLogs.value.length);
 
 // Computed - Total Pages
 const totalPages = computed(() => Math.ceil(totalLogs.value / itemsPerPage.value));
@@ -290,7 +427,7 @@ const totalPages = computed(() => Math.ceil(totalLogs.value / itemsPerPage.value
 const paginatedLogs = computed(() => {
   const start = (currentPage.value - 1) * itemsPerPage.value;
   const end = start + itemsPerPage.value;
-  return logs.value.slice(start, end);
+  return filteredLogs.value.slice(start, end);
 });
 
 // Computed - Start Index
@@ -373,10 +510,80 @@ const scrollToTop = () => {
   }
 };
 
-// Fetch users (single row each)
+// Role Filter Methods
+const toggleRoleFilter = (event) => {
+  showRoleFilter.value = !showRoleFilter.value;
+  
+  if (showRoleFilter.value) {
+    updateFilterPosition(event);
+  }
+};
+
+const updateFilterPosition = (event) => {
+  const svg = event.target.closest('svg');
+  if (!svg) return;
+  
+  const rect = svg.getBoundingClientRect();
+  
+  roleFilterStyle.value = {
+    position: 'fixed',
+    top: `${rect.bottom + 8}px`,
+    left: `${rect.left - 120}px`
+  };
+};
+
+const selectRole = (role) => {
+  if (selectedRole.value === role) {
+    selectedRole.value = '';
+  } else {
+    selectedRole.value = role;
+  }
+};
+
+const selectRoleAndClose = (role) => {
+  if (selectedRole.value === role) {
+    selectedRole.value = '';
+  } else {
+    selectedRole.value = role;
+  }
+  // Auto-apply when selecting a role
+  applyRoleFilter();
+};
+
+const applyRoleFilter = () => {
+  showRoleFilter.value = false;
+  currentPage.value = 1; // Reset to first page
+};
+
+const clearRoleFilter = () => {
+  selectedRole.value = '';
+  showRoleFilter.value = false;
+  currentPage.value = 1;
+};
+
+// Update filter position on scroll
+const handleScroll = () => {
+  if (showRoleFilter.value) {
+    showRoleFilter.value = false;
+  }
+};
+
+// Close filter when clicking outside
+const handleClickOutside = (event) => {
+  const filterPopup = document.querySelector('.fixed.bg-white.shadow-2xl');
+  if (showRoleFilter.value && filterPopup && !filterPopup.contains(event.target)) {
+    const filterButton = event.target.closest('button');
+    if (!filterButton || !filterButton.querySelector('svg')) {
+      showRoleFilter.value = false;
+    }
+  }
+};
+
+// Fetch all logs
 const fetchLogs = async () => {
   try {
     const res = await axios.get(`${API}/admin/logs`);
+    allLogs.value = res.data;
     logs.value = res.data;
   } catch {
     emit("toast", { message: "Error fetching logs", type: "error" });
@@ -421,7 +628,16 @@ const formatDateTime = (dt) => {
     : "Invalid";
 };
 
-onMounted(fetchLogs);
+onMounted(() => {
+  fetchLogs();
+  document.addEventListener('click', handleClickOutside);
+  window.addEventListener('scroll', handleScroll);
+});
+
+onBeforeUnmount(() => {
+  document.removeEventListener('click', handleClickOutside);
+  window.removeEventListener('scroll', handleScroll);
+});
 </script>
 
 <style scoped>
@@ -455,5 +671,16 @@ button:active:not(:disabled) {
 
 .max-h-96::-webkit-scrollbar-thumb:hover {
   background: #555;
+}
+
+/* Fade transition for filter popup */
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.2s ease;
+}
+
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
 }
 </style>

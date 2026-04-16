@@ -21,14 +21,14 @@
         </button>
       </div>
 
-      <!-- RIGHT: Active / All Toggle -->
+      <!-- RIGHT: Active / All / Inactive Toggle -->
       <div class="flex flex-col">
         <div class="flex items-center bg-gray-100 rounded-full p-1 shadow-inner w-fit">
           <button
-            @click="showDisabled = false"
+            @click="filterMode = 'active'"
             :class="[
               'px-4 py-2 text-sm font-semibold rounded-full transition-all',
-              !showDisabled
+              filterMode === 'active'
                 ? 'bg-white text-blue-600 shadow'
                 : 'text-gray-600 hover:text-gray-800'
             ]"
@@ -37,21 +37,33 @@
           </button>
 
           <button
-            @click="showDisabled = true"
+            @click="filterMode = 'all'"
             :class="[
               'px-4 py-2 text-sm font-semibold rounded-full transition-all',
-              showDisabled
+              filterMode === 'all'
                 ? 'bg-white text-blue-600 shadow'
                 : 'text-gray-600 hover:text-gray-800'
             ]"
           >
             All Students
           </button>
+
+          <button
+            @click="filterMode = 'inactive'"
+            :class="[
+              'px-4 py-2 text-sm font-semibold rounded-full transition-all',
+              filterMode === 'inactive'
+                ? 'bg-white text-blue-600 shadow'
+                : 'text-gray-600 hover:text-gray-800'
+            ]"
+          >
+            Inactive Only
+          </button>
         </div>
 
         <!-- Helper text JUST below toggle -->
         <p
-          v-if="showDisabled"
+          v-if="filterMode === 'all'"
           class="text-xs text-gray-500 mt-1 pl-2"
         >
           Disabled students are shown in grey
@@ -78,6 +90,17 @@
     <div v-if="!showAddApplicantPage && !showUploadPage" class="bg-white rounded-2xl shadow-xl border border-gray-200 overflow-hidden">
       <!-- Applicants Table -->
       <div class="bg-white rounded-2xl shadow-xl border border-gray-200 overflow-hidden">
+
+        <!-- SEARCH FILTER INPUT -->
+        <div class="mb-6 flex gap-3 p-6 pb-0">
+          <input
+            v-model="searchQuery"
+            placeholder="🔍 Search students..."
+            class="w-full max-w-xs px-4 py-3 rounded-xl border-2 border-black bg-purple-50
+                   focus:bg-white focus:ring-2 focus:ring-blue-400 outline-none transition 
+                   text-sm font-medium placeholder:text-gray-600"
+          />
+        </div>
 
         <table class="w-full">
           <thead class="bg-gradient-to-r from-blue-50 to-blue-100 text-gray-700">
@@ -295,14 +318,32 @@ const showViewModal = ref(false);
 const selectedApplicant = ref(null);
 const showAddApplicantPage = ref(false);
 const showUploadPage = ref(false);
-const showDisabled = ref(false);
+const filterMode = ref('active'); // 'active', 'all', or 'inactive'
+const searchQuery = ref("");
 
 const filteredApplicants = computed(() => {
-  if (showDisabled.value) {
-    return applicantsList.value;
+  // First filter by active/disabled status based on filterMode
+  let filtered;
+  if (filterMode.value === 'active') {
+    filtered = applicantsList.value.filter(a => Number(a.Is_Active) === 1);
+  } else if (filterMode.value === 'inactive') {
+    filtered = applicantsList.value.filter(a => Number(a.Is_Active) === 0);
+  } else {
+    // 'all' mode
+    filtered = applicantsList.value;
   }
-  return applicantsList.value.filter(
-    a => Number(a.Is_Active) === 1
+  
+  // Then filter by search query
+  if (!searchQuery.value.trim()) {
+    return filtered;
+  }
+  
+  const query = searchQuery.value.toLowerCase();
+  return filtered.filter(a =>
+    a.Full_Name?.toLowerCase().includes(query) ||
+    a.Email?.toLowerCase().includes(query) ||
+    a.Phone?.toLowerCase().includes(query) ||
+    String(a.Applicant_Id || '').includes(query)
   );
 });
 

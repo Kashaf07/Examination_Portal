@@ -18,10 +18,10 @@
           <!-- Toggle -->
           <div class="flex items-center bg-gray-100 rounded-full p-1 shadow-inner">
             <button
-              @click="showDisabled = false"
+              @click="filterMode = 'active'"
               :class="[
                 'px-4 py-2 text-sm font-semibold rounded-full transition-all',
-                !showDisabled
+                filterMode === 'active'
                   ? 'bg-white text-blue-600 shadow'
                   : 'text-gray-600 hover:text-gray-800'
               ]"
@@ -30,15 +30,27 @@
             </button>
 
             <button
-              @click="showDisabled = true"
+              @click="filterMode = 'all'"
               :class="[
                 'px-4 py-2 text-sm font-semibold rounded-full transition-all',
-                showDisabled
+                filterMode === 'all'
                   ? 'bg-white text-blue-600 shadow'
                   : 'text-gray-600 hover:text-gray-800'
               ]"
             >
               All Designations
+            </button>
+
+            <button
+              @click="filterMode = 'inactive'"
+              :class="[
+                'px-4 py-2 text-sm font-semibold rounded-full transition-all',
+                filterMode === 'inactive'
+                  ? 'bg-white text-blue-600 shadow'
+                  : 'text-gray-600 hover:text-gray-800'
+              ]"
+            >
+              Inactive Only
             </button>
           </div>
         </div>
@@ -46,7 +58,7 @@
 
       <transition name="fade">
         <p
-          v-if="showDisabled"
+          v-if="filterMode === 'all'"
           class="text-xs text-gray-500 mb-2 text-right"
         >
           Disabled designations are shown in grey
@@ -163,7 +175,7 @@ export default {
       designations: [],
       showModal: false,
       isEdit: false,
-      showDisabled: false,
+      filterMode: 'active',
       modalData: {
         id: null,
         name: "",
@@ -173,8 +185,12 @@ export default {
 
   computed: {
     filteredDesignations() {
-      if (this.showDisabled) return this.designations;
-      return this.designations.filter(d => Number(d.is_active) === 1);
+      if (this.filterMode === 'active') {
+        return this.designations.filter(d => Number(d.is_active) === 1);
+      } else if (this.filterMode === 'inactive') {
+        return this.designations.filter(d => Number(d.is_active) === 0);
+      }
+      return this.designations;
     },
   },
 
