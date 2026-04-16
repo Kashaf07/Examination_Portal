@@ -99,7 +99,7 @@
                   </button>
 
                   <button
-                    @click="toggleStatus(d)"
+                    @click="askToggleStatus(d)"
                     :class="Number(d.is_active) === 1
                       ? 'bg-red-500 hover:bg-red-600'
                       : 'bg-green-500 hover:bg-green-600'"
@@ -164,6 +164,46 @@
     </div>
 
   </div>
+
+  <!-- Confirmation Modal for Disable/Enable Designation -->
+  <div
+    v-if="showConfirmModal"
+    class="fixed inset-0 z-[9999] flex items-center justify-center"
+  >
+    <div class="absolute inset-0 bg-black/60 backdrop-blur-md"></div>
+
+    <div class="relative bg-white/95 backdrop-blur-sm rounded-3xl shadow-2xl p-8 max-w-md w-full mx-4 transform transition-all">
+      <div class="text-center">
+
+        <h3 class="text-2xl font-bold text-gray-900 mb-3">
+          {{ designationToToggle && Number(designationToToggle.is_active) === 1 ? 'Disable Designation' : 'Enable Designation' }}
+        </h3>
+
+        <p class="text-sm text-gray-600 mb-8 leading-relaxed">
+          Are you sure you want to
+          {{ designationToToggle && Number(designationToToggle.is_active) === 1 ? 'disable' : 'enable' }}
+          this designation?
+        </p>
+
+        <div class="flex gap-4">
+          <button
+            @click="cancelConfirm"
+            class="flex-1 py-3 bg-white text-gray-700 border border-gray-300 rounded-full hover:bg-gray-50 hover:border-gray-400 transition-all duration-300 font-semibold shadow-lg hover:shadow-xl transform hover:scale-105 active:scale-95"
+          >
+            Cancel
+          </button>
+
+          <button
+            @click="confirmToggle"
+            class="flex-1 py-3 bg-blue-600 text-white rounded-full hover:bg-blue-700 transition-all duration-300 font-semibold shadow-lg hover:shadow-xl transform hover:scale-105 active:scale-95"
+          >
+            OK
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
 </template>
 
 <script>
@@ -176,6 +216,8 @@ export default {
       showModal: false,
       isEdit: false,
       filterMode: 'active',
+      showConfirmModal: false,
+      designationToToggle: null,
       modalData: {
         id: null,
         name: "",
@@ -250,7 +292,6 @@ export default {
 
     async toggleStatus(d) {
       const action = d.is_active ? "disable" : "enable";
-      if (!confirm(`Are you sure you want to ${action} this designation?`)) return;
 
       await axios.put(
         `http://${window.location.hostname}:5000/api/admin/designations/toggle-status/${d.id}`
@@ -263,6 +304,28 @@ export default {
 
       this.fetchDesignations();
     },
+
+    askToggleStatus(d) {
+      this.designationToToggle = d;
+      this.showConfirmModal = true;
+    },
+
+    cancelConfirm() {
+      this.showConfirmModal = false;
+      this.designationToToggle = null;
+    },
+
+    async confirmToggle() {
+      const d = this.designationToToggle;
+      this.showConfirmModal = false;
+      this.designationToToggle = null;
+      await this.toggleStatus(d);
+    },
   },
 };
 </script>
+
+<style scoped>
+.fade-enter-active, .fade-leave-active { transition: opacity 0.2s; }
+.fade-enter-from, .fade-leave-to { opacity: 0; }
+</style>

@@ -97,7 +97,7 @@
                   </button>
 
                   <button
-                    @click="toggleSchoolStatus(school)"
+                    @click="askToggleSchool(school)"
                     :class="Number(school.Is_Active) === 1
                       ? 'bg-red-500 hover:bg-red-600'
                       : 'bg-green-500 hover:bg-green-600'"
@@ -168,6 +168,46 @@
     </div>
 
   </div>
+
+  <!-- Confirmation Modal for Disable/Enable School -->
+  <div
+    v-if="showConfirmModal"
+    class="fixed inset-0 z-[9999] flex items-center justify-center"
+  >
+    <div class="absolute inset-0 bg-black/60 backdrop-blur-md"></div>
+
+    <div class="relative bg-white/95 backdrop-blur-sm rounded-3xl shadow-2xl p-8 max-w-md w-full mx-4 transform transition-all">
+      <div class="text-center">
+
+        <h3 class="text-2xl font-bold text-gray-900 mb-3">
+          {{ schoolToToggle && Number(schoolToToggle.Is_Active) === 1 ? 'Disable School' : 'Enable School' }}
+        </h3>
+
+        <p class="text-sm text-gray-600 mb-8 leading-relaxed">
+          Are you sure you want to
+          {{ schoolToToggle && Number(schoolToToggle.Is_Active) === 1 ? 'disable' : 'enable' }}
+          this school?
+        </p>
+
+        <div class="flex gap-4">
+          <button
+            @click="cancelConfirm"
+            class="flex-1 py-3 bg-white text-gray-700 border border-gray-300 rounded-full hover:bg-gray-50 hover:border-gray-400 transition-all duration-300 font-semibold shadow-lg hover:shadow-xl transform hover:scale-105 active:scale-95"
+          >
+            Cancel
+          </button>
+
+          <button
+            @click="confirmToggle"
+            class="flex-1 py-3 bg-blue-600 text-white rounded-full hover:bg-blue-700 transition-all duration-300 font-semibold shadow-lg hover:shadow-xl transform hover:scale-105 active:scale-95"
+          >
+            OK
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
 </template>
 
 <script setup>
@@ -184,6 +224,27 @@ const schoolsList = ref([]);
 const showModal = ref(false);
 const isEdit = ref(false);
 const filterMode = ref('active');
+
+// Confirmation modal state
+const showConfirmModal = ref(false);
+const schoolToToggle = ref(null);
+
+const askToggleSchool = (school) => {
+  schoolToToggle.value = school;
+  showConfirmModal.value = true;
+};
+
+const cancelConfirm = () => {
+  showConfirmModal.value = false;
+  schoolToToggle.value = null;
+};
+
+const confirmToggle = async () => {
+  const school = schoolToToggle.value;
+  showConfirmModal.value = false;
+  schoolToToggle.value = null;
+  await toggleSchoolStatus(school);
+};
 
 const filteredSchools = computed(() => {
   if (filterMode.value === 'active') {
@@ -258,8 +319,6 @@ const updateSchool = async () => {
 const toggleSchoolStatus = async (school) => {
   const action = school.Is_Active ? "disable" : "enable";
 
-  if (!confirm(`Are you sure you want to ${action} this school?`)) return;
-
   try {
     await axios.put(
       `${API}/admin/schools/toggle-status/${school.School_Id}`
@@ -284,3 +343,8 @@ onMounted(() => {
   fetchSchools();
 });
 </script>
+
+<style scoped>
+.fade-enter-active, .fade-leave-active { transition: opacity 0.2s; }
+.fade-enter-from, .fade-leave-to { opacity: 0; }
+</style>

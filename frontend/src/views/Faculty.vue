@@ -1096,7 +1096,7 @@ const allTabs = [
   { id: "my-exams", name: "My Exams", icon: "exams", access: "create_exam" },
   { id: "groups", name: "Groups", icon: "groups", access: "view_groups" },
   { id: "add-applicants", name: "Add Student", icon: "applicants", access: "add_applicants" },
-  { id: "upload-students", name: "Upload Students", icon: "applicants", access: "upload_students" }
+  { id: "upload-students", name: "Upload Students", icon: "students", access: "upload_students" }
 ]
 
 const facultyPermissions = ref({

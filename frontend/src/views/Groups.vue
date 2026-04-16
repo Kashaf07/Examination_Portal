@@ -141,7 +141,7 @@
                   </button>
 
                   <button
-                    @click="toggleGroupStatus(g)"
+                    @click="askToggleGroup(g)"
                     :class="g.Is_Active === 1
                       ? 'bg-red-500 hover:bg-red-600'
                       : 'bg-green-500 hover:bg-green-600'"
@@ -193,7 +193,7 @@
 
                             <td class="px-4 py-3 text-center">
                               <button
-                                @click="removeApplicant(g.Group_Id, a.Applicant_Id)"
+                                @click="askRemoveApplicant(g.Group_Id, a.Applicant_Id)"
                                 :disabled="g.Is_Active === 0"  
                                 :class="g.Is_Active === 0    ? 
                                 'bg-red-300 cursor-not-allowed'    
@@ -233,8 +233,32 @@
       </div>
     </div>
 
-    <!-- ===================== CREATE GROUP MODAL ===================== -->
+    <!-- ===================== CONFIRM MODAL ===================== -->
     <div
+      v-if="showConfirmModal"
+      class="fixed inset-0 z-[9999] flex items-center justify-center"
+    >
+      <div class="absolute inset-0 bg-black/60 backdrop-blur-md"></div>
+      <div class="relative bg-white/95 backdrop-blur-sm rounded-3xl shadow-2xl p-8 max-w-md w-full mx-4 transform transition-all">
+        <div class="text-center">
+          <h3 class="text-2xl font-bold text-gray-900 mb-3">{{ confirmTitle }}</h3>
+          <p class="text-sm text-gray-600 mb-8 leading-relaxed">{{ confirmMessage }}</p>
+          <div class="flex gap-4">
+            <button
+              @click="cancelConfirm"
+              class="flex-1 py-3 bg-white text-gray-700 border border-gray-300 rounded-full hover:bg-gray-50 hover:border-gray-400 transition-all duration-300 font-semibold shadow-lg hover:shadow-xl transform hover:scale-105 active:scale-95"
+            >Cancel</button>
+            <button
+              @click="confirmAction"
+              class="flex-1 py-3 bg-blue-600 text-white rounded-full hover:bg-blue-700 transition-all duration-300 font-semibold shadow-lg hover:shadow-xl transform hover:scale-105 active:scale-95"
+            >OK</button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <!-- ============================================================ -->
+
+    <!-- ===================== CREATE GROUP MODAL ===================== -->    <div
       v-if="showCreateModal"
       class="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-[9999] p-4"
       @click.self="showCreateModal = false"
@@ -296,7 +320,7 @@ import { watch } from "vue"
 
 const emit = defineEmits(["toast"])
 
-const filterMode = ref('active') // 'active', 'all', or 'inactive'
+const filterMode = ref('active')
 const newGroupName = ref("")
 const searchQuery = ref("")
 const showCreateModal = ref(false)
@@ -304,6 +328,45 @@ const groups = ref([])
 const applicants = ref({})
 const expandedGroup = ref(null)
 const fetchTimestamp = ref(Date.now())
+
+// Confirm modal state
+const showConfirmModal = ref(false)
+const confirmTitle = ref("")
+const confirmMessage = ref("")
+const pendingAction = ref(null)
+
+const askConfirm = (title, message, action) => {
+  confirmTitle.value = title
+  confirmMessage.value = message
+  pendingAction.value = action
+  showConfirmModal.value = true
+}
+const cancelConfirm = () => {
+  showConfirmModal.value = false
+  pendingAction.value = null
+}
+const confirmAction = async () => {
+  showConfirmModal.value = false
+  if (pendingAction.value) await pendingAction.value()
+  pendingAction.value = null
+}
+
+const askToggleGroup = (g) => {
+  const action = g.Is_Active === 1 ? 'disable' : 'enable'
+  askConfirm(
+    action === 'disable' ? 'Disable Group' : 'Enable Group',
+    `Are you sure you want to ${action} this group?`,
+    () => toggleGroupStatus(g)
+  )
+}
+
+const askRemoveApplicant = (groupId, applicantId) => {
+  askConfirm(
+    'Remove Student',
+    'Are you sure you want to remove this student from the group?',
+    () => removeApplicant(groupId, applicantId)
+  )
+}
 
 const role =
   (localStorage.getItem("active_role") || "").toLowerCase() === "admin"
@@ -343,8 +406,6 @@ const searchedGroups = computed(() => {
 /* ENABLE / DISABLE GROUP */
 const toggleGroupStatus = async (group) => {
   const action = group.Is_Active === 1 ? 'disable' : 'enable'
-
-  if (!confirm(`Are you sure you want to ${action} this group?`)) return
 
   try {
     await axios.put(`/groups/toggle-status/${group.Group_Id}`)
@@ -456,8 +517,6 @@ const toggleView = async (groupId) => {
 
 /* REMOVE APPLICANT */
 const removeApplicant = async (groupId, applicantId) => {
-  if (!confirm("Remove applicant from this group?")) return
-
   try {
     await axios.post("/groups/remove-applicant", {
       group_id: groupId,
@@ -512,7 +571,5 @@ onMounted(loadGroups)
   from { transform: translateY(16px); opacity: 0; }
   to { transform: translateY(0); opacity: 1; }
 }
-.animate-fadeIn {
-  animation: fadeIn 0.2s ease-out;
-}
+.animate-fadeIn { animation: fadeIn 0.2s ease-out; }
 </style>
