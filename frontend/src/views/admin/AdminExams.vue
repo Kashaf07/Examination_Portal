@@ -435,55 +435,24 @@
     />
 
     <!-- Confirmation Modal for Turning OFF Exam -->
-    <div
-      v-if="showConfirmModal"
-      class="fixed inset-0 z-50 flex items-center justify-center"
-    >
-      <!-- Blurred Background -->
-      <div class="absolute inset-0 bg-black/60 backdrop-blur-md"></div>
-      
-      <!-- Modal Content -->
-      <div class="relative bg-white/95 backdrop-blur-sm rounded-3xl shadow-2xl p-8 max-w-md w-full mx-4 transform transition-all animate-pulse-slow">
-        <div class="text-center">
-          <!-- Warning Icon with Gradient -->
-          <div class="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-gradient-to-br from-red-100 to-pink-100 mb-6">
-            <svg class="h-8 w-8 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
-            </svg>
-          </div>
-          
-          <!-- Title -->
-          <h3 class="text-xl font-bold text-gray-900 mb-3">Turn OFF Exam</h3>
-          
-          <!-- Message -->
-          <p class="text-sm text-gray-600 mb-8 leading-relaxed">
-            Are you sure you want to turn OFF the exam 
-            <span class="font-bold text-gray-800 bg-gray-100 px-2 py-1 rounded-lg">"{{ selectedExamForConfirm?.Exam_Name }}"</span>?
-            <br><br>
-            This action will stop the exam for all students.
-          </p>
-          
-          <!-- Buttons -->
-          <div class="flex gap-4 justify-center">
-            <!-- Cancel Button -->
-            <button
-              @click="cancelConfirmation"
-              class="px-8 py-3 bg-white text-gray-700 border border-gray-300 rounded-full hover:bg-gray-50 hover:border-gray-400 transition-all duration-300 font-semibold shadow-lg hover:shadow-xl transform hover:scale-105 active:scale-95"
-            >
-              Cancel
-            </button>
-            
-            <!-- OK Button -->
-            <button
-              @click="confirmTurnOff"
-              class="px-8 py-3 bg-blue-600 text-white rounded-full hover:bg-blue-700 transition-all duration-300 font-semibold shadow-lg hover:shadow-xl transform hover:scale-105 active:scale-95"
-            >
-              OK
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
+    <ConfirmationModal
+      :is-open="showConfirmModal"
+      title="Turn OFF Exam"
+      :message="`Are you sure you want to turn OFF the exam '${selectedExamForConfirm?.Exam_Name}'? This action will stop the exam for all students.`"
+      variant="danger"
+      @confirm="confirmTurnOff"
+      @close="cancelConfirmation"
+    />
+
+    <!-- Delete Confirmation Modal -->
+    <ConfirmationModal
+      :is-open="showDeleteConfirmModal"
+      :title="confirmModalConfig.title"
+      :message="confirmModalConfig.message"
+      :variant="confirmModalConfig.variant"
+      @confirm="confirmModalConfig.onConfirm"
+      @close="showDeleteConfirmModal = false"
+    />
 
   </div>
 </template>
@@ -493,6 +462,7 @@ import { ref, onMounted, computed } from "vue";
 import { useRouter } from "vue-router";
 import axios from "axios";
 import QRCodeModal from "@/components/QRCodeModal.vue";
+import ConfirmationModal from "@/components/ConfirmationModal.vue";
 
 const emit = defineEmits(["toast"]);
 const router = useRouter();
@@ -510,6 +480,15 @@ const selectedExamForQR = ref(null);
 // Confirmation Modal State
 const showConfirmModal = ref(false);
 const selectedExamForConfirm = ref(null);
+
+// Delete Confirmation Modal State
+const showDeleteConfirmModal = ref(false);
+const confirmModalConfig = ref({
+  title: '',
+  message: '',
+  variant: 'default',
+  onConfirm: null
+});
 
 const adminEmail = localStorage.getItem("admin_email") || localStorage.getItem("email") || "";
 
@@ -776,19 +755,26 @@ const createExam = async () => {
 };
 
 /* ================= DELETE ================= */
-const deleteExam = async (id) => {
-  if (!confirm("Delete this exam?")) return;
-
-  try {
-    const res = await axios.delete(`http://${window.location.hostname}:5000/api/admin/exam/delete/${id}`);
-    if (res.data.success) {
-      emit("toast", { message: "Exam deleted successfully!", type: "success" });
-      fetchExams();
-      fetchConducted();
+const deleteExam = (id) => {
+  confirmModalConfig.value = {
+    title: 'Delete Exam',
+    message: 'Are you sure you want to delete this exam? This action cannot be undone.',
+    variant: 'danger',
+    onConfirm: async () => {
+      try {
+        const res = await axios.delete(`http://${window.location.hostname}:5000/api/admin/exam/delete/${id}`);
+        if (res.data.success) {
+          emit("toast", { message: "Exam deleted successfully!", type: "success" });
+          fetchExams();
+          fetchConducted();
+        }
+      } catch {
+        emit("toast", { message: "Error deleting exam", type: "error" });
+      }
     }
-  } catch {
-    emit("toast", { message: "Error deleting exam", type: "error" });
-  }
+  };
+
+  showDeleteConfirmModal.value = true;
 };
 
 /* ================= ADD STUDENTS ================= */

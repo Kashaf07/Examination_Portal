@@ -299,6 +299,16 @@
       </div>
     </div>
 
+    <!-- Confirmation Modal -->
+    <ConfirmationModal
+      :is-open="showConfirmModal"
+      :title="confirmModalConfig.title"
+      :message="confirmModalConfig.message"
+      :variant="confirmModalConfig.variant"
+      @confirm="confirmModalConfig.onConfirm"
+      @close="showConfirmModal = false"
+    />
+
   </div>
 </template>
 
@@ -308,6 +318,7 @@ import { useRouter } from "vue-router";
 import axios from "@/utils/axiosInstance";
 import AddApplicantsPage from "../AddApplicantsPage.vue";
 import UploadStudents from "../UploadStudents.vue";
+import ConfirmationModal from "@/components/ConfirmationModal.vue";
 
 const emit = defineEmits(["toast"]);
 const router = useRouter();
@@ -320,6 +331,15 @@ const showAddApplicantPage = ref(false);
 const showUploadPage = ref(false);
 const filterMode = ref('active'); // 'active', 'all', or 'inactive'
 const searchQuery = ref("");
+
+// Confirmation Modal State
+const showConfirmModal = ref(false);
+const confirmModalConfig = ref({
+  title: '',
+  message: '',
+  variant: 'default',
+  onConfirm: null
+});
 
 const filteredApplicants = computed(() => {
   // First filter by active/disabled status based on filterMode
@@ -455,16 +475,31 @@ const openViewModal = (a) => {
 };
 
 // Enable/Disable
-const toggleApplicantStatus = async (applicant) => {
+const toggleApplicantStatus = (applicant) => {
   const action = applicant.Is_Active === 1 ? "disable" : "enable";
-  if (!confirm(`Are you sure you want to ${action} this student?`)) return;
-
-  await axios.put(`/admin/applicants/toggle-status/${applicant.Applicant_Id}`);
-  emit("toast", {
-    message: `Student ${action}d successfully`,
-    type: "success"
-  });
-  fetchApplicants();
+  
+  confirmModalConfig.value = {
+    title: `${action.charAt(0).toUpperCase() + action.slice(1)} Student`,
+    message: `Are you sure you want to ${action} this student?`,
+    variant: action === 'disable' ? 'danger' : 'default',
+    onConfirm: async () => {
+      try {
+        await axios.put(`/admin/applicants/toggle-status/${applicant.Applicant_Id}`);
+        emit("toast", {
+          message: `Student ${action}d successfully`,
+          type: "success"
+        });
+        fetchApplicants();
+      } catch (err) {
+        emit("toast", {
+          message: `Failed to ${action} student`,
+          type: "error"
+        });
+      }
+    }
+  };
+  
+  showConfirmModal.value = true;
 };
 
 

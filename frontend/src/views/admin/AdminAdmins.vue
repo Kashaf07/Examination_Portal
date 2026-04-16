@@ -164,12 +164,23 @@
       </div>
     </div>
 
+    <!-- Confirmation Modal -->
+    <ConfirmationModal
+      :is-open="showConfirmModal"
+      :title="confirmModalConfig.title"
+      :message="confirmModalConfig.message"
+      :variant="confirmModalConfig.variant"
+      @confirm="confirmModalConfig.onConfirm"
+      @close="showConfirmModal = false"
+    />
+
   </div>
 </template>
 
 <script setup>
 import { ref, computed, onMounted } from "vue";
 import axios from "axios";
+import ConfirmationModal from "@/components/ConfirmationModal.vue";
 
 // Parent toast emitter
 const emit = defineEmits(["toast"]);
@@ -209,6 +220,15 @@ const API = `http://${window.location.hostname}:5000/api`;
 const admins = ref([]);
 const showModal = ref(false);
 const isEdit = ref(false);
+
+// Confirmation Modal State
+const showConfirmModal = ref(false);
+const confirmModalConfig = ref({
+  title: '',
+  message: '',
+  variant: 'default',
+  onConfirm: null
+});
 
 const form = ref({
   Admin_ID: null,
@@ -273,26 +293,33 @@ const updateAdmin = async () => {
   }
 };
 
-const toggleAdminStatus = async (admin) => {
-  const action = admin.Is_Active ? "disable" : "enable"
+const toggleAdminStatus = (admin) => {
+  const action = admin.Is_Active ? "disable" : "enable";
 
-  if (!confirm(`Are you sure you want to ${action} this admin?`)) return
+  confirmModalConfig.value = {
+    title: `${action.charAt(0).toUpperCase() + action.slice(1)} Admin`,
+    message: `Are you sure you want to ${action} this admin?`,
+    variant: action === 'disable' ? 'danger' : 'default',
+    onConfirm: async () => {
+      try {
+        await axios.put(`${API}/admin/admins/toggle-status/${admin.Admin_ID}`);
+        await fetchAdmins();
 
-  try {
-    await axios.put(`${API}/admin/admins/toggle-status/${admin.Admin_ID}`)
-    await fetchAdmins()
+        emit("toast", {
+          message: `Admin ${action}d successfully`,
+          type: "success"
+        });
+      } catch (err) {
+        emit("toast", {
+          message: err.response?.data?.error || "Failed to update admin status",
+          type: "error"
+        });
+      }
+    }
+  };
 
-    emit("toast", {
-      message: `Admin ${action}d successfully`,
-      type: "success"
-    })
-  } catch (err) {
-    emit("toast", {
-      message: err.response?.data?.error || "Failed to update admin status",
-      type: "error"
-    })
-  }
-}
+  showConfirmModal.value = true;
+};
 
 // ---------------- INIT ----------------
 onMounted(fetchAdmins);
