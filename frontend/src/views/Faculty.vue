@@ -170,7 +170,7 @@
 
         <!-- Logout Button -->
         <button
-          @click="logout"
+          @click="showLogoutModal = true"
            :class="[
             'w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl transition-all duration-200 group relative',
             'bg-white hover:bg-blue-50 text-blue-500 border-2 border-blue-500 shadow-md hover:shadow-lg '
@@ -769,6 +769,36 @@ class="absolute -top-1 -right-1 text-yellow-600 text-sm flip-vertical"
   </div>
   </div>
 
+  <!-- Logout Confirmation Modal -->
+  <div
+    v-if="showLogoutModal"
+    class="fixed inset-0 z-50 flex items-center justify-center"
+  >
+    <div class="absolute inset-0 bg-black/60 backdrop-blur-md"></div>
+    <div class="relative bg-white/95 backdrop-blur-sm rounded-3xl shadow-2xl p-8 max-w-md w-full mx-4 transform transition-all">
+      <div class="text-center">
+        <h3 class="text-xl font-bold text-gray-900 mb-3">Logout</h3>
+        <p class="text-sm text-gray-600 mb-8 leading-relaxed">
+          Are you sure you want to logout?
+        </p>
+        <div class="flex gap-4">
+          <button
+            @click="showLogoutModal = false"
+            class="flex-1 py-3 bg-white text-gray-700 border border-gray-300 rounded-full hover:bg-gray-50 hover:border-gray-400 transition-all duration-300 font-semibold shadow-lg hover:shadow-xl transform hover:scale-105 active:scale-95"
+          >
+            Cancel
+          </button>
+          <button
+            @click="showLogoutModal = false; logout()"
+            class="flex-1 py-3 bg-blue-600 text-white rounded-full hover:bg-blue-700 transition-all duration-300 font-semibold shadow-lg hover:shadow-xl transform hover:scale-105 active:scale-95"
+          >
+            OK
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- ============================================================ -->
   <!-- 🔔 NOTIFICATION BELL — Fixed outside website, top-right      -->
   <!-- Stays perfectly still; never scrolls with page content       -->
@@ -1002,6 +1032,12 @@ const selectedExamForQR = ref(null)
 
 // Confirmation Modal State
 const showConfirmModal = ref(false)
+const showLogoutModal = ref(false)
+
+const handleBackButton = () => {
+  window.history.pushState(null, '', window.location.href)
+  showLogoutModal.value = true
+}
 const selectedExamForConfirm = ref(null)
 
 // Confirmation Modal State
@@ -1197,6 +1233,10 @@ onMounted(() => {
 
   activeTab.value = 'my-exams'
 
+  // Back button trap
+  history.pushState(null, '', window.location.href)
+  window.addEventListener('popstate', handleBackButton)
+
   // Add click outside listener
   document.addEventListener('click', handleClickOutside)
 })
@@ -1204,6 +1244,7 @@ onMounted(() => {
 onUnmounted(() => {
   if (countdownTimer) clearInterval(countdownTimer)
   document.removeEventListener('click', handleClickOutside)
+  window.removeEventListener('popstate', handleBackButton)
 })
 
 /* ================= METHODS ================= */
