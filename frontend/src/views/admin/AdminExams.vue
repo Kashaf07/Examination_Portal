@@ -11,6 +11,15 @@
       </button>
     </div>
 
+    <div
+      v-if="isCreating"
+      class="fixed inset-0 bg-gray-200/60 backdrop-blur-sm flex items-center justify-center z-50"
+    >
+      <div class="bg-white px-6 py-4 rounded-xl shadow-lg text-center">
+        <p class="text-lg font-semibold text-gray-700">Creating Exam...</p>
+      </div>
+    </div>
+
     <!-- ---------------- CREATE EXAM FORM ---------------- -->
     <div
       v-if="showCreateForm"
@@ -472,6 +481,7 @@ const API = `http://${window.location.hostname}:5000/api`;
 const examsList = ref([]);
 const conductedList = ref([]);
 const examStatus = ref({});
+const isCreating = ref(false)
 
 // QR Code Modal State
 const showQRModal = ref(false);
@@ -732,11 +742,13 @@ const fetchConducted = async () => {
 /* ================= CREATE EXAM ================= */
 const createExam = async () => {
   try {
+    isCreating.value = true;
     const res = await axios.post(`${API}/exam/create`, examForm.value);
 
     if (res.data.success) {
       emit("toast", { message: "Exam created successfully!", type: "success" });
       toggleCreateForm();
+      await fetchExams();
       fetchExams();
 
       examForm.value = {
@@ -751,6 +763,8 @@ const createExam = async () => {
     }
   } catch {
     emit("toast", { message: "Error creating exam", type: "error" });
+  } finally {
+    isCreating.value = false 
   }
 };
 
