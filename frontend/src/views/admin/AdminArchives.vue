@@ -60,7 +60,7 @@
               <td class="px-4 py-3 text-center">
                 <button
                   @click="viewResponses(exam.Exam_Id)"
-                  class="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg text-sm font-semibold shadow transition"
+                  class="bg-purple-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-purple-700 shadow-md hover:shadow-lg transition font-semibold"
                 >
                   View Responses
                 </button>
@@ -139,10 +139,10 @@ function goBack() {
 
 function viewResponses(id) {
   localStorage.setItem('from_page', 'archives')
-
   router.push({
     name: 'ViewResponsesAdmin',
-    params: { examId: id }
+    params: { examId: id },
+    query: { from: 'archives' }
   })
 }
 

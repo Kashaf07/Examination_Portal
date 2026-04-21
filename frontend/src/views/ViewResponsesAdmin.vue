@@ -249,7 +249,14 @@ const fetchAttempts = async () => {
 }
 
 const viewAnswers = (id) => router.push({ name: 'ViewAnswers', params: { attemptId: id } })
-const goBack = () => router.push('/admin/exams')
+const goBack = () => {
+  const from = route.query.from
+  if (from === 'archives') {
+    router.push({ name: 'AdminArchives' })
+  } else {
+    router.push('/admin/exams')
+  }
+}
 </script>
 
 <style scoped>
