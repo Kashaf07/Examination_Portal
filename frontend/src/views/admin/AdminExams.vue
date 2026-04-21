@@ -297,7 +297,7 @@
                 <th class="px-6 py-4 text-left text-sm font-bold text-gray-700">Date</th>
                 <th class="px-6 py-4 text-left text-sm font-bold text-gray-700">Total Applicants</th>
                 <th class="px-6 py-4 text-left text-sm font-bold text-gray-700">Attempted</th>
-                <th class="px-6 py-4 text-center text-sm font-bold text-gray-700">Reopen</th>
+                <th class="px-6 py-4 text-center text-sm font-bold text-gray-700">Restart</th>
                 <th class="px-6 py-4 text-center text-sm font-bold text-gray-700">Actions</th>
                 <th class="px-6 py-4 text-center text-sm font-bold text-gray-700">Archives</th>
               </tr>
@@ -321,7 +321,7 @@
                 </td>
                 <td class="px-6 py-4 text-center">
                   <button
-                    @click="navigateTo('ViewResponsesAdmin', exam.Exam_Id)"
+                    @click="router.push({ name: 'ViewResponsesAdmin', params: { examId: exam.Exam_Id }, query: { from: 'exams' }})"
                     class="bg-purple-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-purple-700 shadow-md hover:shadow-lg transition font-semibold"
                   >
                     View Responses

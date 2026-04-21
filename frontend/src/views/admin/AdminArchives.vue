@@ -138,7 +138,12 @@ function goBack() {
 }
 
 function viewResponses(id) {
-  router.push(`/exam/${id}/responses`)
+  localStorage.setItem('from_page', 'archives')
+
+  router.push({
+    name: 'ViewResponsesAdmin',
+    params: { examId: id }
+  })
 }
 
 async function unarchiveExam(id) {
