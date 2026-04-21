@@ -270,7 +270,7 @@ export default {
         return;
       }
       try {
-        const response = await fetch('`http://${window.location.hostname}:5000/api`/questions/add', {
+        const response = await fetch(`http://${window.location.hostname}:5000/api/questions/add`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
