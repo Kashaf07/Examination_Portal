@@ -154,6 +154,23 @@ def create_exam_routes(mysql):
 
         return jsonify(success=True)
 
+    @exam_bp.route("/reopen/<int:exam_id>", methods=["PUT"])
+    def reopen_exam(exam_id):
+        try:
+            cursor = mysql.connection.cursor()
+            cursor.execute("""
+                UPDATE entrance_exam
+                SET exam_status = 'OFF', was_started = 0
+                WHERE Exam_Id = %s
+            """, (exam_id,))
+            mysql.connection.commit()
+            cursor.close()
+            return jsonify(success=True)
+        except Exception as e:
+            print("❌ Reopen exam error:", e)
+            traceback.print_exc()
+            return jsonify(success=False, message="Server error"), 500
+
     # ✅ GET EXAM BY ID (FIXED)
     @exam_bp.route('/get_exam_by_id/<int:exam_id>', methods=['GET'])
     def get_exam_by_id(exam_id):

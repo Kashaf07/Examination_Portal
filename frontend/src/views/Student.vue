@@ -1,19 +1,68 @@
 <template>
-  <!-- Student Info Box - Fixed Position -->
-  <div class="fixed top-4 right-6 z-50 group">
-    <div class="bg-white px-6 py-3 rounded-2xl shadow-lg border-2 border-black text-base font-semibold text-indigo-800 cursor-default transition-all duration-300 hover:shadow-xl hover:scale-105">
-      👤 {{ studentName || studentEmail }}
-    </div>
-    
-    <!-- Email Tooltip -->
-    <div class="absolute top-full right-0 mt-2 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 transform translate-y-2 group-hover:translate-y-0">
-      <div class="bg-gradient-to-r from-emerald-500 to-teal-600 text-white px-4 py-3 rounded-xl shadow-2xl border border-emerald-300 min-w-max relative">
-        <div class="absolute -top-2 right-4 w-4 h-4 bg-emerald-500 transform rotate-45 border-l border-t border-emerald-300"></div>
-        <div class="relative z-10">
-          <div class="text-xs font-medium text-emerald-100 mb-1">📧 Email Address</div>
-          <div class="text-sm font-bold text-white tracking-wide">{{ studentEmail }}</div>
+  <!-- Student Info Box + Logout - Fixed Position -->
+  <div class="fixed top-4 right-6 z-50 flex flex-col items-end gap-4">
+    <!-- Name/Email box -->
+    <div class="group relative">
+      <div class="bg-white/90 backdrop-blur-sm px-5 py-2.5 rounded-2xl shadow-md border border-indigo-100 text-base font-semibold text-indigo-700 cursor-default transition-all duration-300 hover:shadow-lg">
+        👤 {{ studentName || studentEmail }}
+      </div>
+      <!-- Email Tooltip -->
+      <div class="absolute top-full right-0 mt-2 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 transform translate-y-1 group-hover:translate-y-0 z-50">
+        <div class="bg-gradient-to-r from-emerald-500 to-teal-600 text-white px-4 py-3 rounded-xl shadow-2xl min-w-max relative">
+          <div class="absolute -top-2 right-4 w-4 h-4 bg-emerald-500 transform rotate-45"></div>
+          <div class="relative z-10">
+            <div class="text-xs font-medium text-emerald-100 mb-1">📧 Email Address</div>
+            <div class="text-sm font-bold text-white tracking-wide">{{ studentEmail }}</div>
+          </div>
         </div>
-        <div class="absolute inset-0 bg-gradient-to-r from-white/10 to-transparent rounded-xl"></div>
+      </div>
+    </div>
+
+    <!-- Spacer so logout clears the tooltip -->
+    <div class="h-6"></div>
+
+    <!-- Logout icon button — only on enter stage -->
+    <button
+      v-if="stage === 'enter'"
+      @click="showLogoutConfirm = true"
+      class="logout-btn bg-white/90 backdrop-blur-sm w-14 h-14 rounded-2xl shadow-lg border border-gray-200 flex items-center justify-center hover:bg-red-50 hover:border-red-200 hover:shadow-xl transition-all duration-200 group/btn relative"
+      title="Logout"
+    >
+      <svg class="w-6 h-6 text-gray-500 group-hover/btn:text-red-500 transition-colors duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+      </svg>
+      <!-- One-time "Logout" label tooltip -->
+      <span
+        v-if="showLogoutHint"
+        class="absolute right-full mr-3 top-1/2 -translate-y-1/2 bg-gray-900 text-white text-xs font-semibold px-3 py-1.5 rounded-lg whitespace-nowrap shadow-lg pointer-events-none logout-hint"
+      >
+        Logout
+        <span class="absolute right-[-5px] top-1/2 -translate-y-1/2 w-0 h-0 border-t-4 border-b-4 border-l-4 border-transparent border-l-gray-900"></span>
+      </span>
+    </button>
+  </div>
+
+  <!-- Logout Confirmation Modal -->
+  <div
+    v-if="showLogoutConfirm"
+    class="fixed inset-0 z-[9999] flex items-center justify-center bg-black/40 backdrop-blur-sm"
+  >
+    <div class="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-sm mx-4">
+      <h3 class="text-lg font-bold text-gray-900 mb-2">Logout</h3>
+      <p class="text-sm text-gray-500 mb-7">Are you sure you want to logout?</p>
+      <div class="flex gap-3">
+        <button
+          @click="showLogoutConfirm = false"
+          class="flex-1 py-2.5 rounded-xl border border-gray-300 text-gray-600 font-semibold text-sm hover:bg-gray-50 transition"
+        >
+          Cancel
+        </button>
+        <button
+          @click="confirmLogout"
+          class="flex-1 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-sm transition"
+        >
+          Logout
+        </button>
       </div>
     </div>
   </div>
@@ -138,7 +187,10 @@ export default {
       // ── System monitoring: battery and WiFi ──
       batteryLevel: 100,
       isOnline: navigator.onLine,
-      batteryMonitor: null
+      batteryMonitor: null,
+
+      showLogoutConfirm: false,
+      showLogoutHint: false
     }
   },
 
@@ -162,9 +214,15 @@ export default {
 
 
   mounted() {
-    this.studentEmail = localStorage.getItem('student_email')
-    this.studentName  = localStorage.getItem('student_name')
+    this.studentEmail = localStorage.getItem('student_email') || localStorage.getItem('email') || ''
+    this.studentName  = localStorage.getItem('student_name')  || localStorage.getItem('name')  || ''
     this.applicantId  = parseInt(localStorage.getItem('applicant_id'))
+
+    // Show logout hint for 2s on first load
+    setTimeout(() => {
+      this.showLogoutHint = true
+      setTimeout(() => { this.showLogoutHint = false }, 2000)
+    }, 800)
 
     window.addEventListener('keydown',          this.handleKeydown)
     window.addEventListener('focus',            this.cancelOutsideCountdown)
@@ -224,6 +282,12 @@ export default {
   },
 
   methods: {
+
+    confirmLogout() {
+      this.showLogoutConfirm = false
+      localStorage.clear()
+      this.$router.push('/')
+    },
 
     // ─── Battery Monitoring ───────────────────────────────────────────────────
     async startBatteryMonitoring() {
@@ -958,3 +1022,28 @@ clearInlineMessage() {
   }  
 }
 </script>
+
+<style scoped>
+/* Logout button pop-in */
+@keyframes popIn {
+  0%   { opacity: 0; transform: scale(0.5); }
+  70%  { transform: scale(1.1); }
+  100% { opacity: 1; transform: scale(1); }
+}
+
+.logout-btn {
+  animation: popIn 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) 1.2s both;
+}
+
+/* Hint label fade in/out */
+@keyframes hintFade {
+  0%   { opacity: 0; transform: translateY(-50%) translateX(6px); }
+  15%  { opacity: 1; transform: translateY(-50%) translateX(0); }
+  80%  { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+.logout-hint {
+  animation: hintFade 2s ease forwards;
+}
+</style>

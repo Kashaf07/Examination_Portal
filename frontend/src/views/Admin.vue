@@ -1,5 +1,5 @@
 <template>
-  <div class="min-h-screen flex" style="background: linear-gradient(to bottom right, #E3F2FD, #F3E5F5, #FCE4EC);">
+  <div class="h-screen overflow-hidden flex" style="background: linear-gradient(to bottom right, #E3F2FD, #F3E5F5, #FCE4EC);">
 
     <!-- Sidebar -->
     <aside
@@ -26,9 +26,7 @@
 
           <template v-else>
             <div class="flex items-center gap-3 overflow-hidden">
-              <div class="w-9 h-9 bg-gradient-to-br from-blue-500 to-indigo-600 text-white flex items-center justify-center rounded-full font-bold">
-                {{ adminInitial }}
-              </div>
+              <ProfilePicUpload :initial="adminInitial" />
               <div class="leading-tight truncate">
                 <p class="font-semibold text-gray-800 text-sm truncate">
                   {{ adminName }}
@@ -125,7 +123,7 @@
 
         <!-- Logout -->
         <button
-          @click="logout"
+          @click="showLogoutModal = true"
           :class="[
             'w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl transition-all duration-200 group relative',
             'bg-white hover:bg-blue-50 text-blue-500 border-2 border-blue-500 shadow-md hover:shadow-lg '
@@ -150,7 +148,7 @@
     </aside>
 
     <!-- Main -->
-    <main :class="['flex-1 transition-all duration-300', sidebarOpen ? 'ml-64' : 'ml-20']">
+    <main :class="['flex-1 transition-all duration-300 h-screen overflow-y-auto', sidebarOpen ? 'ml-64' : 'ml-20']">
       <div class="px-8 py-6">
 
         <!-- Dashboard -->
@@ -204,6 +202,36 @@
       :exam-name="selectedExamForQR?.name || ''"
       @close="closeQRModal"
     />
+  </div>
+
+  <!-- Logout Confirmation Modal -->
+  <div
+    v-if="showLogoutModal"
+    class="fixed inset-0 z-[9999] flex items-center justify-center"
+  >
+    <div class="absolute inset-0 bg-black/60 backdrop-blur-md"></div>
+    <div class="relative bg-white/95 backdrop-blur-sm rounded-3xl shadow-2xl p-8 max-w-md w-full mx-4 transform transition-all">
+      <div class="text-center">
+        <h3 class="text-xl font-bold text-gray-900 mb-3">Logout</h3>
+        <p class="text-sm text-gray-600 mb-8 leading-relaxed">
+          Are you sure you want to logout?
+        </p>
+        <div class="flex gap-4">
+          <button
+            @click="showLogoutModal = false"
+            class="flex-1 py-3 bg-white text-gray-700 border border-gray-300 rounded-full hover:bg-gray-50 hover:border-gray-400 transition-all duration-300 font-semibold shadow-lg hover:shadow-xl transform hover:scale-105 active:scale-95"
+          >
+            Cancel
+          </button>
+          <button
+            @click="showLogoutModal = false; logout()"
+            class="flex-1 py-3 bg-blue-600 text-white rounded-full hover:bg-blue-700 transition-all duration-300 font-semibold shadow-lg hover:shadow-xl transform hover:scale-105 active:scale-95"
+          >
+            OK
+          </button>
+        </div>
+      </div>
+    </div>
   </div>
 
   <!-- ============================================================ -->
@@ -348,6 +376,7 @@ import { useRouter, useRoute } from "vue-router";
 import NotificationToast from "@/components/admin/NotificationToast.vue";
 import QRCodeModal from "@/components/QRCodeModal.vue";
 import { authApi } from "@/services/adminApi.js";
+import ProfilePicUpload from "@/components/ProfilePicUpload.vue";
 
 const router = useRouter();
 const now = ref(new Date())
@@ -483,12 +512,14 @@ onUnmounted(() => {
   if (notificationTimer) clearInterval(notificationTimer)
   if (countdownTimer) clearInterval(countdownTimer)
   document.removeEventListener('click', handleClickOutside)
+  window.removeEventListener('popstate', handleBackButton)
 })
 
 
 onMounted(() => {
   // Arm the back-button trap ONCE at the layout level
   history.pushState(null, '', window.location.href)
+  window.addEventListener('popstate', handleBackButton)
   activeTab.value = getAdminTabFromPath(route.path)
   checkFacultyRole()
 
@@ -556,6 +587,13 @@ const handleToast = (data) => {
   timer = setTimeout(() => toast.value = { message: "", type: "" }, 3000)
 }
 const clearToast = () => toast.value = { message: "", type: "" }
+
+const showLogoutModal = ref(false)
+
+const handleBackButton = () => {
+  window.history.pushState(null, '', window.location.href)
+  showLogoutModal.value = true
+}
 
 const logout = async () => {
   const email = localStorage.getItem("email");

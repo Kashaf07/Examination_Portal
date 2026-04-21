@@ -238,28 +238,23 @@
 import { ref, onMounted, onUnmounted, computed } from "vue";
 import axios from "axios";
 import ConfirmationModal from "@/components/ConfirmationModal.vue";
-import { useRouter } from 'vue-router'
+import { useRouter, useRoute } from 'vue-router'
 import { watch } from 'vue'
 
 onMounted(() => {
   fetchFaculty();
   fetchSchools();
   fetchDesignations();
-  // DELETE THIS LINE from AdminFaculty.vue (and all other admin child views)
-  window.history.pushState(null, '', window.location.href)
-  window.addEventListener('popstate', handleBack)
 });
 
 onUnmounted(() => {
-  window.removeEventListener('popstate', handleBack)
 });
 
 const router = useRouter();
+const route = useRoute();
 
 watch(() => route.path, (newPath) => {
-  if (newPath.includes('/admin/faculty')) {
-    window.history.pushState(null, '', window.location.href)
-  }
+  // intentionally empty - back button handled by Admin.vue layout
 })
 
 // PARENT TOAST CONNECT
@@ -294,34 +289,6 @@ const filteredFaculty = computed(() => {
   }
   return facultyList.value;
 });
-
-const handleBack = async () => {
-  const confirmLogout = confirm("Do you want to logout?")
-
-  if (confirmLogout) {
-    await logout()   // ✅ NOW IT WORKS
-  } else {
-    // Stay on page
-    window.history.pushState(null, '', window.location.href)
-  }
-}
-
-const logout = async () => {
-  const email = localStorage.getItem("email");
-
-  if (email) {
-    try {
-      await axios.post(`http://${window.location.hostname}:5000/api/admin/logout`, {
-        email: email
-      });
-    } catch (error) {
-      console.error("Logout logging failed:", error);
-    }
-  }
-
-  localStorage.clear();
-  router.replace('/');
-};
 
 // Auto Assign Role
 const autoAssignRole = () => {
