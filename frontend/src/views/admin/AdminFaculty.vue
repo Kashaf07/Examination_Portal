@@ -238,7 +238,7 @@
 import { ref, onMounted, onUnmounted, computed } from "vue";
 import axios from "axios";
 import ConfirmationModal from "@/components/ConfirmationModal.vue";
-import { useRouter } from 'vue-router'
+import { useRouter, useRoute } from 'vue-router'
 import { watch } from 'vue'
 
 onMounted(() => {
@@ -251,6 +251,7 @@ onUnmounted(() => {
 });
 
 const router = useRouter();
+const route = useRoute();
 
 watch(() => route.path, (newPath) => {
   // intentionally empty - back button handled by Admin.vue layout

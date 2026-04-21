@@ -151,6 +151,8 @@ def get_admin_notifications():
             CONCAT(e.Exam_Date, ' ', e.Exam_Time),
             '%Y-%m-%d %H:%i:%s'
         ) > NOW()
+        AND (e.was_started = 0 OR e.exam_status = 'ON')
+        AND e.exam_status != 'DELETED'
     ORDER BY
         STR_TO_DATE(
             CONCAT(e.Exam_Date, ' ', e.Exam_Time),

@@ -1,6 +1,6 @@
 <template>
   <div class="container-wrapper">
-    <div class="min-h-screen flex" style="background: linear-gradient(to bottom right, #E3F2FD, #F3E5F5, #FCE4EC);">
+    <div class="h-screen overflow-hidden flex" style="background: linear-gradient(to bottom right, #E3F2FD, #F3E5F5, #FCE4EC);">
 
     <!-- Sidebar -->
     <aside
@@ -42,9 +42,7 @@
           <!-- When Open: Show Avatar + Name and Hamburger -->
           <template v-else>
             <div class="flex items-center gap-3 overflow-hidden">
-              <div class="w-9 h-9 bg-gradient-to-br from-blue-500 to-indigo-600 text-white flex items-center justify-center rounded-full font-bold shrink-0 shadow-md">
-                {{ facultyInitial }}
-              </div>
+              <ProfilePicUpload :initial="facultyInitial" />
 
               <div class="leading-tight truncate">
                 <p class="font-semibold text-gray-800 text-sm truncate">
@@ -195,7 +193,7 @@
     <!-- Main Content -->
     <main 
       :class="[
-        'flex-1 transition-all duration-300',
+        'flex-1 transition-all duration-300 h-screen overflow-y-auto',
         sidebarOpen ? 'ml-64' : 'ml-20'
       ]"
     >
@@ -208,9 +206,9 @@
           class="flex items-center justify-center min-h-[80vh]"
         >
           <div class="text-center">
-            <div class="mb-6">
-              <div class="w-24 h-24 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-full flex items-center justify-center mx-auto shadow-2xl">
-                <span class="text-4xl text-white font-bold">{{ facultyInitial }}</span>
+            <div class="mb-6 flex justify-center">
+              <div class="w-24 h-24 rounded-full overflow-hidden bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shadow-2xl">
+                <ProfilePicUpload :initial="facultyInitial" style="width:96px;height:96px;" />
               </div>
             </div>
             <h1 class="text-4xl font-bold text-gray-800 mb-4">
@@ -381,193 +379,114 @@
 
             <!-- Exam Tables Only Visible When on Dashboard -->
             <div v-if="currentTab === 'Dashboard'" class="w-full">
-              <!-- Created Exams Table -->
+                <!-- Created Exams Cards -->
               <div v-if="createdExams.length" class="mt-8">
                 <h2 class="text-2xl font-semibold mb-4 text-gray-800">Created Exams</h2>
-                <div class="bg-white rounded-xl shadow-lg overflow-hidden">
-                  <div class="overflow-x-auto">
-                  <table class="min-w-full">
+                <div class="space-y-3">
+                  <div
+                    v-for="exam in createdExams"
+                    :key="exam.Exam_Id"
+                    class="bg-white rounded-2xl shadow-md border border-gray-100 px-5 py-4 hover:shadow-lg transition-shadow"
+                  >
+                    <!-- Row 1: Name + toggle + ON/OFF label + delete -->
+                    <div class="flex items-center gap-3 mb-3">
+                      <h3 class="text-lg font-bold text-gray-900 leading-snug">{{ exam.Exam_Name }}</h3>
+                      <div class="flex items-center gap-1.5 shrink-0">
+                        <button
+                          @click="toggleExamStatus(exam)"
+                          :class="['relative inline-flex h-6 w-11 items-center rounded-full transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2', exam.exam_status === 'ON' ? 'bg-green-600' : 'bg-gray-300']"
+                        >
+                          <span :class="['inline-block h-4 w-4 transform rounded-full bg-white transition-transform duration-200', exam.exam_status === 'ON' ? 'translate-x-6' : 'translate-x-1']" />
+                        </button>
+                        <span :class="['text-xs font-bold w-6', exam.exam_status === 'ON' ? 'text-green-600' : 'text-gray-400']">
+                          {{ exam.exam_status === 'ON' ? 'ON' : 'OFF' }}
+                        </span>
+                      </div>
+                      <div class="flex-1"></div>
+                      <button
+                        @click="deleteExam(exam.Exam_Id)"
+                        class="inline-flex items-center justify-center w-8 h-8 bg-red-500 hover:bg-red-600 rounded-lg transition-all shadow hover:scale-110 shrink-0"
+                        title="Delete Exam"
+                      >
+                        <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                        </svg>
+                      </button>
+                    </div>
 
-<!-- TABLE HEADER -->
-<thead class="bg-gradient-to-r from-blue-50 to-indigo-50">
-<tr>
-<th class="px-3 py-4 text-left text-sm font-bold text-gray-700">Exam Name</th>
-<th class="px-3 py-4 text-left text-sm font-bold text-gray-700">Date</th>
-<th class="px-3 py-4 text-left text-sm font-bold text-gray-700">Time</th>
-<th class="px-3 py-4 text-left text-sm font-bold text-gray-700">Duration</th>
-<th class="px-2 py-4 text-left text-sm font-bold text-gray-700">Questions</th>
-<th class="px-2 py-4 text-left text-sm font-bold text-gray-700">Max Marks</th>
-<th class="px-2 py-4 text-center text-sm font-bold text-gray-700">QR Code</th>
-<th class="px-6 py-4 text-center text-sm font-bold text-gray-700">Actions</th>
-<th class="px-2 py-4 text-center text-sm font-bold text-gray-700">Delete</th>
-<th class="px-4 py-4 text-center text-sm font-bold text-gray-700">Exam Status</th>
-</tr>
-</thead>
+                    <!-- Row 2: Meta columns + 3 action buttons flush -->
+                    <div class="flex items-stretch gap-0 border border-gray-200 rounded-xl overflow-hidden bg-gray-50">
+                      <div class="flex items-stretch divide-x divide-gray-200 flex-1">
+                        <div class="flex flex-col justify-center px-3 py-2">
+                          <span class="text-[10px] font-bold text-gray-400 uppercase tracking-wide whitespace-nowrap">Date</span>
+                          <span class="text-sm font-bold text-gray-900 mt-0.5 whitespace-nowrap">{{ exam.Exam_Date }}</span>
+                        </div>
+                        <div class="flex flex-col justify-center px-3 py-2">
+                          <span class="text-[10px] font-bold text-gray-400 uppercase tracking-wide whitespace-nowrap">Time</span>
+                          <span class="text-sm font-bold text-gray-900 mt-0.5 whitespace-nowrap">{{ exam.Exam_Time }}</span>
+                        </div>
+                        <div class="flex flex-col justify-center px-3 py-2">
+                          <span class="text-[10px] font-bold text-gray-400 uppercase tracking-wide whitespace-nowrap">Duration</span>
+                          <span class="text-sm font-bold text-gray-900 mt-0.5 whitespace-nowrap">{{ exam.Duration_Minutes }} min</span>
+                        </div>
+                        <div class="flex flex-col justify-center px-3 py-2">
+                          <span class="text-[10px] font-bold text-gray-400 uppercase tracking-wide whitespace-nowrap">Questions</span>
+                          <span class="text-sm font-bold text-gray-900 mt-0.5">{{ exam.Total_Questions }}</span>
+                        </div>
+                        <div class="flex flex-col justify-center px-3 py-2">
+                          <span class="text-[10px] font-bold text-gray-400 uppercase tracking-wide whitespace-nowrap">Max Marks</span>
+                          <span class="text-sm font-bold text-gray-900 mt-0.5">{{ exam.Max_Marks }}</span>
+                        </div>
+                        <div class="flex flex-col justify-center px-3 py-2">
+                          <span class="text-[10px] font-bold text-gray-400 uppercase tracking-wide whitespace-nowrap">QR Code</span>
+                          <button
+                            @click="openQRModal(exam.Exam_Id, exam.Exam_Name)"
+                            class="mt-1 inline-flex items-center justify-center w-7 h-7 bg-indigo-500 hover:bg-indigo-600 rounded-lg transition-all shadow hover:scale-110"
+                            title="Generate QR Code"
+                          >
+                            <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z" />
+                            </svg>
+                          </button>
+                        </div>
+                      </div>
 
-<!-- TABLE BODY -->
-<tbody class="divide-y divide-gray-200">
+                      <div class="w-px bg-gray-300"></div>
 
-<tr v-for="exam in createdExams" :key="exam.Exam_Id" class="hover:bg-gray-50 transition">
-
-<td class="px-3 py-4 text-sm text-gray-800 font-medium">
-  <div class="leading-tight">
-    <div v-for="(word, index) in exam.Exam_Name.split(' ')" :key="index" class="block">
-      {{ word }}
-    </div>
-  </div>
-</td>
-
-<td class="px-3 py-4 text-sm text-gray-600">
-{{ exam.Exam_Date }}
-</td>
-
-<td class="px-3 py-4 text-sm text-gray-600">
-{{ exam.Exam_Time }}
-</td>
-
-<td class="px-3 py-4 text-sm text-gray-600">
-{{ exam.Duration_Minutes }} min
-</td>
-
-<td class="px-2 py-4 text-sm text-gray-600 text-center">
-{{ exam.Total_Questions }}
-</td>
-
-<td class="px-2 py-4 text-sm text-gray-600 text-center">
-{{ exam.Max_Marks }}
-</td>
-
-<!-- QR -->
-<td class="px-2 py-4 text-center">
-  <button
-    @click="openQRModal(exam.Exam_Id, exam.Exam_Name)"
-    class="inline-flex items-center justify-center w-10 h-10 bg-indigo-500 hover:bg-indigo-600 rounded-lg transition-all duration-200 shadow-md hover:shadow-lg hover:scale-110"
-    title="Generate QR Code"
-  >
-    <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z" />
-    </svg>
-  </button>
-</td>
-
-<!-- Actions -->
-<td class="px-6 py-4">
-<div class="flex items-center justify-center gap-3">
-
-<!-- Add Students -->
-<div class="relative">
-<button
-@click.stop="addStudents(exam.Exam_Id)"
-class="bg-blue-400 hover:bg-blue-500 text-white px-3.5 py-2 rounded-lg text-xs font-semibold shadow-md hover:shadow-lg transition hover:scale-105 whitespace-nowrap"
->
-Add Students
-</button>
-
-<span
-v-if="hasAssignedStudents(exam)"
-class="absolute -top-1 -right-1 text-green-600 text-xs font-bold border-2 border-green-500 bg-white rounded-full w-[18px] h-[18px] flex items-center justify-center shadow"
->
-✔
-</span>
-
-<span
-v-else
-class="absolute -top-1 -right-1 text-yellow-600 text-sm flip-vertical"
->
-⏳
-</span>
-</div>
-
-<!-- Question Bank -->
-<div class="relative">
-<button
-@click="navigateTo('AddQuestion', exam.Exam_Id)"
-class="bg-green-500 hover:bg-green-600 text-white px-3.5 py-2 rounded-lg text-xs font-semibold shadow-md hover:shadow-lg transition hover:scale-105 whitespace-nowrap"
->
-Question Bank
-</button>
-
-<span
-v-if="hasQuestionBank(exam)"
-class="absolute -top-1 -right-1 text-green-600 text-xs font-bold border-2 border-green-500 bg-white rounded-full w-[18px] h-[18px] flex items-center justify-center shadow"
->
-✔
-</span>
-
-<span
-v-else
-class="absolute -top-1 -right-1 text-yellow-600 text-sm flip-vertical"
->
-⏳
-</span>
-</div>
-
-<!-- Question Paper -->
-<div class="relative">
-<button
-@click="navigateTo('MakeQuestionPaper', exam.Exam_Id)"
-class="bg-purple-500 hover:bg-purple-600 text-white px-3.5 py-2 rounded-lg text-xs font-semibold shadow-md hover:shadow-lg transition hover:scale-105 whitespace-nowrap"
->
-Question Paper
-</button>
-
-<span
-v-if="hasQuestionPaper(exam)"
-class="absolute -top-1 -right-1 text-green-600 text-xs font-bold border-2 border-green-500 bg-white rounded-full w-[18px] h-[18px] flex items-center justify-center shadow"
->
-✔
-</span>
-
-<span
-v-else
-class="absolute -top-1 -right-1 text-yellow-600 text-sm flip-vertical"
->
-⏳
-</span>
-</div>
-
-</div>
-</td>
-<!-- Delete -->
-<td class="px-2 py-4 text-center">
-  <button
-    @click="deleteExam(exam.Exam_Id)"
-    class="inline-flex items-center justify-center w-10 h-10 bg-red-500 hover:bg-red-600 rounded-lg transition-all duration-200 shadow-md hover:shadow-lg hover:scale-110"
-    title="Delete Exam"
-  >
-    <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-    </svg>
-  </button>
-</td>
-
-<!-- Status -->
-<td class="px-4 py-4 text-center">
-  <button
-    @click="toggleExamStatus(exam)"
-    :class="[
-      'relative inline-flex h-6 w-11 items-center rounded-full transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2',
-      exam.exam_status === 'ON'
-        ? 'bg-green-600'
-        : 'bg-gray-300'
-    ]"
-  >
-    <span
-      :class="[
-        'inline-block h-4 w-4 transform rounded-full bg-white transition-transform duration-200 ease-in-out',
-        exam.exam_status === 'ON'
-          ? 'translate-x-6'
-          : 'translate-x-1'
-      ]"
-    />
-  </button>
-</td>
-
-</tr>
-
-</tbody>
-
-</table>
+                      <!-- 3 action buttons -->
+                      <div class="flex items-center divide-x divide-gray-200">
+                        <div class="relative flex items-center justify-center px-3 py-2">
+                          <button
+                            @click.stop="addStudents(exam.Exam_Id)"
+                            class="bg-blue-400 hover:bg-blue-500 text-white px-3 py-1.5 rounded-lg text-sm font-semibold shadow transition-all hover:scale-105 whitespace-nowrap"
+                          >Add Students</button>
+                          <span v-if="hasAssignedStudents(exam)" class="absolute top-1 right-1 border-2 border-green-500 bg-white rounded-full w-[16px] h-[16px] flex items-center justify-center shadow">
+                            <svg class="w-2.5 h-2.5 text-green-600" fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+                          </span>
+                          <span v-else class="absolute top-1 right-1 text-base leading-none flip-vertical">⏳</span>
+                        </div>
+                        <div class="relative flex items-center justify-center px-3 py-2">
+                          <button
+                            @click="navigateTo('AddQuestion', exam.Exam_Id)"
+                            class="bg-green-500 hover:bg-green-600 text-white px-3 py-1.5 rounded-lg text-sm font-semibold shadow transition-all hover:scale-105 whitespace-nowrap"
+                          >Question Bank</button>
+                          <span v-if="hasQuestionBank(exam)" class="absolute top-1 right-1 border-2 border-green-500 bg-white rounded-full w-[16px] h-[16px] flex items-center justify-center shadow">
+                            <svg class="w-2.5 h-2.5 text-green-600" fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+                          </span>
+                          <span v-else class="absolute top-1 right-1 text-base leading-none flip-vertical">⏳</span>
+                        </div>
+                        <div class="relative flex items-center justify-center px-3 py-2">
+                          <button
+                            @click="navigateTo('MakeQuestionPaper', exam.Exam_Id)"
+                            class="bg-purple-500 hover:bg-purple-600 text-white px-3 py-1.5 rounded-lg text-sm font-semibold shadow transition-all hover:scale-105 whitespace-nowrap"
+                          >Question Paper</button>
+                          <span v-if="hasQuestionPaper(exam)" class="absolute top-1 right-1 border-2 border-green-500 bg-white rounded-full w-[16px] h-[16px] flex items-center justify-center shadow">
+                            <svg class="w-2.5 h-2.5 text-green-600" fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+                          </span>
+                          <span v-else class="absolute top-1 right-1 text-base leading-none flip-vertical">⏳</span>
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -579,17 +498,15 @@ class="absolute -top-1 -right-1 text-yellow-600 text-sm flip-vertical"
               <div v-if="conductedExams && conductedExams.length" class="mt-12 w-full">
                 <h2 class="text-2xl font-semibold mb-4 text-gray-800">Conducted Exams</h2>
                 <div class="w-full bg-white rounded-xl shadow-lg overflow-hidden">
-                  
-                  <!-- SEARCH FILTER INPUT -->
-              <div class="p-6 pb-0">
-  <input
-    v-model="conductedSearchQuery"
-    placeholder="🔍 Search exams..."
-    class="w-full max-w-xs px-4 py-3 rounded-xl border-2 border-black bg-purple-50
-           focus:bg-white focus:ring-2 focus:ring-blue-400 outline-none transition 
-           text-sm font-medium placeholder:text-gray-600"
-  />
-</div>
+                  <div class="p-6 pb-0">
+                    <input
+                      v-model="conductedSearchQuery"
+                      placeholder="🔍 Search exams..."
+                      class="w-full max-w-xs px-4 py-3 rounded-xl border-2 border-black bg-purple-50
+                             focus:bg-white focus:ring-2 focus:ring-blue-400 outline-none transition
+                             text-sm font-medium placeholder:text-gray-600"
+                    />
+                  </div>
                   <div class="overflow-x-auto">
                     <table class="min-w-full">
                       <thead class="bg-gradient-to-r from-blue-50 to-indigo-50">
@@ -598,21 +515,27 @@ class="absolute -top-1 -right-1 text-yellow-600 text-sm flip-vertical"
                           <th class="px-6 py-4 text-left text-sm font-bold text-gray-700">Date</th>
                           <th class="px-6 py-4 text-left text-sm font-bold text-gray-700">Total Applicants</th>
                           <th class="px-6 py-4 text-left text-sm font-bold text-gray-700">Attempted</th>
+                          <th class="px-6 py-4 text-center text-sm font-bold text-gray-700">Reopen</th>
                           <th class="px-6 py-4 text-center text-sm font-bold text-gray-700">Actions</th>
                         </tr>
                       </thead>
                       <tbody class="divide-y divide-gray-200">
                         <tr v-for="exam in paginatedConductedExams" :key="exam.Exam_Id" class="hover:bg-gray-50 transition">
-                          <td class="px-6 py-4 text-sm text-gray-800 font-medium">
-                            <div class="leading-tight">
-                              <div v-for="(word, index) in (exam.Exam_Name || 'N/A').split(' ')" :key="index" class="block">
-                                {{ word }}
-                              </div>
-                            </div>
-                          </td>
-                          <td class="px-6 py-4 text-sm text-gray-600">{{ formatDate(exam.Exam_Date) }}</td>
+                          <td class="px-6 py-4 text-sm text-gray-800 font-medium whitespace-nowrap">{{ exam.Exam_Name || 'N/A' }}</td>
+                          <td class="px-6 py-4 text-sm text-gray-600 whitespace-nowrap">{{ formatDate(exam.Exam_Date) }}</td>
                           <td class="px-6 py-4 text-sm text-gray-600">{{ exam.total_applicants || 0 }}</td>
                           <td class="px-6 py-4 text-sm text-gray-600">{{ exam.attempted_applicants || 0 }}</td>
+                          <td class="px-6 py-4 text-center">
+                            <button
+                              @click="reopenExam(exam)"
+                              class="inline-flex items-center justify-center w-9 h-9 bg-teal-500 hover:bg-teal-600 text-white rounded-lg shadow transition-all hover:scale-110"
+                              title="Reopen Exam"
+                            >
+                              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                              </svg>
+                            </button>
+                          </td>
                           <td class="px-6 py-4 text-center">
                             <button
                               @click="navigateTo('ViewResponsesFaculty', exam.Exam_Id)"
@@ -934,6 +857,7 @@ import Groups from './Groups.vue'
 import QRCodeModal from '../components/QRCodeModal.vue'
 import NotificationToast from "@/components/admin/NotificationToast.vue"
 import ConfirmationModal from '@/components/ConfirmationModal.vue'
+import ProfilePicUpload from '@/components/ProfilePicUpload.vue'
 
 const now = ref(new Date())
 let countdownTimer = null
@@ -959,50 +883,47 @@ let timer
 
 
 const toggleExamStatus = async (exam) => {
-  // If turning ON, do it immediately
   if (exam.exam_status === "OFF") {
+    exam.exam_status = "ON"
     try {
-      const res = await axios.put(`/exam/toggle/${exam.Exam_Id}`, {
-        status: "ON"
-      })
-
-      if (res.data.success) {
-        exam.exam_status = "ON"
-        showToast("Exam turned ON", "success")
-        fetchExamsAndCategorize()
-      }
-
+      await axios.put(`/exam/toggle/${exam.Exam_Id}`, { status: "ON" })
+      showToast("Exam turned ON", "success")
+      fetchExamsAndCategorize()
     } catch (err) {
-      console.error("Toggle failed", err)
+      exam.exam_status = "OFF"
       showToast("Failed to update exam status", "error")
     }
   } else {
-    // If turning OFF, show confirmation modal
     selectedExamForConfirm.value = exam
     showConfirmModal.value = true
   }
 }
 
 const confirmTurnOff = async () => {
-  try {
-    const res = await axios.put(`/exam/toggle/${selectedExamForConfirm.value.Exam_Id}`, {
-      status: "OFF"
-    })
+  const exam = selectedExamForConfirm.value
+  showConfirmModal.value = false
+  selectedExamForConfirm.value = null
 
+  exam.exam_status = "OFF"
+  try {
+    await axios.put(`/exam/toggle/${exam.Exam_Id}`, { status: "OFF" })
+    showToast("Exam turned OFF", "success")
+    fetchExamsAndCategorize()
+  } catch (err) {
+    exam.exam_status = "ON"
+    showToast("Failed to update exam status", "error")
+  }
+}
+
+const reopenExam = async (exam) => {
+  try {
+    const res = await axios.put(`/exam/reopen/${exam.Exam_Id}`)
     if (res.data.success) {
-      selectedExamForConfirm.value.exam_status = "OFF"
-      showToast("Exam turned OFF", "success")
+      showToast("Exam reopened successfully!", "success")
       fetchExamsAndCategorize()
     }
-
-    showConfirmModal.value = false
-    selectedExamForConfirm.value = null
-
-  } catch (err) {
-    console.error("Toggle failed", err)
-    showToast("Failed to update exam status", "error")
-    showConfirmModal.value = false
-    selectedExamForConfirm.value = null
+  } catch {
+    showToast("Error reopening exam", "error")
   }
 }
 
@@ -1343,34 +1264,16 @@ const deleteExam = async (examId) => {
 
 const executeDeleteExam = async (examId) => {
   try {
-    const res = await axios.delete(
-      `/faculty/exam/delete/${examId}`,
-      {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem("token")}`
-        }
-      }
-    )
-
+    const res = await axios.delete(`/admin/exam/delete/${examId}`)
     if (res.data.success) {
       fetchExamsAndCategorize()
-      toast.value = { message: "Exam deleted successfully!", type: "success" };
-      setTimeout(() => {
-        toast.value = { message: "", type: "" };
-      }, 3000);
+      showToast("Exam deleted successfully!", "success")
     } else {
-      toast.value = { message: res.data.message || "Failed to delete exam", type: "error" };
-      setTimeout(() => {
-        toast.value = { message: "", type: "" };
-      }, 4000);
+      showToast(res.data.message || "Failed to delete exam", "error")
     }
-
   } catch (err) {
     console.error("Delete failed", err)
-    toast.value = { message: "Failed to delete exam", type: "error" };
-    setTimeout(() => {
-      toast.value = { message: "", type: "" };
-    }, 4000);
+    showToast("Failed to delete exam", "error")
   }
 }
 

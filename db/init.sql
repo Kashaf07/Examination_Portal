@@ -489,6 +489,7 @@ CREATE TABLE `mst_admin` (
   `Email` varchar(100) DEFAULT NULL,
   `Password` varchar(255) DEFAULT NULL,
   `Is_Active` tinyint(1) DEFAULT '1',
+  `Profile_Pic` varchar(255) DEFAULT NULL,
   PRIMARY KEY (`Admin_ID`),
   UNIQUE KEY `Email` (`Email`)
 ) ENGINE=InnoDB AUTO_INCREMENT=10 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
@@ -549,6 +550,7 @@ CREATE TABLE `mst_faculty` (
   `Password` varchar(255) NOT NULL,
   `Role_Id` int DEFAULT NULL,
   `Is_Active` tinyint(1) DEFAULT '1',
+  `Profile_Pic` varchar(255) DEFAULT NULL,
   PRIMARY KEY (`Faculty_Id`),
   UNIQUE KEY `F_Email` (`F_Email`),
   KEY `School_Id` (`School_Id`),

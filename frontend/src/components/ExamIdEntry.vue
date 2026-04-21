@@ -53,7 +53,6 @@ const props = defineProps({
 })
 
 const emit = defineEmits(['fetch-exam'])
-
 const examId = ref('')
 
 const handleSubmit = () => {

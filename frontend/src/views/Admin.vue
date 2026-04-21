@@ -1,5 +1,5 @@
 <template>
-  <div class="min-h-screen flex" style="background: linear-gradient(to bottom right, #E3F2FD, #F3E5F5, #FCE4EC);">
+  <div class="h-screen overflow-hidden flex" style="background: linear-gradient(to bottom right, #E3F2FD, #F3E5F5, #FCE4EC);">
 
     <!-- Sidebar -->
     <aside
@@ -26,9 +26,7 @@
 
           <template v-else>
             <div class="flex items-center gap-3 overflow-hidden">
-              <div class="w-9 h-9 bg-gradient-to-br from-blue-500 to-indigo-600 text-white flex items-center justify-center rounded-full font-bold">
-                {{ adminInitial }}
-              </div>
+              <ProfilePicUpload :initial="adminInitial" />
               <div class="leading-tight truncate">
                 <p class="font-semibold text-gray-800 text-sm truncate">
                   {{ adminName }}
@@ -150,7 +148,7 @@
     </aside>
 
     <!-- Main -->
-    <main :class="['flex-1 transition-all duration-300', sidebarOpen ? 'ml-64' : 'ml-20']">
+    <main :class="['flex-1 transition-all duration-300 h-screen overflow-y-auto', sidebarOpen ? 'ml-64' : 'ml-20']">
       <div class="px-8 py-6">
 
         <!-- Dashboard -->
@@ -378,6 +376,7 @@ import { useRouter, useRoute } from "vue-router";
 import NotificationToast from "@/components/admin/NotificationToast.vue";
 import QRCodeModal from "@/components/QRCodeModal.vue";
 import { authApi } from "@/services/adminApi.js";
+import ProfilePicUpload from "@/components/ProfilePicUpload.vue";
 
 const router = useRouter();
 const now = ref(new Date())
