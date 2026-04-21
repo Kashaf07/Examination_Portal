@@ -18,27 +18,16 @@
       </div>
     </div>
 
-    <!-- Spacer so logout clears the tooltip -->
-    <div class="h-6"></div>
-
     <!-- Logout icon button — only on enter stage -->
     <button
       v-if="stage === 'enter'"
       @click="showLogoutConfirm = true"
-      class="logout-btn bg-white/90 backdrop-blur-sm w-14 h-14 rounded-2xl shadow-lg border border-gray-200 flex items-center justify-center hover:bg-red-50 hover:border-red-200 hover:shadow-xl transition-all duration-200 group/btn relative"
+      class="bg-white/90 backdrop-blur-sm w-14 h-14 rounded-2xl shadow-lg border border-gray-200 flex items-center justify-center hover:bg-red-50 hover:border-red-200 hover:shadow-xl transition-all duration-200 group/btn"
       title="Logout"
     >
       <svg class="w-6 h-6 text-gray-500 group-hover/btn:text-red-500 transition-colors duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
         <path stroke-linecap="round" stroke-linejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
       </svg>
-      <!-- One-time "Logout" label tooltip -->
-      <span
-        v-if="showLogoutHint"
-        class="absolute right-full mr-3 top-1/2 -translate-y-1/2 bg-gray-900 text-white text-xs font-semibold px-3 py-1.5 rounded-lg whitespace-nowrap shadow-lg pointer-events-none logout-hint"
-      >
-        Logout
-        <span class="absolute right-[-5px] top-1/2 -translate-y-1/2 w-0 h-0 border-t-4 border-b-4 border-l-4 border-transparent border-l-gray-900"></span>
-      </span>
     </button>
   </div>
 
@@ -287,6 +276,18 @@ export default {
       this.showLogoutConfirm = false
       localStorage.clear()
       this.$router.push('/')
+    },
+
+    startRedirectCountdown() {
+      this.redirectCountdown = 10
+      this.redirectTimer = setInterval(() => {
+        this.redirectCountdown--
+        if (this.redirectCountdown <= 0) {
+          clearInterval(this.redirectTimer)
+          localStorage.clear()
+          this.$router.push('/')
+        }
+      }, 1000)
     },
 
     // ─── Battery Monitoring ───────────────────────────────────────────────────
@@ -994,7 +995,7 @@ clearInlineMessage() {
   // =========================
   // REDIRECT
   // =========================
- this.startRedirectCountdown()
+  this.startRedirectCountdown()
 
 } catch (err) {
 

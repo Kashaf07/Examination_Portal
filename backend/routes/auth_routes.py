@@ -155,7 +155,7 @@ def create_auth_routes(mysql):
             "user_id": user_id,
             "roles": roles,
             "active_role": selected_role,
-            "exp": datetime.now(timezone.utc) + timedelta(hours=2)
+            "exp": datetime.now(timezone.utc) + timedelta(days=30)
         }, SECRET_KEY, algorithm="HS256")
 
         response = {

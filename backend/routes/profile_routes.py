@@ -94,11 +94,16 @@ def create_profile_routes(mysql):
     @profile_bp.route('/get-pic', methods=['GET'])
     def get_profile_pic():
         current_user = get_current_user(request)
-        if not current_user:
-            return jsonify({'profile_pic': None}), 200  # return null instead of 401 so sidebar doesn't break
 
-        email = current_user.get('email')
-        role = current_user.get('role')
+        # Fallback: accept email + role as query params (for when token is expired)
+        if not current_user:
+            email = request.args.get('email')
+            role = request.args.get('role')
+            if not email or not role:
+                return jsonify({'profile_pic': None}), 200
+        else:
+            email = current_user.get('email')
+            role = current_user.get('role')
 
         try:
             cursor = mysql.connection.cursor()
@@ -115,7 +120,7 @@ def create_profile_routes(mysql):
             return jsonify({'profile_pic': pic}), 200
         except Exception as e:
             print("get-pic DB error:", e)
-            return jsonify({'profile_pic': None}), 200  # graceful fallback
+            return jsonify({'profile_pic': None}), 200
 
     @profile_bp.route('/pic-file/<path:filename>', methods=['GET'])
     def serve_profile_pic(filename):
