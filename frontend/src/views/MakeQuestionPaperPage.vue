@@ -1,5 +1,61 @@
 <template>
   <div>
+    <!-- Centered Error Modal -->
+    <div
+      v-if="errorModal.show"
+      class="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-[9999] p-4"
+      @click.self="errorModal.show = false"
+    >
+      <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full p-8 text-center animate-fadeIn">
+        <div class="text-4xl mb-4">❌</div>
+        <h2 class="text-xl font-bold text-gray-800 mb-3">Cannot Add Question</h2>
+        <p class="text-base text-gray-600 mb-8 leading-relaxed">{{ errorModal.message }}</p>
+        <button
+          @click="errorModal.show = false"
+          class="px-10 py-3 bg-blue-600 text-white rounded-full hover:bg-blue-700 transition-all duration-300 font-semibold shadow-lg hover:shadow-xl transform hover:scale-105 active:scale-95"
+        >
+          OK
+        </button>
+      </div>
+    </div>
+
+    <!-- Top-right Toast -->
+    <transition name="toast-slide">
+      <div
+        v-if="toast.show"
+        class="fixed right-4 z-[9999] max-w-md"
+        style="top: 80px;"
+      >
+        <div
+          :class="[
+            'p-4 rounded-xl shadow-2xl border-l-4',
+            toast.type === 'error'
+              ? 'bg-red-50 text-red-800 border-red-500'
+              : 'bg-green-50 text-green-800 border-green-500'
+          ]"
+        >
+          <div class="flex justify-between items-center">
+            <div class="flex items-center gap-3">
+              <!-- Error icon -->
+              <svg v-if="toast.type === 'error'" class="h-5 w-5 text-red-500 shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM7.293 7.293a1 1 0 011.414 0L10 8.586l1.293-1.293a1 1 0 111.414 1.414L11.414 10l1.293 1.293a1 1 0 01-1.414 1.414L10 11.414l-1.293 1.293a1 1 0 01-1.414-1.414L8.586 10 7.293 8.707a1 1 0 010-1.414z"/>
+              </svg>
+              <!-- Success icon -->
+              <svg v-else class="h-5 w-5 text-green-500 shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"/>
+              </svg>
+              <p class="text-sm font-medium">{{ toast.message }}</p>
+            </div>
+            <button @click="toast.show = false" class="text-gray-400 hover:text-gray-600 ml-4">
+              <svg class="h-4 w-4" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 011.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"/>
+              </svg>
+            </button>
+          </div>
+        </div>
+      </div>
+    </transition>
+
     <div v-if="isAuthorized" class="min-h-screen p-10 bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50">
     
     <!-- Back Button -->
@@ -58,11 +114,6 @@
 
     <p v-if="currentTotalMarks > examTotalMarks" class="text-red-600 font-semibold mt-2 mb-2 text-center">
       ❌ You must reduce marks before saving.
-    </p>
-    <p v-if="successMessage" 
-       class="mt-4 mb-4 font-medium text-center"
-       :class="successMessage.includes('❌') ? 'text-red-600' : 'text-green-600'">
-      {{ successMessage }}
     </p>
       
 
@@ -187,6 +238,10 @@ export default {
       examName: '',
       examDate: '',
       examTime: '',
+      // Error modal
+      errorModal: { show: false, message: '' },
+      // Toast
+      toast: { show: false, message: '', type: 'success' },
       // Confirmation modal state
       showConfirmationModal: false,
       confirmationTitle: '',
@@ -316,6 +371,16 @@ export default {
         }
       }
     },
+    showError(message) {
+      this.errorModal.message = message;
+      this.errorModal.show = true;
+    },
+    showToast(message, type = 'success') {
+      this.toast.message = message;
+      this.toast.type = type;
+      this.toast.show = true;
+      setTimeout(() => { this.toast.show = false; }, 3000);
+    },
     formatTime12h(time) {
       if (!time) return ''
       const [h, m] = time.split(':')
@@ -330,11 +395,7 @@ export default {
       
       const newTotal = this.currentTotalMarks + question.Marks;
       if (newTotal > this.examTotalMarks) {
-        // Show error message instead of alert
-        this.successMessage = `❌ Cannot add this question. Total marks would exceed ${this.examTotalMarks}.`;
-        setTimeout(() => {
-          this.successMessage = '';
-        }, 4000);
+        this.showError(`Total marks would exceed the allowed ${this.examTotalMarks}.`);
         return;
       }
         this.selectedQuestions.push(question);
@@ -345,15 +406,11 @@ export default {
     savePaper() {
       // client-side guard: only allow save if exact equality
       if (!this.isPaperComplete) {
-        // Provide a helpful message using the success message area
         if (this.currentTotalMarks > this.examTotalMarks) {
-          this.successMessage = `❌ Total marks exceed the allowed ${this.examTotalMarks}. Please remove or reduce questions.`;
+          this.showError(`Total marks exceed the allowed ${this.examTotalMarks}. Please remove or reduce questions.`);
         } else {
-          this.successMessage = `❌ Total marks must be exactly ${this.examTotalMarks} to save the paper. Current total: ${this.currentTotalMarks}.`;
+          this.showError(`Total marks must be exactly ${this.examTotalMarks} to save the paper. Current total: ${this.currentTotalMarks}.`);
         }
-        setTimeout(() => {
-          this.successMessage = '';
-        }, 5000);
         return;
       }
       const payload = {
@@ -372,18 +429,12 @@ export default {
       })
         .then(res => res.json())
         .then(data => {
-          this.successMessage = '✅ Paper saved successfully!';
-          setTimeout(() => {
-            this.successMessage = '';
-          }, 3000);
+          this.showToast('Paper saved successfully!', 'success');
           console.log(data);
         })
         .catch(err => {
           console.error('❌ Error saving paper:', err);
-          this.successMessage = '❌ Failed to save the paper.';
-          setTimeout(() => {
-            this.successMessage = '';
-          }, 4000);
+          this.showToast('Failed to save the paper.', 'error');
         });
     },
     async randomizeQuestions() {
@@ -406,16 +457,10 @@ export default {
         );
         const data = await res.json();
         this.selectedQuestions = data;
-        this.successMessage = '🎲 Random questions selected successfully!';
-        setTimeout(() => {
-          this.successMessage = '';
-        }, 3000);
+        this.showToast('Random questions selected successfully!', 'success');
       } catch (err) {
         console.error("❌ Failed to randomize:", err);
-        this.successMessage = "❌ Failed to randomize questions";
-        setTimeout(() => {
-          this.successMessage = '';
-        }, 3000);
+        this.showToast("Failed to randomize questions.", 'error');
       }
     },
     
@@ -432,10 +477,7 @@ export default {
   async downloadPDF() {
     const questions = await this.fetchPaperQuestionsForPDF()
     if (!questions.length) {
-      this.successMessage = "❌ No questions found for paper";
-      setTimeout(() => {
-        this.successMessage = '';
-      }, 4000);
+      this.showToast("No questions found for paper.", 'error');
       return
     }
 
@@ -544,6 +586,15 @@ export default {
   box-shadow: 0 6px 20px rgba(168, 85, 247, 0.4);
   transform: translateY(-2px);
 }
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: scale(0.95); }
+  to   { opacity: 1; transform: scale(1); }
+}
+.animate-fadeIn { animation: fadeIn 0.2s ease-out; }
+
+.toast-slide-enter-active, .toast-slide-leave-active { transition: all 0.3s ease; }
+.toast-slide-enter-from, .toast-slide-leave-to { opacity: 0; transform: translateX(60px); }
 
 input {
   border: 1px solid #ccc;

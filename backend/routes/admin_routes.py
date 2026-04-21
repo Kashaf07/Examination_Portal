@@ -1136,9 +1136,8 @@ def create_admin_routes(mysql):
                     WHERE aa.Status IN ('Submitted', 'Restricted')
                     GROUP BY ep.Exam_Id
                 ) AS attempts ON ee.Exam_Id = attempts.Exam_Id
-                WHERE ee.Exam_Date IS NOT NULL
-                AND ee.Exam_Time IS NOT NULL
-                AND TIMESTAMP(ee.Exam_Date, ee.Exam_Time) + INTERVAL ee.Duration_Minutes MINUTE <= NOW()
+                WHERE ee.was_started = 1
+                AND ee.exam_status = 'OFF'
                 AND ee.is_archived = 0
                 GROUP BY ee.Exam_Id, ee.Exam_Name, ee.Exam_Date, ee.faculty_email, attempts.attempted_applicants
                 ORDER BY ee.Exam_Date DESC
@@ -1179,7 +1178,8 @@ def create_admin_routes(mysql):
                     GROUP BY ep.Exam_Id
                 ) AS attempts ON ee.Exam_Id = attempts.Exam_Id
                 WHERE ee.faculty_email = %s
-                AND TIMESTAMP(ee.Exam_Date, ee.Exam_Time) + INTERVAL ee.Duration_Minutes MINUTE <= NOW()
+                AND ee.was_started = 1
+                AND ee.exam_status = 'OFF'
                 AND ee.is_archived = 0
                 GROUP BY ee.Exam_Id, ee.Exam_Name, ee.Exam_Date, attempts.attempted_applicants
                 ORDER BY ee.Exam_Date DESC

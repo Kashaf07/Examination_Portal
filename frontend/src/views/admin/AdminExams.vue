@@ -329,7 +329,7 @@
                 </td>
                 <td class="px-6 py-4 text-center">
                   <button
-                    @click="archiveExam(exam.Exam_Id)"
+                    @click="promptArchive(exam)"
                     class="p-1 text-gray-600 hover:text-blue-600 transition-all duration-200 hover:scale-110"
                     title="Archive"
                   >
@@ -416,6 +416,17 @@
       :exam-id="selectedExamForQR?.id || ''"
       :exam-name="selectedExamForQR?.name || ''"
       @close="closeQRModal"
+    />
+
+    <!-- Archive Confirmation Modal -->
+    <ConfirmationModal
+      :is-open="showArchiveConfirmModal"
+      title="Archive Exam"
+      :message="`Are you sure you want to archive '${examToArchive?.Exam_Name}'? It will be moved to Archives.`"
+      confirm-text="Archive"
+      cancel-text="Cancel"
+      @confirm="confirmArchive"
+      @close="showArchiveConfirmModal = false"
     />
 
     <!-- Confirmation Modal for Turning OFF Exam -->
@@ -532,6 +543,7 @@ const toggleExamStatus = async (exam) => {
       await axios.put(`${API}/exam/toggle/${exam.Exam_Id}`, { status: "ON" });
       emit("toast", { message: "Exam turned ON", type: "success" });
       fetchExams();
+      fetchConducted();
     } catch (err) {
       exam.exam_status = "OFF"; // revert
       emit("toast", { message: "Failed to update exam status", type: "error" });
@@ -553,6 +565,7 @@ const confirmTurnOff = async () => {
     await axios.put(`${API}/exam/toggle/${exam.Exam_Id}`, { status: "OFF" });
     emit("toast", { message: "Exam turned OFF", type: "success" });
     fetchExams();
+    fetchConducted();
   } catch (err) {
     exam.exam_status = "ON"; // revert
     emit("toast", { message: "Failed to update exam status", type: "error" });
@@ -582,6 +595,21 @@ const upcomingExams = computed(() =>
 );
 
 const conductedExams = computed(() => conductedList.value);
+
+const showArchiveConfirmModal = ref(false);
+const examToArchive = ref(null);
+
+const promptArchive = (exam) => {
+  examToArchive.value = exam;
+  showArchiveConfirmModal.value = true;
+};
+
+const confirmArchive = async () => {
+  const exam = examToArchive.value;
+  showArchiveConfirmModal.value = false;
+  examToArchive.value = null;
+  await archiveExam(exam.Exam_Id);
+};
 
 const archiveExam = async (examId) => {
   try {
@@ -765,6 +793,7 @@ const reopenExam = async (exam) => {
     if (res.data.success) {
       emit("toast", { message: "Exam reopened successfully!", type: "success" });
       fetchExams();
+      fetchConducted();
     }
   } catch {
     emit("toast", { message: "Error reopening exam", type: "error" });

@@ -483,20 +483,34 @@ onMounted(async () => {
   const cachedPath = localStorage.getItem('profile_pic_path')
   if (cachedPath) profilePicUrl.value = buildPicUrl(cachedPath)
 
+  // Try with token first, fall back to email+role query params
+  const email = localStorage.getItem('email')
+  const role  = localStorage.getItem('active_role')
+
   try {
-    const res = await axiosInstance.get('/profile/get-pic')
+    let res
+    try {
+      res = await axiosInstance.get('/profile/get-pic')
+    } catch (tokenErr) {
+      // Token expired — retry with email+role as query params (no auth needed)
+      if (email && role) {
+        res = await axiosInstance.get(`/profile/get-pic?email=${encodeURIComponent(email)}&role=${encodeURIComponent(role)}`)
+      } else {
+        throw tokenErr
+      }
+    }
+
     if (res.data.profile_pic) {
       const path = res.data.profile_pic
       profilePicUrl.value = buildPicUrl(path)
       localStorage.setItem('profile_pic_path', path)
     } else {
-      // Backend confirmed no pic — clear cache
       profilePicUrl.value = null
       localStorage.removeItem('profile_pic_path')
       localStorage.removeItem('profile_pic_url')
     }
   } catch (e) {
-    // Token expired or network error — keep showing cached pic, it loads directly without auth
+    // Keep showing cached pic if everything fails
   }
 
   document.addEventListener('click', handleOutsideClick)
