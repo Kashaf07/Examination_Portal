@@ -1,6 +1,34 @@
 <template>
   <div class="min-h-screen w-full bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 flex flex-col items-center py-10">
     
+    <!-- Unarchive Confirmation Modal -->
+    <div
+      v-if="showUnarchiveModal"
+      class="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-[9999] p-4"
+      @click.self="showUnarchiveModal = false"
+    >
+      <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full p-8 text-center" style="animation: fadeIn 0.2s ease-out">
+        <h2 class="text-2xl font-bold text-gray-800 mb-4">Unarchive Exam</h2>
+        <p class="text-base text-gray-600 mb-8 leading-relaxed">
+          Are you sure you want to unarchive <strong>{{ examToUnarchive?.Exam_Name }}</strong>? It will be moved back to conducted exams.
+        </p>
+        <div class="flex gap-4 justify-center">
+          <button
+            @click="showUnarchiveModal = false"
+            class="flex-1 px-6 py-3 bg-white text-gray-700 border border-gray-300 rounded-full hover:bg-gray-50 transition-all font-semibold shadow"
+          >
+            Cancel
+          </button>
+          <button
+            @click="confirmUnarchive"
+            class="flex-1 px-6 py-3 bg-blue-600 text-white rounded-full hover:bg-blue-700 transition-all font-semibold shadow"
+          >
+            Unarchive
+          </button>
+        </div>
+      </div>
+    </div>
+
     <div class="w-full max-w-full px-6">
 
       <!-- BACK BUTTON -->
@@ -68,7 +96,7 @@
 
               <td class="px-4 py-3 text-center">
                 <button
-                  @click="unarchiveExam(exam.Exam_Id)"
+                  @click="promptUnarchive(exam)"
                   class="p-1 text-gray-600 hover:text-green-600 transition-all duration-200 hover:scale-110"
                   title="Unarchive"
                 >
@@ -108,6 +136,8 @@ import { useRouter } from 'vue-router'
 const router = useRouter()
 const exams = ref([])
 const searchQuery = ref('')
+const showUnarchiveModal = ref(false)
+const examToUnarchive = ref(null)
 
 onMounted(fetchArchived)
 
@@ -148,7 +178,24 @@ function viewResponses(id) {
 
 async function unarchiveExam(id) {
   await axios.put(`/admin/exam/restore/${id}`)
-  alert('Exam unarchived successfully') // simple for now
   fetchArchived()
 }
+
+function promptUnarchive(exam) {
+  examToUnarchive.value = exam
+  showUnarchiveModal.value = true
+}
+
+async function confirmUnarchive() {
+  showUnarchiveModal.value = false
+  await unarchiveExam(examToUnarchive.value.Exam_Id)
+  examToUnarchive.value = null
+}
 </script>
+
+<style scoped>
+@keyframes fadeIn {
+  from { opacity: 0; transform: scale(0.95); }
+  to   { opacity: 1; transform: scale(1); }
+}
+</style>

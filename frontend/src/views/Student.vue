@@ -382,9 +382,7 @@ clearInlineMessage() {
         } else {
           clearInterval(this.redirectTimer)
           clearInterval(this._keyLogFlushTimer)
-          localStorage.removeItem('student_email')
-          localStorage.removeItem('student_name')
-          localStorage.removeItem('applicant_id')
+          localStorage.clear()
           window.location.href = '/'
         }
       }, 1000)
