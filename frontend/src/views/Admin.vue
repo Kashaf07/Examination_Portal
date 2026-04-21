@@ -154,7 +154,7 @@
       <div class="px-8 py-6">
 
         <!-- Dashboard -->
-<div v-if="activeTab === null" class="space-y-8">
+<div v-if="route.path === '/admin'" class="space-y-8">
 
   <!-- Welcome Card -->
   <div class="bg-white/80 backdrop-blur-lg rounded-2xl p-8 shadow-xl">

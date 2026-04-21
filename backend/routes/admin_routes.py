@@ -1132,11 +1132,14 @@ def create_admin_routes(mysql):
                 LEFT JOIN (
                     SELECT ep.Exam_Id, COUNT(DISTINCT aa.Applicant_Id) AS attempted_applicants
                     FROM exam_paper ep
-                    JOIN applicant_attempt aa ON ep.Exam_Paper_Id = aa.Exam_Paper_Id
+                    LEFT JOIN applicant_attempt aa ON ep.Exam_Paper_Id = aa.Exam_Paper_Id
                     WHERE aa.Status IN ('Submitted', 'Restricted')
                     GROUP BY ep.Exam_Id
                 ) AS attempts ON ee.Exam_Id = attempts.Exam_Id
-                WHERE TIMESTAMP(ee.Exam_Date, ee.Exam_Time) + INTERVAL ee.Duration_Minutes MINUTE <= NOW()
+                WHERE ee.Exam_Date IS NOT NULL
+                AND ee.Exam_Time IS NOT NULL
+                AND TIMESTAMP(ee.Exam_Date, ee.Exam_Time) + INTERVAL ee.Duration_Minutes MINUTE <= NOW()
+                AND ee.is_archived = 0
                 GROUP BY ee.Exam_Id, ee.Exam_Name, ee.Exam_Date, ee.faculty_email, attempts.attempted_applicants
                 ORDER BY ee.Exam_Date DESC
             """
@@ -1171,12 +1174,13 @@ def create_admin_routes(mysql):
                 LEFT JOIN (
                     SELECT ep.Exam_Id, COUNT(DISTINCT aa.Applicant_Id) AS attempted_applicants
                     FROM exam_paper ep
-                    JOIN applicant_attempt aa ON ep.Exam_Paper_Id = aa.Exam_Paper_Id
+                    LEFT JOIN applicant_attempt aa ON ep.Exam_Paper_Id = aa.Exam_Paper_Id
                     WHERE aa.Status = 'Submitted'
                     GROUP BY ep.Exam_Id
                 ) AS attempts ON ee.Exam_Id = attempts.Exam_Id
                 WHERE ee.faculty_email = %s
-                  AND TIMESTAMP(ee.Exam_Date, ee.Exam_Time) + INTERVAL ee.Duration_Minutes MINUTE <= NOW()
+                AND TIMESTAMP(ee.Exam_Date, ee.Exam_Time) + INTERVAL ee.Duration_Minutes MINUTE <= NOW()
+                AND ee.is_archived = 0
                 GROUP BY ee.Exam_Id, ee.Exam_Name, ee.Exam_Date, attempts.attempted_applicants
                 ORDER BY ee.Exam_Date DESC
             """
@@ -1186,9 +1190,113 @@ def create_admin_routes(mysql):
             cursor.close()
             return jsonify({"success": True, "exams": exams}), 200
         except Exception as e:
+            print("CONDUCTED EXAMS ERROR DETAIL:", str(e))
             print("Error fetching conducted exams for faculty:", e)
             return jsonify({"success": False, "error": str(e)}), 500
+       
+    @admin_bp.route('/exam/archive/<int:exam_id>', methods=['PUT'])
+    def archive_exam(exam_id):
+        try:
+            cursor = mysql.connection.cursor()
+            cursor.execute("""
+                UPDATE entrance_exam
+                SET is_archived = 1
+                WHERE Exam_Id = %s
+            """, (exam_id,))
+            
+            mysql.connection.commit()
+            cursor.close()
+
+            return jsonify({"success": True, "message": "Exam archived"}), 200
+        except Exception as e:
+            return jsonify({"success": False, "error": str(e)}), 500 
         
+    @admin_bp.route('/all_past_exams', methods=['GET'])
+    def get_all_past_exams():
+        try:
+            cursor = mysql.connection.cursor()
+            cursor.execute("""
+                SELECT 
+                    ee.Exam_Id,
+                    ee.Exam_Name,
+                    ee.Exam_Date,
+                    ee.is_archived,
+                    ee.faculty_email,
+                    COUNT(DISTINCT aea.Applicant_Id) AS total_applicants,
+                    COALESCE(attempts.attempted_applicants, 0) AS attempted_applicants
+                FROM entrance_exam ee
+                LEFT JOIN applicant_exam_assign aea ON ee.Exam_Id = aea.Exam_Id
+                LEFT JOIN (
+                    SELECT ep.Exam_Id, COUNT(DISTINCT aa.Applicant_Id) AS attempted_applicants
+                    FROM exam_paper ep
+                    LEFT JOIN applicant_attempt aa ON ep.Exam_Paper_Id = aa.Exam_Paper_Id
+                    WHERE aa.Status IN ('Submitted', 'Restricted')
+                    GROUP BY ep.Exam_Id
+                ) AS attempts ON ee.Exam_Id = attempts.Exam_Id
+                WHERE ee.Exam_Date IS NOT NULL
+                AND ee.Exam_Time IS NOT NULL
+                AND TIMESTAMP(ee.Exam_Date, ee.Exam_Time) + INTERVAL ee.Duration_Minutes MINUTE <= NOW()
+                GROUP BY ee.Exam_Id, ee.Exam_Name, ee.Exam_Date, 
+                        ee.is_archived, ee.faculty_email, attempts.attempted_applicants
+                ORDER BY ee.is_archived ASC, ee.Exam_Date DESC
+            """)
+            columns = [desc[0] for desc in cursor.description]
+            exams = [dict(zip(columns, row)) for row in cursor.fetchall()]
+            cursor.close()
+            return jsonify({"success": True, "exams": exams}), 200
+        except Exception as e:
+            print("Error fetching all past exams:", e)
+            return jsonify({"success": False, "error": str(e)}), 500
+        
+    @admin_bp.route('/archived_exams', methods=['GET'])
+    def get_archived_exams():
+        try:
+            cursor = mysql.connection.cursor()
+
+            cursor.execute("""
+                SELECT 
+                    ee.Exam_Id,
+                    ee.Exam_Name,
+                    ee.Exam_Date,
+                    ee.faculty_email,
+                    COUNT(DISTINCT aea.Applicant_Id) AS total_applicants,
+                    COALESCE(attempts.attempted_applicants, 0) AS attempted_applicants
+                FROM entrance_exam ee
+                LEFT JOIN applicant_exam_assign aea ON ee.Exam_Id = aea.Exam_Id
+                LEFT JOIN (
+                    SELECT ep.Exam_Id, COUNT(DISTINCT aa.Applicant_Id) AS attempted_applicants
+                    FROM exam_paper ep
+                    LEFT JOIN applicant_attempt aa ON ep.Exam_Paper_Id = aa.Exam_Paper_Id
+                    WHERE aa.Status IN ('Submitted', 'Restricted')
+                    GROUP BY ep.Exam_Id
+                ) AS attempts ON ee.Exam_Id = attempts.Exam_Id
+                WHERE ee.is_archived = 1
+                GROUP BY ee.Exam_Id, ee.Exam_Name, ee.Exam_Date, ee.faculty_email, attempts.attempted_applicants
+                ORDER BY ee.Exam_Date DESC
+            """)
+
+            columns = [desc[0] for desc in cursor.description]
+            exams = [dict(zip(columns, row)) for row in cursor.fetchall()]
+            cursor.close()
+
+            return jsonify({"success": True, "exams": exams}), 200
+
+        except Exception as e:
+            print("ARCHIVED EXAMS ERROR:", e)
+            return jsonify({"success": False, "error": str(e)}), 500   
+    @admin_bp.route('/exam/restore/<int:exam_id>', methods=['PUT'])
+    def restore_exam(exam_id):
+        cursor = mysql.connection.cursor()
+        cursor.execute("""
+            UPDATE entrance_exam
+            SET is_archived = 0
+            WHERE Exam_Id = %s
+        """, (exam_id,))
+        mysql.connection.commit()
+        cursor.close()
+
+        return jsonify({"success": True}), 200
+    
     @admin_bp.route('/exam/delete/<int:exam_id>', methods=['DELETE'])
     def delete_exam(exam_id):
         try:

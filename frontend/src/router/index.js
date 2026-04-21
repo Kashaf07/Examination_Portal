@@ -75,6 +75,12 @@ const routes = [
     ]
   },
 
+  {
+    path: '/admin/archives',
+    name: 'AdminArchives',
+    component: () => import('../views/admin/AdminArchives.vue')
+  },
+
   // ---------------- FACULTY ----------------
   {
     path: '/faculty',

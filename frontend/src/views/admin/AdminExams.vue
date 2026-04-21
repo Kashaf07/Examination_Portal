@@ -324,9 +324,19 @@
       No exams created yet.
     </div>
 
+    <div class="flex justify-between items-center">
+      <h2 class="text-2xl font-semibold">Conducted Exams</h2>
+
+      <button
+        @click="router.push({ name: 'AdminArchives' })"
+        class="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold px-6 py-3 rounded-full shadow-lg transition-all hover:scale-105"
+      >
+        View Archives
+      </button>
+    </div>
+
     <!-- ---------------- CONDUCTED EXAMS TABLE ---------------- -->
     <div v-if="conductedExams && conductedExams.length" class="mt-12">
-      <h2 class="text-2xl font-semibold mb-4 text-gray-800">Conducted Exams</h2>
       <div class="bg-white rounded-xl shadow-lg overflow-hidden">
         
         <!-- SEARCH FILTER INPUT -->
@@ -349,6 +359,7 @@
                 <th class="px-6 py-4 text-left text-sm font-bold text-gray-700">Total Applicants</th>
                 <th class="px-6 py-4 text-left text-sm font-bold text-gray-700">Attempted</th>
                 <th class="px-6 py-4 text-center text-sm font-bold text-gray-700">Actions</th>
+                <th class="px-6 py-4 text-center text-sm font-bold text-gray-700">Archives</th>
               </tr>
             </thead>
             <tbody class="divide-y divide-gray-200">
@@ -369,6 +380,25 @@
                     class="bg-purple-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-purple-700 shadow-md hover:shadow-lg transition font-semibold"
                   >
                     View Responses
+                  </button>
+                </td>
+                <td class="px-6 py-4 text-center">
+                  <button
+                    @click="archiveExam(exam.Exam_Id)"
+                    class="p-1 text-gray-600 hover:text-blue-600 transition-all duration-200 hover:scale-110"
+                    title="Archive"
+                  >
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <!-- box outline -->
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M3 9h18v11a1 1 0 01-1 1H4a1 1 0 01-1-1V9z"/>
+                      <!-- lid top bar -->
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M3 9l1.5-4h15L21 9"/>
+                      <!-- arrow down into box -->
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M12 12v4m0 0l-2-2m2 2l2-2"/>
+                    </svg>
                   </button>
                 </td>
               </tr>
@@ -635,11 +665,33 @@ const upcomingExams = computed(() =>
   )
 );
 
-const conductedExams = computed(() =>
-  examsList.value.filter(
-    exam => exam.was_started === 1 && exam.exam_status === "OFF"
-  )
-);
+const conductedExams = computed(() => conductedList.value);
+
+const archiveExam = async (examId) => {
+  try {
+    const res = await axios.put(`${API}/admin/exam/archive/${examId}`);
+
+    if (res.data.success) {
+      emit("toast", {
+        message: "Exam archived successfully",
+        type: "success"
+      });
+
+      // ✅ instant UI update
+      conductedList.value = conductedList.value.filter(
+        exam => exam.Exam_Id !== examId
+      );
+
+      // ✅ optional refresh
+      fetchConducted();
+    }
+  } catch (err) {
+    emit("toast", {
+      message: "Failed to archive exam",
+      type: "error"
+    });
+  }
+};
 
 const hasAssignedStudents = (exam) => {
   return exam.total_applicants && exam.total_applicants > 0;
@@ -647,9 +699,7 @@ const hasAssignedStudents = (exam) => {
 
 /* ================= CONDUCTED EXAMS PAGINATION ================= */
 const filteredConductedExams = computed(() => {
-  const conducted = examsList.value.filter(
-    exam => exam.was_started === 1 && exam.exam_status === "OFF"
-  );
+  const conducted = conductedList.value;
   
   if (!conductedSearchQuery.value.trim()) {
     return conducted;
@@ -749,6 +799,7 @@ const createExam = async () => {
       emit("toast", { message: "Exam created successfully!", type: "success" });
       toggleCreateForm();
       await fetchExams();
+      await fetchConducted();
       fetchExams();
 
       examForm.value = {
