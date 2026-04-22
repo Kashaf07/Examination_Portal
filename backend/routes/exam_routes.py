@@ -79,7 +79,7 @@ def create_exam_routes(mysql):
             cursor.execute("""
                     SELECT Exam_Id, Exam_Name, Exam_Date, Exam_Time,
                         Duration_Minutes, Total_Questions, Max_Marks,
-                        exam_status, was_started
+                        exam_status, was_started, is_archived
                     FROM entrance_exam
                     WHERE Faculty_Email = %s
                     ORDER BY Exam_Id DESC
@@ -117,6 +117,7 @@ def create_exam_routes(mysql):
                     "Max_Marks": exam["Max_Marks"],
                     "exam_status": exam["exam_status"],
                     "was_started": exam["was_started"],
+                    "is_archived": exam["is_archived"],
                     "total_applicants": total_applicants,
                     "attempted_applicants": attempted_applicants
                 })

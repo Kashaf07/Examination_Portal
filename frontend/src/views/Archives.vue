@@ -130,7 +130,7 @@
 
 <script setup>
 import { ref, onMounted, computed } from 'vue'
-import axios from '../../utils/axiosInstance'
+import axios from '../utils/axiosInstance'
 import { useRouter, useRoute } from 'vue-router'
 
 const router = useRouter()

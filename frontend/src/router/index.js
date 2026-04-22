@@ -76,9 +76,10 @@ const routes = [
   },
 
   {
-    path: '/admin/archives',
-    name: 'AdminArchives',
-    component: () => import('../views/admin/AdminArchives.vue')
+    path: '/archives',
+    name: 'Archives',
+    component: () => import('../views/Archives.vue'),
+    meta: { requiresAuth: true, role: ['Admin', 'Faculty'] }
   },
 
   // ---------------- FACULTY ----------------

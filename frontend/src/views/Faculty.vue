@@ -496,7 +496,15 @@
 
               <!-- Conducted Exams Table -->
               <div v-if="conductedExams && conductedExams.length" class="mt-12 w-full">
-                <h2 class="text-2xl font-semibold mb-4 text-gray-800">Conducted Exams</h2>
+                <div class="flex items-center justify-between mb-4">
+                  <h2 class="text-2xl font-semibold text-gray-800">Conducted Exams</h2>
+                  <button
+                    @click="goToArchives"
+                    class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition font-semibold shadow-md hover:shadow-lg"
+                  >
+                    View Archives
+                  </button>
+                </div>
                 <div class="w-full bg-white rounded-xl shadow-lg overflow-hidden">
                   <div class="p-6 pb-0">
                     <input
@@ -517,6 +525,7 @@
                           <th class="px-6 py-4 text-left text-sm font-bold text-gray-700">Attempted</th>
                           <th class="px-6 py-4 text-center text-sm font-bold text-gray-700">Reopen</th>
                           <th class="px-6 py-4 text-center text-sm font-bold text-gray-700">Actions</th>
+                          <th class="px-6 py-4 text-center text-sm font-bold text-gray-700">Archive</th>
                         </tr>
                       </thead>
                       <tbody class="divide-y divide-gray-200">
@@ -542,6 +551,22 @@
                               class="bg-purple-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-purple-700 shadow-md hover:shadow-lg transition font-semibold"
                             >
                               View Responses
+                            </button>
+                          </td>
+                           <td class="px-6 py-4 text-center">
+                            <button
+                              @click="promptArchive(exam)"
+                              class="p-1 text-gray-600 hover:text-blue-600 transition-all duration-200 hover:scale-110"
+                              title="Archive"
+                            >
+                              <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                  d="M3 9h18v11a1 1 0 01-1 1H4a1 1 0 01-1-1V9z"/>
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                  d="M3 9l1.5-4h15L21 9"/>
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                  d="M12 12v4m0 0l-2-2m2 2l2-2"/>
+                              </svg>
                             </button>
                           </td>
                         </tr>
@@ -844,6 +869,38 @@
     @close="showConfirmationModal = false"
   />
 
+  <!-- Archive Confirmation Modal -->
+  <div
+    v-if="showArchiveConfirmModal"
+    class="fixed inset-0 z-50 flex items-center justify-center"
+  >
+    <div class="absolute inset-0 bg-black/60 backdrop-blur-md"></div>
+    <div class="relative bg-white/95 backdrop-blur-sm rounded-3xl shadow-2xl p-8 max-w-md w-full mx-4">
+      <div class="text-center">
+        <h3 class="text-xl font-bold text-gray-900 mb-3">Archive Exam</h3>
+        <p class="text-sm text-gray-600 mb-8 leading-relaxed">
+          Are you sure you want to archive
+          <span class="font-bold text-gray-800">"{{ examToArchive?.Exam_Name }}"</span>?
+          It will be moved to Past Exams.
+        </p>
+        <div class="flex gap-4">
+          <button
+            @click="showArchiveConfirmModal = false; examToArchive = null"
+            class="flex-1 py-3 bg-white text-gray-700 border border-gray-300 rounded-full hover:bg-gray-50 transition font-semibold shadow-lg"
+          >
+            Cancel
+          </button>
+          <button
+            @click="confirmArchive"
+            class="flex-1 py-3 bg-blue-600 text-white rounded-full hover:bg-blue-700 transition font-semibold shadow-lg"
+          >
+            Archive
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
 </template>
 
 <script setup>
@@ -862,6 +919,8 @@ import ProfilePicUpload from '@/components/ProfilePicUpload.vue'
 const now = ref(new Date())
 let countdownTimer = null
 const router = useRouter()
+const showArchiveConfirmModal = ref(false)
+const examToArchive = ref(null)
 
 /* ================= AUTH ================= */
 const roles = JSON.parse(localStorage.getItem("roles") || "[]")
@@ -1219,7 +1278,11 @@ const fetchExamsAndCategorize = async () => {
       createdExams.value = exams.filter(e => e.was_started === 0 || e.exam_status === "ON")
 
       // Conducted exams
-      conductedExams.value = exams.filter(e => e.was_started === 1 && e.exam_status === "OFF")
+      conductedExams.value = exams.filter(e => 
+        e.was_started === 1 && 
+        e.exam_status === "OFF" && 
+        !e.is_archived  // ← handles null, 0, undefined all correctly
+      )
 
       await loadExamStatuses(createdExams.value)
     }
@@ -1363,6 +1426,37 @@ const handleCancelConfirmation = () => {
   pendingAction.value = null;
   pendingExamId.value = null;
 }
+
+// ─── Archive helpers ───────────────────────────────────────────
+const promptArchive = (exam) => {
+  examToArchive.value = exam
+  showArchiveConfirmModal.value = true
+}
+
+const confirmArchive = async () => {
+  const exam = examToArchive.value
+  showArchiveConfirmModal.value = false
+  examToArchive.value = null
+  await archiveExam(exam.Exam_Id)
+}
+
+const archiveExam = async (examId) => {
+  try {
+    const res = await axios.put(`/faculty/exam/archive/${examId}`)
+    if (res.data.success) {
+      showToast('Exam archived successfully', 'success')
+      conductedExams.value = conductedExams.value.filter(e => e.Exam_Id !== examId)
+      fetchExamsAndCategorize()
+    }
+  } catch {
+    showToast('Failed to archive exam', 'error')
+  }
+}
+
+const goToArchives = () => {
+  router.push({ name: 'Archives', query: { role: 'Faculty' } })
+}
+
 </script>
 
 <style scoped>

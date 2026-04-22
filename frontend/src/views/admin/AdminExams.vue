@@ -267,7 +267,7 @@
       <h2 class="text-2xl font-semibold">Conducted Exams</h2>
 
       <button
-        @click="router.push({ name: 'AdminArchives' })"
+        @click="router.push({ name: 'Archives' })"
         class="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold px-6 py-3 rounded-full shadow-lg transition-all hover:scale-105"
       >
         View Archives

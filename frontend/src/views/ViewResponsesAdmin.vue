@@ -252,7 +252,7 @@ const viewAnswers = (id) => router.push({ name: 'ViewAnswers', params: { attempt
 const goBack = () => {
   const from = route.query.from
   if (from === 'archives') {
-    router.push({ name: 'AdminArchives' })
+    router.push({ name: 'Archives', query: { role: 'Admin' } })
   } else {
     router.push('/admin/exams')
   }

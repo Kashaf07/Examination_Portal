@@ -85,7 +85,7 @@ def create_faculty_routes(mysql):
                     WHERE aa.Status = 'Submitted'
                     GROUP BY ep.Exam_Id
                 ) AS attempts ON ee.Exam_Id = attempts.Exam_Id
-                WHERE ee.faculty_email = %s
+                WHERE ee.Faculty_email = %s
                   AND TIMESTAMP(ee.Exam_Date, ee.Exam_Time) + INTERVAL ee.Duration_Minutes MINUTE <= NOW()
                 GROUP BY ee.Exam_Id, ee.Exam_Name, ee.Exam_Date, attempts.attempted_applicants
                 ORDER BY ee.Exam_Date DESC
@@ -127,7 +127,7 @@ def create_faculty_routes(mysql):
                     WHERE aa.Status = 'Submitted'
                     GROUP BY ep.Exam_Id
                 ) AS attempts ON ee.Exam_Id = attempts.Exam_Id
-                WHERE ee.faculty_email = %s
+                WHERE ee.Faculty_email = %s
                 GROUP BY ee.Exam_Id, ee.Exam_Name, ee.Exam_Date, attempts.attempted_applicants
                 ORDER BY ee.Exam_Date DESC
             """
@@ -164,7 +164,7 @@ def create_faculty_routes(mysql):
                     WHERE aa.Status = 'Submitted'
                     GROUP BY ep.Exam_Id
                 ) AS attempts ON ee.Exam_Id = attempts.Exam_Id
-                WHERE ee.faculty_email = %s
+                WHERE ee.Faculty_email = %s
                 GROUP BY ee.Exam_Id, ee.Exam_Name, attempts.attempted_applicants
                 ORDER BY ee.Exam_Name
             """
@@ -241,5 +241,93 @@ def create_faculty_routes(mysql):
                 "success": False,
                 "error": str(e)
             }), 500
+            
+    @faculty_bp.route("/exam/archive/<int:exam_id>", methods=["PUT"])
+    @token_required
+    def archive_exam_faculty(current_user, exam_id):
+        try:
+            faculty_email = current_user["email"]
+            cursor = mysql.connection.cursor()
+
+            # check ownership
+            cursor.execute(
+                "SELECT Exam_Id FROM entrance_exam WHERE Exam_Id=%s AND Faculty_Email=%s",
+                (exam_id, faculty_email)
+            )
+            exam = cursor.fetchone()
+
+            if not exam:
+                return jsonify({"success": False, "message": "Unauthorized"}), 403
+
+            cursor.execute(
+                "UPDATE entrance_exam SET is_archived=1 WHERE Exam_Id=%s",
+                (exam_id,)
+            )
+
+            mysql.connection.commit()
+            cursor.close()
+
+            return jsonify({"success": True})
+
+        except Exception as e:
+            return jsonify({"success": False, "message": str(e)}), 500
+        
+    @faculty_bp.route("/archived_exams", methods=["GET"])
+    @token_required
+    def get_archived_exams_faculty(current_user):
+        try:
+            faculty_email = current_user["email"]
+            cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+
+            query = """
+                SELECT 
+                    ee.Exam_Id,
+                    ee.Exam_Name,
+                    ee.Exam_Date,
+                    COUNT(DISTINCT aea.Applicant_Id) AS total_applicants,
+                    COALESCE(attempts.attempted_applicants, 0) AS attempted_applicants
+                FROM entrance_exam ee
+                LEFT JOIN applicant_exam_assign aea ON ee.Exam_Id = aea.Exam_Id
+                LEFT JOIN (
+                    SELECT ep.Exam_Id, COUNT(DISTINCT aa.Applicant_Id) AS attempted_applicants
+                    FROM exam_paper ep
+                    JOIN applicant_attempt aa ON ep.Exam_Paper_Id = aa.Exam_Paper_Id
+                    WHERE aa.Status = 'Submitted'
+                    GROUP BY ep.Exam_Id
+                ) AS attempts ON ee.Exam_Id = attempts.Exam_Id
+                WHERE ee.Faculty_email = %s
+                AND ee.is_archived = 1
+                GROUP BY ee.Exam_Id
+                ORDER BY ee.Exam_Date DESC
+            """
+
+            cursor.execute(query, (faculty_email,))
+            exams = cursor.fetchall()
+            cursor.close()
+
+            return jsonify({"success": True, "exams": exams})
+
+        except Exception as e:
+            return jsonify({"success": False, "message": str(e)}), 500
+        
+    @faculty_bp.route("/exam/restore/<int:exam_id>", methods=["PUT"])
+    @token_required
+    def restore_exam_faculty(current_user, exam_id):
+        try:
+            faculty_email = current_user["email"]
+            cursor = mysql.connection.cursor()
+
+            cursor.execute(
+                "UPDATE entrance_exam SET is_archived=0 WHERE Exam_Id=%s AND Faculty_Email=%s",
+                (exam_id, faculty_email)
+            )
+
+            mysql.connection.commit()
+            cursor.close()
+
+            return jsonify({"success": True})
+
+        except Exception as e:
+            return jsonify({"success": False, "message": str(e)}), 500
 
     return faculty_bp
