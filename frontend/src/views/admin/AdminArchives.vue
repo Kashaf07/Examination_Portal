@@ -131,19 +131,38 @@
 <script setup>
 import { ref, onMounted, computed } from 'vue'
 import axios from '../../utils/axiosInstance'
-import { useRouter } from 'vue-router'
+import { useRouter, useRoute } from 'vue-router'
 
 const router = useRouter()
+const route = useRoute()
 const exams = ref([])
 const searchQuery = ref('')
 const showUnarchiveModal = ref(false)
 const examToUnarchive = ref(null)
+const callerRole = computed(() => route.query.role || 'Admin')
 
 onMounted(fetchArchived)
 
 async function fetchArchived() {
-  const res = await axios.get('/admin/archived_exams')
-  exams.value = res.data.exams
+  try {
+    const isFaculty = callerRole.value === 'Faculty'
+    const url = isFaculty ? '/faculty/archived_exams' : '/admin/archived_exams'
+    const res = await axios.get(url)
+    exams.value = res.data.exams || []
+  } catch (e) {
+    console.error("Failed to fetch archived exams:", e)
+  }
+}
+
+async function unarchiveExam(id) {
+  try {
+    const isfaculty = callerRole.value === 'Faculty'
+    const url = isfaculty ? `/faculty/exam/restore/${id}` : `/admin/exam/restore/${id}`
+    await axios.put(url)
+    fetchArchived()
+  } catch (e) {
+    console.error("Failed to unarchive exam:", e)
+  }
 }
 
 /* 🔥 SMART SEARCH (LIKE VIEW RESPONSES) */
@@ -164,21 +183,23 @@ function formatDate(date) {
 }
 
 function goBack() {
-  router.push('/admin/exams')
+  if (callerRole.value === 'Faculty') {
+    router.push('/faculty')
+  } else {
+    router.push('/admin/exams')
+  }
 }
 
 function viewResponses(id) {
   localStorage.setItem('from_page', 'archives')
+  const routeName = callerRole.value === 'Faculty' 
+    ? 'ViewResponses' 
+    : 'ViewResponsesAdmin'
   router.push({
-    name: 'ViewResponsesAdmin',
+    name: routeName,
     params: { examId: id },
     query: { from: 'archives' }
   })
-}
-
-async function unarchiveExam(id) {
-  await axios.put(`/admin/exam/restore/${id}`)
-  fetchArchived()
 }
 
 function promptUnarchive(exam) {

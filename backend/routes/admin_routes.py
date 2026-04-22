@@ -1284,6 +1284,7 @@ def create_admin_routes(mysql):
         except Exception as e:
             print("ARCHIVED EXAMS ERROR:", e)
             return jsonify({"success": False, "error": str(e)}), 500   
+    
     @admin_bp.route('/exam/restore/<int:exam_id>', methods=['PUT'])
     def restore_exam(exam_id):
         cursor = mysql.connection.cursor()
