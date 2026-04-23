@@ -495,19 +495,21 @@
 
               <!-- Conducted Exams Table -->
               <div v-if="conductedExams && conductedExams.length" class="mt-12">
+                <!-- Conducted Exams Heading with View Archives Button -->
                 <div class="flex justify-between items-center mb-4">
                   <h2 class="text-2xl font-semibold text-gray-800">Conducted Exams</h2>
                   <button
                     @click="goToArchives"
-                    class="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-6 py-3 rounded-full shadow-lg transition-all hover:scale-105"
+                    class="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold px-6 py-3 rounded-full shadow-lg transition-all hover:scale-105"
                   >
                     View Archives
                   </button>
                 </div>
+
                 <div class="bg-white rounded-xl shadow-lg overflow-hidden">
                   
                   <!-- SEARCH FILTER INPUT -->
-                  <div class="mb-6 flex gap-3 p-6 pb-0">
+                  <div class="flex justify-between items-center gap-3 p-6 pb-4 border-b border-gray-200">
                     <input
                       v-model="conductedSearchQuery"
                       placeholder="🔍 Search exams..."
@@ -631,6 +633,38 @@
                       </button>
 
                     </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Empty State for Conducted Exams -->
+              <div v-else class="mt-12">
+                <!-- Conducted Exams Heading with View Archives Button -->
+                <div class="flex justify-between items-center mb-4">
+                  <h2 class="text-2xl font-semibold text-gray-800">Conducted Exams</h2>
+                  <button
+                    @click="goToArchives"
+                    class="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold px-6 py-3 rounded-full shadow-lg transition-all hover:scale-105"
+                  >
+                    View Archives
+                  </button>
+                </div>
+
+                <div class="bg-white rounded-xl shadow-lg overflow-hidden">
+                  <!-- SEARCH FILTER INPUT -->
+                  <div class="flex justify-between items-center gap-3 p-6 pb-4 border-b border-gray-200">
+                    <input
+                      v-model="conductedSearchQuery"
+                      placeholder="🔍 Search exams..."
+                      class="w-full max-w-xs px-4 py-3 rounded-xl border-2 border-black bg-purple-50
+                             focus:bg-white focus:ring-2 focus:ring-blue-400 outline-none transition
+                             text-sm font-medium placeholder:text-gray-600"
+                    />
+                  </div>
+
+                  <!-- Empty State -->
+                  <div class="text-gray-500 text-center text-lg py-12">
+                    No conducted exams yet.
                   </div>
                 </div>
               </div>

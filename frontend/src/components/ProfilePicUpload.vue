@@ -216,10 +216,13 @@ const natH = ref(0)
 const crop = ref({ x: 0, y: 0, size: 200 })
 const MIN_SIZE = 60
 
-// ─── Build URL from filename (no timestamp — file is replaced on upload, not renamed) ───
+// ─── Build URL from filename - served via backend ───
 function buildPicUrl(path) {
-  const filename = path.replace('profile_pics/', '')
-  return `http://${window.location.hostname}:5000/api/profile/pic-file/${filename}`
+  // Path format: email@domain.com/profile.jpg
+  // In production (Docker): backend serves from shared volume
+  // In development: backend serves from backend/profile_pics
+  const backendUrl = import.meta.env.VITE_API_URL || `http://${window.location.hostname}:5000`
+  return `${backendUrl}/api/profile/pic-file/${path}`
 }
 function getRenderedBounds() {
   const imgAspect = natW.value / natH.value

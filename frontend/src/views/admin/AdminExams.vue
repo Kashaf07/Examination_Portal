@@ -263,9 +263,9 @@
       No exams created yet.
     </div>
 
-    <div class="flex justify-between items-center">
-      <h2 class="text-2xl font-semibold">Conducted Exams</h2>
-
+    <!-- Conducted Exams Heading with View Archives Button -->
+    <div class="flex justify-between items-center mb-4">
+      <h2 class="text-2xl font-semibold text-gray-800">Conducted Exams</h2>
       <button
         @click="router.push({ name: 'Archives' })"
         class="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold px-6 py-3 rounded-full shadow-lg transition-all hover:scale-105"
@@ -275,11 +275,12 @@
     </div>
 
     <!-- ---------------- CONDUCTED EXAMS TABLE ---------------- -->
-    <div v-if="conductedExams && conductedExams.length" class="mt-12">
+    <div class="mt-4">
       <div class="bg-white rounded-xl shadow-lg overflow-hidden">
         
-        <!-- SEARCH FILTER INPUT -->
-        <div class="mb-6 flex gap-3 p-6 pb-0">
+        <!-- HEADER WITH SEARCH AND FILTERS -->
+        <div class="flex justify-between items-center gap-3 p-6 pb-4 border-b border-gray-200">
+          <!-- SEARCH FILTER INPUT -->
           <input
             v-model="conductedSearchQuery"
             placeholder="🔍 Search exams..."
@@ -287,9 +288,36 @@
                    focus:bg-white focus:ring-2 focus:ring-blue-400 outline-none transition 
                    text-sm font-medium placeholder:text-gray-600"
           />
+
+          <!-- Filter Buttons -->
+          <div class="flex items-center bg-gray-100 rounded-full p-1 shadow-inner">
+            <button
+              @click="examFilter = 'my'"
+              :class="[
+                'px-6 py-2.5 rounded-full font-semibold text-sm transition-all duration-200',
+                examFilter === 'my'
+                  ? 'bg-white text-blue-600 shadow-md'
+                  : 'text-gray-600 hover:text-gray-900'
+              ]"
+            >
+              My Exams
+            </button>
+            <button
+              @click="examFilter = 'all'"
+              :class="[
+                'px-6 py-2.5 rounded-full font-semibold text-sm transition-all duration-200',
+                examFilter === 'all'
+                  ? 'bg-white text-blue-600 shadow-md'
+                  : 'text-gray-600 hover:text-gray-900'
+              ]"
+            >
+              All Exams
+            </button>
+          </div>
         </div>
 
-        <div class="overflow-x-auto">
+        <!-- TABLE OR EMPTY STATE -->
+        <div v-if="conductedExams && conductedExams.length" class="overflow-x-auto">
           <table class="min-w-full">
             <thead class="bg-gradient-to-r from-blue-50 to-indigo-50">
               <tr>
@@ -350,61 +378,66 @@
             </tbody>
           </table>
         </div>
-      </div>
 
-      <!-- Pagination for Conducted Exams -->
-      <div v-if="conductedExams.length > 0" class="bg-gray-50 px-6 py-4 border-t border-gray-200">
-        <div class="flex items-center justify-between">
-          
-          <!-- Results Info -->
-          <div class="text-sm text-gray-700">
-            Showing 
-            <span class="font-semibold">{{ conductedStartIndex + 1 }}</span>
-            to 
-            <span class="font-semibold">{{ conductedEndIndex }}</span>
-            of 
-            <span class="font-semibold">{{ totalConductedExams }}</span>
-            results
-          </div>
+        <!-- Empty State for Conducted Exams -->
+        <div v-else class="text-gray-500 text-center text-lg py-12">
+          No conducted exams yet.
+        </div>
 
-          <!-- Pagination Buttons -->
-          <div class="flex items-center gap-2">
+        <!-- Pagination for Conducted Exams -->
+        <div v-if="conductedExams.length > 0" class="bg-gray-50 px-6 py-4 border-t border-gray-200">
+          <div class="flex items-center justify-between">
             
-            <!-- Previous Button -->
-            <button
-              @click="goToConductedPage(currentConductedPage - 1)"
-              :disabled="currentConductedPage === 1"
-              class="px-3 py-2 rounded-lg border border-gray-300 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition"
-            >
-              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
-              </svg>
-            </button>
+            <!-- Results Info -->
+            <div class="text-sm text-gray-700">
+              Showing 
+              <span class="font-semibold">{{ conductedStartIndex + 1 }}</span>
+              to 
+              <span class="font-semibold">{{ conductedEndIndex }}</span>
+              of 
+              <span class="font-semibold">{{ totalConductedExams }}</span>
+              results
+            </div>
 
-            <!-- Page Numbers -->
-            <button
-              v-for="page in totalConductedPages"
-              :key="page"
-              @click="goToConductedPage(page)"
-              class="px-4 py-2 rounded-lg border transition"
-              :class="currentConductedPage === page 
-                ? 'bg-blue-600 text-white border-blue-600' 
-                : 'border-gray-300 bg-white hover:bg-gray-50'"
-            >
-              {{ page }}
-            </button>
+            <!-- Pagination Buttons -->
+            <div class="flex items-center gap-2">
+              
+              <!-- Previous Button -->
+              <button
+                @click="goToConductedPage(currentConductedPage - 1)"
+                :disabled="currentConductedPage === 1"
+                class="px-3 py-2 rounded-lg border border-gray-300 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition"
+              >
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+                </svg>
+              </button>
 
-            <!-- Next Button -->
-            <button
-              @click="goToConductedPage(currentConductedPage + 1)"
-              :disabled="currentConductedPage === totalConductedPages"
-              class="px-3 py-2 rounded-lg border border-gray-300 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition"
-            >
-              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
-              </svg>
-            </button>
+              <!-- Page Numbers -->
+              <button
+                v-for="page in totalConductedPages"
+                :key="page"
+                @click="goToConductedPage(page)"
+                class="px-4 py-2 rounded-lg border transition"
+                :class="currentConductedPage === page 
+                  ? 'bg-blue-600 text-white border-blue-600' 
+                  : 'border-gray-300 bg-white hover:bg-gray-50'"
+              >
+                {{ page }}
+              </button>
 
+              <!-- Next Button -->
+              <button
+                @click="goToConductedPage(currentConductedPage + 1)"
+                :disabled="currentConductedPage === totalConductedPages"
+                class="px-3 py-2 rounded-lg border border-gray-300 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition"
+              >
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                </svg>
+              </button>
+
+            </div>
           </div>
         </div>
       </div>
@@ -453,7 +486,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, computed } from "vue";
+import { ref, onMounted, computed, watch } from "vue";
 import { useRouter } from "vue-router";
 import axios from "axios";
 import QRCodeModal from "@/components/QRCodeModal.vue";
@@ -468,6 +501,7 @@ const examsList = ref([]);
 const conductedList = ref([]);
 const examStatus = ref({});
 const isCreating = ref(false)
+const examFilter = ref('my'); // 'my' or 'all'
 
 // QR Code Modal State
 const showQRModal = ref(false);
@@ -535,6 +569,7 @@ const closeQRModal = () => {
   showQRModal.value = false;
   selectedExamForQR.value = null;
 };
+
 const toggleExamStatus = async (exam) => {
   if (exam.exam_status === "OFF") {
     // Optimistic update immediately
@@ -594,7 +629,17 @@ const upcomingExams = computed(() =>
   )
 );
 
-const conductedExams = computed(() => conductedList.value);
+const conductedExams = computed(() => {
+  if (examFilter.value === 'my') {
+    return conductedList.value.filter(exam => {
+      // Case-insensitive comparison and trim whitespace
+      const examEmail = (exam.faculty_email || '').toLowerCase().trim();
+      const currentEmail = (adminEmail || '').toLowerCase().trim();
+      return examEmail === currentEmail;
+    });
+  }
+  return conductedList.value;
+});
 
 const showArchiveConfirmModal = ref(false);
 const examToArchive = ref(null);
@@ -643,7 +688,7 @@ const hasAssignedStudents = (exam) => {
 
 /* ================= CONDUCTED EXAMS PAGINATION ================= */
 const filteredConductedExams = computed(() => {
-  const conducted = conductedList.value;
+  const conducted = conductedExams.value;
   
   if (!conductedSearchQuery.value.trim()) {
     return conducted;
@@ -678,6 +723,11 @@ const goToConductedPage = (page) => {
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
 };
+
+/* ================= WATCH FILTER CHANGES ================= */
+watch(examFilter, () => {
+  currentConductedPage.value = 1; // Reset to first page when filter changes
+});
 
 /* ================= EXAM STATUS ================= */
 const loadExamStatuses = async (exams) => {

@@ -5,7 +5,7 @@
   <div v-if="showWarning && $route.path !== '/'" class="session-warning">
     <div class="warning-box">
       <h2>Session Expiring</h2>
-      <p>Your session will expire in <b>30 seconds</b> due to inactivity.</p>
+      <p>Your session will expire in <b :class="{ 'countdown-red': countdown <= 5 }">{{ countdown }} {{ countdown === 1 ? 'second' : 'seconds' }}</b> due to inactivity.</p>
 
       <button class="stay-btn" @click="stayLoggedIn">
         Stay Logged In
@@ -24,10 +24,23 @@ export default {
     return {
       idleTimer: null,
       warningTimer: null,
+      countdownTimer: null,
       timeout: 1 * 60 * 1000,        // 1 min
       warningTime: 30 * 1000, //4.5 * 60 * 1000,  // 4.5 mins
-      showWarning: false
+      showWarning: false,
+      countdown: 30
     };
+  },
+
+  // Add this inside your export default, alongside methods/data
+  watch: {
+    $route(to) {
+      if (to.path === '/') {
+        this.showWarning = false;
+        clearTimeout(this.idleTimer);
+        clearTimeout(this.warningTimer);
+      }
+    }
   },
 
   // Add this inside your export default, alongside methods/data
@@ -51,12 +64,15 @@ export default {
 
       clearTimeout(this.idleTimer);
       clearTimeout(this.warningTimer);
+      clearInterval(this.countdownTimer);
 
       this.showWarning = false;
+      this.countdown = 30;
 
       // ⏳ Warning before logout
       this.warningTimer = setTimeout(() => {
         this.showWarning = true;
+        this.startCountdown();
       }, this.warningTime);
 
       // ⛔ Final logout
@@ -65,8 +81,20 @@ export default {
       }, this.timeout);
     },
 
+    startCountdown() {
+      this.countdown = 30;
+      this.countdownTimer = setInterval(() => {
+        this.countdown--;
+        if (this.countdown <= 0) {
+          clearInterval(this.countdownTimer);
+        }
+      }, 1000);
+    },
+
     stayLoggedIn() {
       this.showWarning = false;
+      clearInterval(this.countdownTimer);
+      this.countdown = 30;
       this.resetTimer(); // 🔁 Reset timers again
     },
 
@@ -93,6 +121,7 @@ export default {
       // ❌ stop timers
       clearTimeout(this.idleTimer);
       clearTimeout(this.warningTimer);
+      clearInterval(this.countdownTimer);
 
       this.showWarning = false;
 
@@ -126,6 +155,7 @@ export default {
 
     clearTimeout(this.idleTimer);
     clearTimeout(this.warningTimer);
+    clearInterval(this.countdownTimer);
   }
 };
 </script>
@@ -193,5 +223,29 @@ export default {
     transform: scale(1);
     opacity: 1;
   }
+}
+
+@keyframes heartbeat {
+  0%, 100% {
+    transform: scale(1);
+  }
+  25% {
+    transform: scale(1.1);
+  }
+  50% {
+    transform: scale(1);
+  }
+  75% {
+    transform: scale(1.05);
+  }
+}
+
+.heartbeat-animation {
+  animation: heartbeat 0.8s ease-in-out infinite;
+}
+
+.countdown-red {
+  color: #ef4444 !important; /* red-500 */
+  font-weight: 700;
 }
 </style>

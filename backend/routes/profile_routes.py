@@ -4,7 +4,10 @@ import jwt
 from werkzeug.utils import secure_filename
 
 SECRET_KEY = "SecretKeyKYKI786"
-UPLOAD_FOLDER = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'uploads', 'profile_pics')
+# Store profile pics in shared volume (works in both Docker and local dev)
+# In Docker: /app/profile_pics (mounted volume)
+# In local dev: backend/profile_pics
+UPLOAD_FOLDER = os.environ.get('PROFILE_PICS_PATH', os.path.join(os.path.dirname(os.path.dirname(__file__)), 'profile_pics'))
 
 def get_current_user(req):
     auth = req.headers.get('Authorization', '')
@@ -39,7 +42,8 @@ def create_profile_routes(mysql):
 
             email = current_user.get('email')
             role = current_user.get('role')
-            print(f"upload-pic: user={email}, role={role}")
+            user_id = current_user.get('user_id')
+            print(f"upload-pic: user={email}, role={role}, user_id={user_id}")
 
             if 'profile_pic' not in request.files:
                 print("upload-pic: no file in request.files, keys:", list(request.files.keys()))
@@ -50,18 +54,45 @@ def create_profile_routes(mysql):
             content_type = file.content_type or ''
             print(f"upload-pic: filename={filename}, content_type={content_type}")
 
-            # Build safe filename from email
-            safe_base = email.replace('@', '_at_').replace('.', '_').replace('+', '_')
+            # Create user-specific folder using ID and email
             ext = filename.rsplit('.', 1)[-1].lower() if '.' in filename else 'jpg'
             if ext not in ('jpg', 'jpeg', 'png', 'webp'):
                 return jsonify({'error': 'Only JPG, PNG, or WEBP images are allowed'}), 400
-            safe_name = secure_filename(safe_base) + '.' + ext
-            save_path = os.path.join(UPLOAD_FOLDER, safe_name)
+            
+            # Get user ID from database
+            cursor = mysql.connection.cursor()
+            if role == 'Admin':
+                cursor.execute("SELECT Admin_ID FROM mst_admin WHERE Email = %s", (email,))
+            elif role == 'Faculty':
+                cursor.execute("SELECT Faculty_Id FROM mst_faculty WHERE F_Email = %s", (email,))
+            else:
+                return jsonify({'error': f'Role not supported: {role}'}), 400
+            
+            id_row = cursor.fetchone()
+            cursor.close()
+            
+            if not id_row:
+                return jsonify({'error': 'User not found'}), 404
+            
+            db_user_id = id_row[0]
+            
+            # Create folder: ID_email@domain.com
+            folder_name = f'{db_user_id}_{email}'
+            user_folder = os.path.join(UPLOAD_FOLDER, folder_name)
+            os.makedirs(user_folder, exist_ok=True)
+            
+            # Save as profile.jpg inside user's folder
+            safe_name = f'profile.{ext}'
+            save_path = os.path.join(user_folder, safe_name)
+            relative_path = f'{folder_name}/{safe_name}'
+
+            # Delete old profile pic if exists
+            if os.path.exists(save_path):
+                os.remove(save_path)
+                print(f"upload-pic: deleted old file {save_path}")
 
             file.save(save_path)
             print(f"upload-pic: file saved to {save_path}")
-
-            relative_path = f'profile_pics/{safe_name}'
 
             cursor = mysql.connection.cursor()
             if role == 'Admin':
@@ -124,6 +155,7 @@ def create_profile_routes(mysql):
 
     @profile_bp.route('/pic-file/<path:filename>', methods=['GET'])
     def serve_profile_pic(filename):
+        # Serve from frontend/public/profile_pics
         return send_from_directory(UPLOAD_FOLDER, filename)
 
     @profile_bp.route('/delete-pic', methods=['DELETE', 'OPTIONS'])
@@ -149,10 +181,18 @@ def create_profile_routes(mysql):
 
             row = cursor.fetchone()
             if row and row[0]:
-                # Delete file from disk
-                file_path = os.path.join(os.path.dirname(UPLOAD_FOLDER), row[0])
+                # Delete file and folder
+                file_path = os.path.join(UPLOAD_FOLDER, row[0])
                 if os.path.exists(file_path):
                     os.remove(file_path)
+                    print(f"delete-pic: deleted file {file_path}")
+                    # Try to remove empty folder
+                    folder_path = os.path.dirname(file_path)
+                    try:
+                        os.rmdir(folder_path)
+                        print(f"delete-pic: removed empty folder {folder_path}")
+                    except:
+                        pass
 
             # Clear from DB
             if role == 'Admin':
