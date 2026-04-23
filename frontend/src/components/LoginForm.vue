@@ -62,11 +62,19 @@ const videoSrc = '/login.mp4'
 let messageTimer = null
 
 onMounted(() => {
+  const expired = localStorage.getItem("session_expired");
+
+  if (expired) {
+    showMessage("Session expired. You were automatically logged out.");
+    localStorage.removeItem("session_expired");
+  }
+
   const token = localStorage.getItem('token')
   if (token) {
     const role = localStorage.getItem('active_role')
     if (role) router.replace(`/${role.toLowerCase()}`)
   }
+
   history.replaceState(null, '', '/')
   history.pushState(null, '', '/')
 })
@@ -101,6 +109,7 @@ const login = async () => {
     localStorage.setItem("active_role", res.active_role)
     localStorage.setItem("email", res.email)
     localStorage.setItem("name", res.name)
+    localStorage.setItem("login_time", Date.now())
 
     if (res.applicant_id) localStorage.setItem("applicant_id", res.applicant_id)
     if (res.faculty_id) localStorage.setItem("faculty_id", res.faculty_id)
