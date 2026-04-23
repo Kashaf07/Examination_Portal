@@ -31,12 +31,12 @@ def create_group():
         return jsonify(success=False, message="Unauthorized"), 403
 
     cur.execute(
-        "SELECT 1 FROM applicant_groups WHERE group_name=%s",
-        (group_name.strip(),)
+        "SELECT 1 FROM applicant_groups WHERE group_name=%s AND Faculty_Email=%s",
+        (group_name.strip(), email)
     )
     if cur.fetchone():
         cur.close()
-        return jsonify(success=False, message="Group already exists"), 409
+        return jsonify(success=False, message=f"Group '{group_name}' already exists in your account"), 409
 
     cur.execute("""
         INSERT INTO applicant_groups (group_name, Faculty_Email)

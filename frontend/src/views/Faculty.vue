@@ -499,7 +499,7 @@
                   <h2 class="text-2xl font-semibold text-gray-800">Conducted Exams</h2>
                   <button
                     @click="goToArchives"
-                    class="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold px-6 py-3 rounded-full shadow-lg transition-all hover:scale-105"
+                    class="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-6 py-3 rounded-full shadow-lg transition-all hover:scale-105"
                   >
                     View Archives
                   </button>
@@ -720,7 +720,7 @@
   <!-- Logout Confirmation Modal -->
   <div
     v-if="showLogoutModal"
-    class="fixed inset-0 z-50 flex items-center justify-center"
+    class="fixed inset-0 z-[9999] flex items-center justify-center"
   >
     <div class="absolute inset-0 bg-black/60 backdrop-blur-md"></div>
     <div class="relative bg-white/95 backdrop-blur-sm rounded-3xl shadow-2xl p-8 max-w-md w-full mx-4 transform transition-all">

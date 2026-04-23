@@ -149,17 +149,19 @@ INSERT INTO `mst_faculty` VALUES
 -- ============================================================
 DROP TABLE IF EXISTS `faculty_groups`;
 CREATE TABLE `faculty_groups` (
-  `Group_Id`   int          NOT NULL AUTO_INCREMENT,
-  `Group_Name` varchar(100) NOT NULL,
-  `Created_On` timestamp    NULL DEFAULT CURRENT_TIMESTAMP,
-  `Is_Active`  tinyint(1)   DEFAULT '1',
-  PRIMARY KEY (`Group_Id`)
+  `Group_Id`      int          NOT NULL AUTO_INCREMENT,
+  `Group_Name`    varchar(100) NOT NULL,
+  `Faculty_Email` varchar(100) NOT NULL,
+  `Created_On`    timestamp    NULL DEFAULT CURRENT_TIMESTAMP,
+  `Is_Active`     tinyint(1)   DEFAULT '1',
+  PRIMARY KEY (`Group_Id`),
+  UNIQUE KEY `unique_faculty_group` (`Group_Name`, `Faculty_Email`)
 ) ENGINE=InnoDB AUTO_INCREMENT=7 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 INSERT INTO `faculty_groups` VALUES
-  (1,'BCA','2026-01-28 11:23:57',1),
-  (2,'BBA','2026-01-29 06:06:27',1),
-  (6,'MSc','2026-02-06 09:23:03',0);
+  (1,'BCA','dhavalm@nuv.ac.in','2026-01-28 11:23:57',1),
+  (2,'BBA','dhavalm@nuv.ac.in','2026-01-29 06:06:27',1),
+  (6,'MSc','kashaf.parkar@nuv.ac.in','2026-02-06 09:23:03',0);
 
 -- ============================================================
 -- 7. faculty_group_assign  (depends on mst_faculty, faculty_groups)
@@ -195,12 +197,13 @@ INSERT INTO `faculty_group_assign` VALUES
 -- ============================================================
 DROP TABLE IF EXISTS `applicant_groups`;
 CREATE TABLE `applicant_groups` (
-  `Group_Id`    int          NOT NULL AUTO_INCREMENT,
-  `Group_Name`  varchar(100) DEFAULT NULL,
+  `Group_Id`      int          NOT NULL AUTO_INCREMENT,
+  `Group_Name`    varchar(100) DEFAULT NULL,
   `Faculty_Email` varchar(100) DEFAULT NULL,
-  `Created_At`  timestamp    NULL DEFAULT CURRENT_TIMESTAMP,
-  `Is_Active`   tinyint(1)   DEFAULT '1',
-  PRIMARY KEY (`Group_Id`)
+  `Created_At`    timestamp    NULL DEFAULT CURRENT_TIMESTAMP,
+  `Is_Active`     tinyint(1)   DEFAULT '1',
+  PRIMARY KEY (`Group_Id`),
+  UNIQUE KEY `unique_group_per_faculty` (`Group_Name`, `Faculty_Email`)
 ) ENGINE=InnoDB AUTO_INCREMENT=13 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 INSERT INTO `applicant_groups` VALUES

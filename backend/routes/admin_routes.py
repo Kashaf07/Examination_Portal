@@ -289,12 +289,12 @@ def create_admin_routes(mysql):
     @admin_bp.route('/groups', methods=['GET'])
     def get_groups():
         cursor = mysql.connection.cursor()
-        cursor.execute("SELECT group_id, group_name FROM applicant_groups ORDER BY group_id DESC")
+        cursor.execute("SELECT group_id, group_name, Faculty_Email FROM applicant_groups ORDER BY group_id DESC")
         rows = cursor.fetchall()
         cursor.close()
 
         return jsonify([
-            {'group_id': r[0], 'group_name': r[1]}
+            {'group_id': r[0], 'group_name': r[1], 'faculty_email': r[2]}
             for r in rows
         ]), 200
 
@@ -303,14 +303,15 @@ def create_admin_routes(mysql):
     def add_group():
         data = request.json
         group_name = data.get('group_name')
+        faculty_email = data.get('faculty_email', 'admin@system')
 
         if not group_name:
             return jsonify({'error': 'Group name required'}), 400
 
         cursor = mysql.connection.cursor()
         cursor.execute(
-            "INSERT INTO applicant_groups (group_name) VALUES (%s)",
-            (group_name,)
+            "INSERT INTO applicant_groups (group_name, Faculty_Email) VALUES (%s, %s)",
+            (group_name, faculty_email)
         )
         mysql.connection.commit()
         cursor.close()
@@ -322,15 +323,22 @@ def create_admin_routes(mysql):
     def update_group(group_id):
         data = request.json
         group_name = data.get('group_name')
+        faculty_email = data.get('faculty_email')
 
         if not group_name:
             return jsonify({'error': 'Group name required'}), 400
 
         cursor = mysql.connection.cursor()
-        cursor.execute(
-            "UPDATE applicant_groups SET group_name=%s WHERE group_id=%s",
-            (group_name, group_id)
-        )
+        if faculty_email:
+            cursor.execute(
+                "UPDATE applicant_groups SET group_name=%s, Faculty_Email=%s WHERE group_id=%s",
+                (group_name, faculty_email, group_id)
+            )
+        else:
+            cursor.execute(
+                "UPDATE applicant_groups SET group_name=%s WHERE group_id=%s",
+                (group_name, group_id)
+            )
         mysql.connection.commit()
         cursor.close()
 

@@ -4,19 +4,38 @@ import MySQLdb.cursors
 def create_faculty_groups_routes(mysql):
     bp = Blueprint('faculty_groups', __name__)
 
-    # GET ALL FACULTY GROUPS
+    # GET ALL FACULTY GROUPS (FILTERED BY FACULTY EMAIL IF PROVIDED)
     @bp.route('/faculty-groups', methods=['GET'])
     def get_faculty_groups():
+        faculty_email = request.args.get('faculty_email')
         cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
-        cursor.execute("""
-            SELECT 
-                Group_Id,
-                Group_Name,
-                Created_On,
-                Is_Active
-            FROM faculty_groups
-            ORDER BY Is_Active DESC, Group_Name
-        """)
+        
+        if faculty_email:
+            # Filter by faculty email - faculty sees only their groups
+            cursor.execute("""
+                SELECT 
+                    Group_Id,
+                    Group_Name,
+                    Faculty_Email,
+                    Created_On,
+                    Is_Active
+                FROM faculty_groups
+                WHERE Faculty_Email = %s
+                ORDER BY Is_Active DESC, Group_Name
+            """, (faculty_email,))
+        else:
+            # Admin sees all groups
+            cursor.execute("""
+                SELECT 
+                    Group_Id,
+                    Group_Name,
+                    Faculty_Email,
+                    Created_On,
+                    Is_Active
+                FROM faculty_groups
+                ORDER BY Is_Active DESC, Group_Name
+            """)
+        
         groups = cursor.fetchall()
         cursor.close()
         return jsonify(success=True, groups=groups)
@@ -39,32 +58,34 @@ def create_faculty_groups_routes(mysql):
         return jsonify(success=True, message="Group status updated")
 
     # CREATE FACULTY GROUP (ADMIN ONLY)
-   
     @bp.route('/faculty-groups/create', methods=['POST'])
     def create_faculty_group():
         data = request.get_json()
         role = data.get("role")
         group_name = data.get("group_name")
+        faculty_email = data.get("faculty_email")
 
         if role != "Admin":
             return jsonify(success=False, message="Only admin allowed"), 403
 
-        if not group_name:
-            return jsonify(success=False, message="Group name required"), 400
+        if not group_name or not faculty_email:
+            return jsonify(success=False, message="Group name and faculty email required"), 400
 
         cursor = mysql.connection.cursor()
 
+        # Check if group name already exists for this faculty
         cursor.execute("""
-            SELECT 1 FROM faculty_groups WHERE Group_Name = %s
-        """, (group_name,))
+            SELECT 1 FROM faculty_groups 
+            WHERE Group_Name = %s AND Faculty_Email = %s
+        """, (group_name, faculty_email))
         if cursor.fetchone():
             cursor.close()
-            return jsonify(success=False, message="Group already exists"), 409
+            return jsonify(success=False, message=f"Group '{group_name}' already exists for this faculty"), 409
 
         cursor.execute("""
-            INSERT INTO faculty_groups (Group_Name)
-            VALUES (%s)
-        """, (group_name,))
+            INSERT INTO faculty_groups (Group_Name, Faculty_Email)
+            VALUES (%s, %s)
+        """, (group_name, faculty_email))
         mysql.connection.commit()
         cursor.close()
 
