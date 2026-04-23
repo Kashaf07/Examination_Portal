@@ -353,17 +353,32 @@
           />
         </div>
 
+        <!-- Faculty Selection -->
+        <div class="mb-6">
+          <label class="block text-sm font-semibold text-gray-700 mb-2">Assign to Faculty</label>
+          <select
+            v-model="selectedFacultyEmail"
+            class="w-full px-4 py-3 rounded-xl border border-gray-300 bg-purple-50 focus:bg-white 
+                   focus:ring-2 focus:ring-purple-400 focus:border-purple-400 transition outline-none text-gray-800"
+          >
+            <option value="">Select Faculty</option>
+            <option v-for="faculty in allFaculty" :key="faculty.Faculty_Id" :value="faculty.F_Email">
+              {{ faculty.F_Name }} ({{ faculty.F_Email }})
+            </option>
+          </select>
+        </div>
+
         <!-- Buttons -->
         <div class="flex justify-end gap-3">
           <button
-            @click="showCreateModal = false; newGroupName = ''"
+            @click="showCreateModal = false; newGroupName = ''; selectedFacultyEmail = ''"
             class="px-6 py-2.5 rounded-full bg-gray-200 text-gray-700 font-semibold hover:bg-gray-300 transition"
           >
             Cancel
           </button>
           <button
             @click="createFacultyGroup"
-            :disabled="!newGroupName.trim()"
+            :disabled="!newGroupName.trim() || !selectedFacultyEmail"
             class="px-6 py-2.5 rounded-full bg-purple-600 text-white font-semibold 
                    hover:bg-purple-700 transition disabled:opacity-50 disabled:cursor-not-allowed shadow-md"
           >
@@ -387,6 +402,8 @@ const emit = defineEmits(['toast'])
 const addingFaculty = ref({})
 const groups = ref([])
 const newGroupName = ref('')
+const selectedFacultyEmail = ref('')
+const allFaculty = ref([])
 const searchQuery = ref('')
 const showCreateModal = ref(false)
 const expandedGroup = ref(null)
@@ -479,6 +496,16 @@ const fetchGroups = async () => {
   }
 }
 
+/* LOAD ALL FACULTY */
+const loadAllFaculty = async () => {
+  try {
+    const res = await axios.get('/admin/faculty')
+    allFaculty.value = res.data || []
+  } catch (err) {
+    console.error('Error loading faculty:', err)
+  }
+}
+
 /* 🔥 PRELOAD COUNTS WITHOUT CLICKING VIEW */
 const preloadFacultyCounts = async () => {
   for (const g of groups.value) {
@@ -501,13 +528,23 @@ const createFacultyGroup = async () => {
     return
   }
 
+  if (!selectedFacultyEmail.value) {
+    emit('toast', {
+      message: 'Please select a faculty member',
+      type: 'error'
+    })
+    return
+  }
+
   try {
     await axios.post('/faculty-groups/create', {
       group_name: newGroupName.value,
-      role: 'Admin'
+      role: 'Admin',
+      faculty_email: selectedFacultyEmail.value
     })
 
     newGroupName.value = ''
+    selectedFacultyEmail.value = ''
     showCreateModal.value = false
     await fetchGroups()
 
@@ -518,7 +555,7 @@ const createFacultyGroup = async () => {
 
   } catch (err) {
     emit('toast', {
-      message: err.response?.data?.error || 'Error creating faculty group',
+      message: err.response?.data?.message || 'Error creating faculty group',
       type: 'error'
     })
   }
@@ -643,7 +680,10 @@ const toggleGroupStatus = async (group) => {
   }
 }
 
-onMounted(fetchGroups)
+onMounted(() => {
+  fetchGroups()
+  loadAllFaculty()
+})
 </script>
 
 <style scoped>
