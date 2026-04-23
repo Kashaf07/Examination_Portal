@@ -2,7 +2,7 @@
   <router-view />
 
   <!-- 🔔 Warning Popup -->
-  <div v-if="showWarning" class="session-warning">
+  <div v-if="showWarning && $route.path !== '/'" class="session-warning">
     <div class="warning-box">
       <h2>Session Expiring</h2>
       <p>Your session will expire in <b>30 seconds</b> due to inactivity.</p>
@@ -28,6 +28,17 @@ export default {
       warningTime: 30 * 1000, //4.5 * 60 * 1000,  // 4.5 mins
       showWarning: false
     };
+  },
+
+  // Add this inside your export default, alongside methods/data
+  watch: {
+    $route(to) {
+      if (to.path === '/') {
+        this.showWarning = false;
+        clearTimeout(this.idleTimer);
+        clearTimeout(this.warningTimer);
+      }
+    }
   },
 
   methods: {
