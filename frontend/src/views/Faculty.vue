@@ -1,6 +1,5 @@
 <template>
-  <div class="container-wrapper">
-    <div class="h-screen overflow-hidden flex" style="background: linear-gradient(to bottom right, #E3F2FD, #F3E5F5, #FCE4EC);">
+  <div class="h-screen overflow-hidden flex" style="background: linear-gradient(to bottom right, #E3F2FD, #F3E5F5, #FCE4EC);">
 
     <!-- Sidebar -->
     <aside
@@ -198,7 +197,7 @@
       ]"
     >
       <!-- Main Content Area -->
-      <div class="px-8 py-6 w-full"> 
+      <div class="px-8 py-6">
 
         <!-- Welcome Screen (shown when activeTab is null) -->
         <div
@@ -223,7 +222,7 @@
         <!-- Content Area (shown when specific tab is selected) -->
         <div v-else>
           <!-- My Exams View -->
-          <div v-if="activeTab === 'my-exams'" class="w-full space-y-6">
+          <div v-if="activeTab === 'my-exams'" class="space-y-6">
             <div class="mb-8">
               <h1 class="text-4xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-purple-600">
                 My Exams
@@ -235,7 +234,7 @@
             <div class="flex gap-4 mb-6">
               <button
                 @click="toggleExamForm"
-                class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+                class="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-6 py-3 rounded-full shadow-lg transition-all hover:scale-105"
               >
                 {{ showForm ? 'Close' : 'Create Exam' }}
               </button>
@@ -244,9 +243,9 @@
             <!-- Create Exam Form -->
             <div
               v-if="showForm"
-              class="max-w-3xl mx-auto mb-8 bg-white/80 backdrop-blur-lg shadow-xl border border-white/40 rounded-2xl p-8 transition-all"
+              class="max-w-3xl mx-auto mb-10 bg-white/80 backdrop-blur-lg shadow-xl border border-white/40 rounded-2xl p-8 transition-all"
             >
-              <h2 class="text-2xl font-bold mb-6 text-gray-800 flex items-center gap-2">
+              <h2 class="text-2xl font-bold mb-6 text-gray-800">
                 Create New Exam
               </h2>
 
@@ -378,7 +377,7 @@
             </div>
 
             <!-- Exam Tables Only Visible When on Dashboard -->
-            <div v-if="currentTab === 'Dashboard'" class="w-full">
+            <div v-if="currentTab === 'Dashboard'">
                 <!-- Created Exams Cards -->
               <div v-if="createdExams.length" class="mt-8">
                 <h2 class="text-2xl font-semibold mb-4 text-gray-800">Created Exams</h2>
@@ -495,18 +494,20 @@
               </div>
 
               <!-- Conducted Exams Table -->
-              <div v-if="conductedExams && conductedExams.length" class="mt-12 w-full">
-                <div class="flex items-center justify-between mb-4">
+              <div v-if="conductedExams && conductedExams.length" class="mt-12">
+                <div class="flex justify-between items-center mb-4">
                   <h2 class="text-2xl font-semibold text-gray-800">Conducted Exams</h2>
                   <button
                     @click="goToArchives"
-                    class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition font-semibold shadow-md hover:shadow-lg"
+                    class="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold px-6 py-3 rounded-full shadow-lg transition-all hover:scale-105"
                   >
                     View Archives
                   </button>
                 </div>
-                <div class="w-full bg-white rounded-xl shadow-lg overflow-hidden">
-                  <div class="p-6 pb-0">
+                <div class="bg-white rounded-xl shadow-lg overflow-hidden">
+                  
+                  <!-- SEARCH FILTER INPUT -->
+                  <div class="mb-6 flex gap-3 p-6 pb-0">
                     <input
                       v-model="conductedSearchQuery"
                       placeholder="🔍 Search exams..."
@@ -515,6 +516,7 @@
                              text-sm font-medium placeholder:text-gray-600"
                     />
                   </div>
+
                   <div class="overflow-x-auto">
                     <table class="min-w-full">
                       <thead class="bg-gradient-to-r from-blue-50 to-indigo-50">
@@ -523,9 +525,9 @@
                           <th class="px-6 py-4 text-left text-sm font-bold text-gray-700">Date</th>
                           <th class="px-6 py-4 text-left text-sm font-bold text-gray-700">Total Applicants</th>
                           <th class="px-6 py-4 text-left text-sm font-bold text-gray-700">Attempted</th>
-                          <th class="px-6 py-4 text-center text-sm font-bold text-gray-700">Reopen</th>
+                          <th class="px-6 py-4 text-center text-sm font-bold text-gray-700">Restart</th>
                           <th class="px-6 py-4 text-center text-sm font-bold text-gray-700">Actions</th>
-                          <th class="px-6 py-4 text-center text-sm font-bold text-gray-700">Archive</th>
+                          <th class="px-6 py-4 text-center text-sm font-bold text-gray-700">Archives</th>
                         </tr>
                       </thead>
                       <tbody class="divide-y divide-gray-200">
@@ -636,12 +638,12 @@
           </div>
 
           <!-- Groups View -->
-          <div v-else-if="activeTab === 'groups'" class="w-full min-h-[85vh]">
+          <div v-else-if="activeTab === 'groups'" class="min-h-[85vh]">
             <Groups />
           </div>
 
           <!-- Add Applicants View -->
-          <div v-else-if="activeTab === 'add-applicants'" class="w-full min-h-[85vh]">
+          <div v-else-if="activeTab === 'add-applicants'" class="min-h-[85vh]">
             <AddApplicantsPage
               @saved="handleApplicantSaved"
               @close="showApplicantForm = false"
@@ -649,7 +651,7 @@
           </div>
 
           <!-- Upload Students View -->
-          <div v-else-if="activeTab === 'upload-students'" class="w-full min-h-[85vh]">
+          <div v-else-if="activeTab === 'upload-students'" class="min-h-[85vh]">
             <UploadStudents />
           </div>
         </div>
@@ -714,8 +716,6 @@
         </div>
       </div>
     </div>
-  </div>
-  </div>
 
   <!-- Logout Confirmation Modal -->
   <div
@@ -901,6 +901,7 @@
     </div>
   </div>
 
+  </div>
 </template>
 
 <script setup>
@@ -1564,6 +1565,19 @@ button:active:not(:disabled) {
 
 .animate-pulse-slow {
   animation: pulse-slow 3s ease-in-out infinite;
+}
+
+/* Hide scrollbar for navigation and main content */
+nav::-webkit-scrollbar,
+main::-webkit-scrollbar {
+  width: 0;
+  display: none;
+}
+
+nav,
+main {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
 }
 
 </style>
