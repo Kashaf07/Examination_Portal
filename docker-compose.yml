@@ -37,6 +37,8 @@ services:
       - MAIL_USERNAME=examinationportal2025@gmail.com
       - MAIL_PASSWORD=zwdp rwro piku dwib
       - FRONTEND_URL=http://69.49.230.69:1111
+    volumes:
+      - profile_pics:/app/profile_pics
     networks:
       - exam_network
 
@@ -48,6 +50,8 @@ services:
       - "1111:80"
     depends_on:
       - backend
+    volumes:
+      - profile_pics:/usr/share/nginx/html/profile_pics
     networks:
       - exam_network
 
@@ -57,3 +61,4 @@ networks:
 
 volumes:
   exam_db_data:
+  profile_pics:
