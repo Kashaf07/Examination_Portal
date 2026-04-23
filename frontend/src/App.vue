@@ -15,6 +15,8 @@
 </template>
 
 <script>
+import axios from "@/utils/axiosInstance";
+
 export default {
   name: "App",
 
@@ -79,14 +81,17 @@ export default {
       if (!token) return;
 
       try {
-        // ✅ CALL BACKEND LOGOUT API
-        await fetch("http://localhost:5000/auth/logout", {
-          method: "POST",
-          headers: {
-            "Authorization": `Bearer ${token}`,
-            "Content-Type": "application/json"
+        await axios.post(
+          "/auth/logout",
+          {},
+          {
+            headers: {
+              Authorization: `Bearer ${token}`
+            }
           }
-        });
+        );
+        console.log("✅ Logout saved in DB");
+        
       } catch (e) {
         console.log("Logout API failed (safe to ignore)", e);
       }
