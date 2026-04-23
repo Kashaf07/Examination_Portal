@@ -22,7 +22,13 @@ def create_auth_routes(mysql):
                 return jsonify({'message': 'Token is missing!'}), 401
 
             try:
-                data = jwt.decode(token, SECRET_KEY, algorithms=["HS256"])
+                try:
+                    data = jwt.decode(token, SECRET_KEY, algorithms=["HS256"])
+                except jwt.ExpiredSignatureError:
+                    # ✅ Decode expired token ALSO (only for logout use)
+                    data = jwt.decode(token, SECRET_KEY, algorithms=["HS256"], options={"verify_exp": False})
+                except jwt.InvalidTokenError:
+                    return jsonify({'message': 'Invalid token!'}), 401
                 current_user = {
                     'email': data['email'],
                     'role': data['active_role'],
@@ -155,7 +161,7 @@ def create_auth_routes(mysql):
             "user_id": user_id,
             "roles": roles,
             "active_role": selected_role,
-            "exp": datetime.now(timezone.utc) + timedelta(minutes=1)
+            "exp": datetime.now(timezone.utc) + timedelta(minutes=5)
         }, SECRET_KEY, algorithm="HS256")
 
         response = {
@@ -187,7 +193,7 @@ def create_auth_routes(mysql):
 
             cursor.execute("""
                 UPDATE login_log
-                SET Logout_Time = %s
+                SET Logout_Time = CONVERT_TZ(NOW(), '+00:00', '+05:30')
                 WHERE Log_ID = (
                     SELECT Log_ID FROM (
                         SELECT Log_ID
@@ -199,7 +205,7 @@ def create_auth_routes(mysql):
                         LIMIT 1
                     ) AS sub
                 )
-            """, (datetime.now(), user_id, role))
+            """, (user_id, role))
 
             mysql.connection.commit()
             cursor.close()
