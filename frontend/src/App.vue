@@ -2,8 +2,8 @@
   <router-view />
 
   <!-- 🔔 Warning Popup -->
-  <div v-if="showWarning" class="session-warning">
-    <div class="warning-box" :class="{ 'heartbeat-animation': countdown <= 5 && countdown > 0 }">
+  <div v-if="showWarning && $route.path !== '/'" class="session-warning">
+    <div class="warning-box">
       <h2>Session Expiring</h2>
       <p>Your session will expire in <b :class="{ 'countdown-red': countdown <= 5 }">{{ countdown }} {{ countdown === 1 ? 'second' : 'seconds' }}</b> due to inactivity.</p>
 
@@ -30,6 +30,28 @@ export default {
       showWarning: false,
       countdown: 30
     };
+  },
+
+  // Add this inside your export default, alongside methods/data
+  watch: {
+    $route(to) {
+      if (to.path === '/') {
+        this.showWarning = false;
+        clearTimeout(this.idleTimer);
+        clearTimeout(this.warningTimer);
+      }
+    }
+  },
+
+  // Add this inside your export default, alongside methods/data
+  watch: {
+    $route(to) {
+      if (to.path === '/') {
+        this.showWarning = false;
+        clearTimeout(this.idleTimer);
+        clearTimeout(this.warningTimer);
+      }
+    }
   },
 
   methods: {
