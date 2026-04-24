@@ -128,6 +128,7 @@ import ExamIdEntry from '../components/ExamIdEntry.vue'
 import ExamInstructions from '../components/ExamInstructions.vue'
 import ExamInterface from '../components/ExamInterface.vue'
 import ExamFinished from '../components/ExamFinished.vue'
+import { useKeystrokeTracking } from '../composables/useKeystrokeTracking'
 
 export default {
   components: {
@@ -135,6 +136,11 @@ export default {
     ExamInstructions,
     ExamInterface,
     ExamFinished
+  },
+
+  setup() {
+    const { logKeystroke, logMouseClick, flushKeystrokes, stopTracking } = useKeystrokeTracking()
+    return { logKeystroke, logMouseClick, flushKeystrokes, stopTracking }
   },
 
   data() {
@@ -337,6 +343,19 @@ export default {
         }, 3000)
       }
     },
+
+    // 🔥 NEW: Track ALL keystrokes for detailed monitoring
+    trackKeystroke(event) {
+      if (!this.examAttemptId || !this.applicantId || !this.currentQuestion) return
+      
+      this.logKeystroke(
+        this.examAttemptId,
+        this.applicantId,
+        this.currentQuestion.Question_Id,
+        event
+      )
+    },
+
     showInlineMessage(text, type = 'error') {
   this.inlineMessage = { text, type }
 
@@ -571,6 +590,11 @@ clearInlineMessage() {
       const shift = event.shiftKey
       const meta  = event.metaKey
 
+      // 🔥 TRACK ALL KEYSTROKES (NEW FEATURE)
+      if (this.examAttemptId && this.applicantId && this.currentQuestion) {
+        this.trackKeystroke(event)
+      }
+
       // ── Arrow / Enter navigation for MCQ/TF ─────────────────────────────────
       const qType = this.currentQuestion?.Question_Type
       if (['MCQ', 'TF'].includes(qType)) {
@@ -719,6 +743,16 @@ clearInlineMessage() {
       this.selectedOption = key
       this.keyboardSelectedOption = null
       this.clearInlineMessage()
+
+      // 🔥 Log mouse click when option is selected
+      if (this.examAttemptId && this.applicantId && this.currentQuestion) {
+        this.logMouseClick(
+          this.examAttemptId,
+          this.applicantId,
+          this.currentQuestion.Question_Id,
+          `Option ${key}`
+        )
+      }
 
       // save immediately
       this.answers[this.currentIndex] = {

@@ -36,6 +36,7 @@ from routes.groups_routes import group_bp
 from routes.exam_result_routes import create_exam_result_routes
 from routes.exam_analytics_routes import create_exam_analytics_routes
 from routes.profile_routes import create_profile_routes
+from routes.keystroke_routes import create_keystroke_routes
 
 # ---------------- APP ----------------
 app = Flask(__name__)
@@ -101,6 +102,7 @@ student_bp = create_student_routes(mysql)
 app.register_blueprint(student_bp, url_prefix="/api/student")
 
 app.register_blueprint(create_profile_routes(mysql), url_prefix="/api/profile")
+app.register_blueprint(create_keystroke_routes(mysql), url_prefix="/api/keystroke")
 
 # ---------------- 🔔 SCHEDULER (SAFE + CONTEXT AWARE) ----------------
 scheduler = BackgroundScheduler()

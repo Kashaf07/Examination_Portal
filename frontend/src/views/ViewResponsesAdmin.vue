@@ -74,7 +74,21 @@
               <td class="px-4 py-2.5 text-center">{{ attempt.Marks_Obtained }}</td>
               <td class="px-4 py-2.5 text-center">{{ attempt.Max_Marks }}</td>
               <td class="px-4 py-2.5 text-center">
-                <span :class="{'text-green-600 font-semibold': attempt.Status === 'Pass','text-red-500 font-semibold': attempt.Status === 'Fail','text-amber-600 font-semibold': attempt.Status === 'Restricted'}">{{ attempt.Status || '-' }}</span>
+                <div class="flex items-center justify-center gap-2">
+                  <span :class="{'text-green-600 font-semibold': attempt.Status === 'Pass','text-red-500 font-semibold': attempt.Status === 'Fail','text-amber-600 font-semibold': attempt.Status === 'Restricted'}">{{ attempt.Status || '-' }}</span>
+                  <!-- 🔥 NEW: Eye icon for keystroke logs -->
+                  <button 
+                    v-if="attempt.Status === 'Restricted'" 
+                    @click="viewKeystrokeLogs(attempt.Attempt_Id)"
+                    class="text-purple-600 hover:text-purple-800 hover:bg-purple-50 p-1.5 rounded-lg transition"
+                    title="View Keystroke Logs"
+                  >
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                    </svg>
+                  </button>
+                </div>
               </td>
               <td class="px-4 py-2.5 text-center">
                 <button @click="viewAnswers(attempt.Attempt_Id)" class="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-full text-sm font-semibold shadow">View Answers</button>
@@ -133,12 +147,20 @@
       <button @click="router.back()" class="bg-red-600 hover:bg-red-700 text-white px-6 py-2 rounded-lg font-semibold shadow-md transition">Go Back</button>
     </div>
   </div>
+
+  <!-- 🔥 NEW: Keystroke Logs Modal -->
+  <KeystrokeLogsModal 
+    v-if="showKeystrokeModal" 
+    :attempt-id="selectedAttemptId"
+    @close="showKeystrokeModal = false"
+  />
 </template>
 
 <script setup>
 import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import axios from '../utils/axiosInstance'
+import KeystrokeLogsModal from '../components/KeystrokeLogsModal.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -151,6 +173,10 @@ const activeFilter = ref(null)
 const popoverStyle = ref({})
 const searchQuery = ref('')
 const filters = ref({ studentId: '', minMarks: null, status: '', marksSort: '', studentSort: '' })
+
+// 🔥 NEW: Keystroke logs modal
+const showKeystrokeModal = ref(false)
+const selectedAttemptId = ref(null)
 
 const goToResult    = () => router.push({ name: 'ExamResult',    params: { examId: examId.value } })
 const goToAnalytics = () => router.push({ name: 'ExamAnalytics', params: { examId: examId.value } })
@@ -249,6 +275,13 @@ const fetchAttempts = async () => {
 }
 
 const viewAnswers = (id) => router.push({ name: 'ViewAnswers', params: { attemptId: id } })
+
+// 🔥 NEW: View keystroke logs
+const viewKeystrokeLogs = (attemptId) => {
+  selectedAttemptId.value = attemptId
+  showKeystrokeModal.value = true
+}
+
 const goBack = () => {
   const from = route.query.from
   if (from === 'archives') {
