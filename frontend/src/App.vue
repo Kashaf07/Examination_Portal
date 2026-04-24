@@ -25,8 +25,8 @@ export default {
       idleTimer: null,
       warningTimer: null,
       countdownTimer: null,
-      timeout: 1 * 60 * 1000,        // 1 min
-      warningTime: 30 * 1000, //4.5 * 60 * 1000,  // 4.5 mins
+      timeout: 5 * 60 * 1000,        // 5 mins
+      warningTime: 4.5 * 60 * 1000,  // 4.5 mins
       showWarning: false,
       countdown: 30
     };
