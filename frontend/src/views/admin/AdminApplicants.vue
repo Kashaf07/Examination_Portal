@@ -81,6 +81,25 @@
       @saved="handleApplicantSaved"
     />
 
+    <!-- ✅ Success Toast -->
+    <transition name="slide-toast">
+      <div
+        v-if="studentSavedToast"
+        class="fixed bottom-6 right-6 z-[9999] flex items-center gap-3 px-5 py-3.5 rounded-2xl shadow-xl text-sm font-semibold"
+        style="background:#f0fdf4; border:1px solid #bbf7d0; color:#166534;"
+      >
+        <div class="w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0"
+          style="background:#dcfce7;">
+          <svg class="w-4 h-4" fill="none" stroke="#16a34a" stroke-width="2.5"
+            stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
+            <circle cx="12" cy="12" r="10"/>
+            <polyline points="9 12 11 14 15 10"/>
+          </svg>
+        </div>
+        Student added successfully!
+      </div>
+    </transition>
+
     <!-- Upload Students Page -->    
     <UploadStudents
       v-if="showUploadPage"
@@ -331,6 +350,7 @@ const showAddApplicantPage = ref(false);
 const showUploadPage = ref(false);
 const filterMode = ref('active'); // 'active', 'all', or 'inactive'
 const searchQuery = ref("");
+const studentSavedToast = ref(false)
 
 // Confirmation Modal State
 const showConfirmModal = ref(false);
@@ -446,9 +466,13 @@ const fetchApplicants = async () => {
 };
 
 const handleApplicantSaved = () => {
-  fetchApplicants();
-  emit("toast", { message: "Applicant added", type: "success" });
-};
+  fetchApplicants()               // refresh list immediately
+  showAddApplicantPage.value = false  // close the form
+
+  // show toast in parent
+  studentSavedToast.value = true
+  setTimeout(() => (studentSavedToast.value = false), 3000)
+}
 
 const toggleAddApplicant = () => {
   showAddApplicantPage.value = !showAddApplicantPage.value;
@@ -536,6 +560,16 @@ onMounted(fetchApplicants);
     transform: translateY(0);
     opacity: 1;
   }
+}
+
+.slide-toast-enter-active,
+.slide-toast-leave-active {
+  transition: opacity 0.3s, transform 0.3s;
+}
+.slide-toast-enter-from,
+.slide-toast-leave-to {
+  opacity: 0;
+  transform: translateY(12px);
 }
 
 .animate-fadeIn {
