@@ -639,7 +639,7 @@ def create_admin_routes(mysql):
     def get_admins():
         try:
             cursor = mysql.connection.cursor()
-            cursor.execute("SELECT Admin_ID, Name, Email, Is_Active FROM mst_admin ORDER BY Is_Active DESC, Name ASC")
+            cursor.execute("SELECT Admin_ID, Name, Email, Is_Active, Is_Super_Admin FROM mst_admin ORDER BY Is_Active DESC, Name ASC")
             admins = cursor.fetchall()
             columns = [desc[0] for desc in cursor.description]
             result = [dict(zip(columns, row)) for row in admins]
@@ -653,6 +653,16 @@ def create_admin_routes(mysql):
     def toggle_admin_status(admin_id):
         try:
             cursor = mysql.connection.cursor()
+            
+            # Prevent disabling SUPER ADMIN
+            cursor.execute("SELECT Is_Super_Admin FROM mst_admin WHERE Admin_ID = %s", (admin_id,))
+            admin = cursor.fetchone()
+
+            if admin and admin[0] == 1:
+                cursor.close()
+                return jsonify({
+                    "error": "Super Admin cannot be disabled"
+                }), 400
 
             # ❗ Prevent disabling last active admin
             cursor.execute("SELECT COUNT(*) FROM mst_admin WHERE Is_Active = 1")
@@ -775,6 +785,16 @@ def create_admin_routes(mysql):
         try:
             cursor = mysql.connection.cursor()
             
+            # 🚫 Prevent deleting SUPER ADMIN
+            cursor.execute("SELECT Is_Super_Admin FROM mst_admin WHERE Admin_ID = %s", (admin_id,))
+            admin = cursor.fetchone()
+
+            if admin and admin[0] == 1:
+                cursor.close()
+                return jsonify({
+                    "error": "Super Admin cannot be disabled"
+                }), 400
+            
             # Check if this is the last admin
             cursor.execute("SELECT COUNT(*) FROM mst_admin")
             admin_count = cursor.fetchone()[0]
@@ -790,6 +810,47 @@ def create_admin_routes(mysql):
         except Exception as e:
             print("Error deleting admin:", e)
             return jsonify({"error": f"Unable to delete admin: {str(e)}"}), 500
+
+    @admin_bp.route('/admins/toggle-super/<int:admin_id>', methods=['PUT'])
+    def toggle_super_admin(admin_id):
+        try:
+            data = request.get_json()
+            requested_by_email = data.get('requested_by')
+
+            cursor = mysql.connection.cursor()
+
+            # Check if the requester is a Super Admin
+            cursor.execute("SELECT Is_Super_Admin FROM mst_admin WHERE Email = %s", (requested_by_email,))
+            requester = cursor.fetchone()
+
+            if not requester or requester[0] != 1:
+                cursor.close()
+                return jsonify({"error": "Only a Super Admin can change Super Admin status"}), 403
+
+            # Prevent removing your own super admin status
+            cursor.execute("SELECT Email FROM mst_admin WHERE Admin_ID = %s", (admin_id,))
+            target = cursor.fetchone()
+            if target and target[0] == requested_by_email:
+                cursor.close()
+                return jsonify({"error": "You cannot change your own Super Admin status"}), 400
+
+            cursor.execute("""
+                UPDATE mst_admin
+                SET Is_Super_Admin = CASE
+                    WHEN Is_Super_Admin = 1 THEN 0
+                    ELSE 1
+                END
+                WHERE Admin_ID = %s
+            """, (admin_id,))
+
+            mysql.connection.commit()
+            cursor.close()
+
+            return jsonify({"success": True, "message": "Super Admin status updated"}), 200
+
+        except Exception as e:
+            mysql.connection.rollback()
+            return jsonify({"error": str(e)}), 500
 
     # Login Logs Routes
     @admin_bp.route('/logs', methods=['GET'])

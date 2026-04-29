@@ -105,6 +105,8 @@ INSERT INTO `mst_admin` VALUES
   (1,'Dhaval Mehta','dhavalm@nuv.ac.in','dm123@NUV',1,NULL),
   (2,'Shraddha Doshi','shraddha.doshi@nuv.ac.in','sd123@NUV',1,NULL),
   (3,'Kashaf Parkar','kashaf.parkar@nuv.ac.in','kp123@NUV',1,NULL),
+  (4,'Izma Shaikh','izma.shaikh@nuv.ac.in','is123@NUV',1,NULL),
+  (5,'Yasir Shaikh','yasir.shaikh@nuv.ac.in','ys123@NUV',1,NULL),
   (8,'Chirag Darji','chirag.darji@nuv.ac.in','Chirag@NUV',1,NULL),
   (9,'Kashaf','kashaf.a.parkar@nuv.ac.in','12345',1,NULL);
 
@@ -898,6 +900,14 @@ CREATE TABLE `exam_archived` (
 -- ============================================================
 ALTER TABLE entrance_exam ADD COLUMN is_archived TINYINT(1) DEFAULT 0;
 UPDATE entrance_exam SET is_archived = 0 WHERE is_archived IS NULL;
+
+-- Super Admin flag
+ALTER TABLE mst_admin ADD COLUMN Is_Super_Admin TINYINT DEFAULT 0;
+UPDATE mst_admin SET Is_Super_Admin = 1 WHERE Email IN (
+  'kashaf.parkar@nuv.ac.in',
+  'izma.shaikh@nuv.ac.in',
+  'yasir.shaikh@nuv.ac.in'
+);
 
 -- Re-enable FK checks
 SET FOREIGN_KEY_CHECKS = 1;
