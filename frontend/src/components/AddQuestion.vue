@@ -93,7 +93,10 @@
         @click="activeTab = 'generate'"
         :class="activeTab === 'generate' ? activeBtn : inactiveBtn"
       >
-        🤖 Generate Question
+        <span class="flex items-center gap-2">
+          <img src="/Gemini.png" alt="Gemini" class="w-5 h-5" />
+          Generate Question
+        </span>
       </button>
     </div>
 
