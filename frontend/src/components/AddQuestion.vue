@@ -88,7 +88,21 @@
       >
         📤 Upload Questions
       </button>
+
+      <button
+        @click="activeTab = 'generate'"
+        :class="activeTab === 'generate' ? activeBtn : inactiveBtn"
+      >
+        🤖 Generate Question
+      </button>
     </div>
+
+    <!-- Generate Questions -->
+    <GenerateQuestionModal
+      v-if="activeTab === 'generate'"
+      :examId="$route.params.examId"
+      @questions-added="handleQuestionsAdded"
+    />
 
     <!-- Upload Questions -->
     <UploadQuestionBank
@@ -219,10 +233,12 @@
 
 <script>
 import UploadQuestionBank from '../views/UploadQuestionBank.vue';
+import GenerateQuestionModal from './GenerateQuestionModal.vue';
 
 export default {
   components: {
-    UploadQuestionBank
+    UploadQuestionBank,
+    GenerateQuestionModal
   },
   data() {
     return {
@@ -365,6 +381,9 @@ export default {
         correct_answer: '',
         marks: 1
       };
+    },
+    handleQuestionsAdded() {
+      this.showSuccessToast('AI-generated questions added successfully!');
     }
   },
   mounted() {

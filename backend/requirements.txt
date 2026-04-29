@@ -11,3 +11,5 @@ PyJWT
 arrow
 pytz
 Werkzeug
+groq
+python-dotenv
