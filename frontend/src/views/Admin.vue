@@ -46,7 +46,7 @@
       </div>
 
       <!-- Navigation -->
-      <nav class="flex-1 py-3 px-3 space-y-1 overflow-y-auto overflow-x-visible">
+      <nav class="flex-1 py-2 px-3 space-y-0.5 overflow-y-auto overflow-x-visible">
         <button
         v-for="tab in tabs"
       :key="tab.id"
@@ -54,7 +54,7 @@
       @mouseleave="hideTooltip"
       @click="goToTab(tab.id)"
           :class="[
-            'w-full flex items-center gap-3 px-3 py-2 rounded-xl transition-all duration-200 group relative',
+            'w-full flex items-center gap-3 px-3 py-1.5 rounded-xl transition-all duration-200 group relative',
             activeTab === tab.id
               ? 'bg-blue-100 text-blue-700 shadow-sm'
               : 'hover:bg-white hover:bg-opacity-40 text-gray-700'
