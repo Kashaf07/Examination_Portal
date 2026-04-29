@@ -65,13 +65,23 @@ def create_add_students_bp(mysql):
 
             return jsonify(success=True, message="Applicant added successfully"), 201
 
-        except Exception:
+        except Exception as e:
             mysql.connection.rollback()
-            return jsonify(
-                success=False,
-                message="Invalid date of birth. Please select a valid date.",
-                field="DOB"
-            ), 400
+            print("ACTUAL ERROR:", str(e))
+            error_msg = str(e).lower()
+            
+            if 'dob' in error_msg or 'date' in error_msg or 'datetime' in error_msg:
+                return jsonify(
+                    success=False,
+                    message="Invalid date of birth. Please select a valid date.",
+                    field="DOB"
+                ), 400
+            else:
+                return jsonify(
+                    success=False,
+                    message=f"Something went wrong: {str(e)}",
+                    field=None
+                ), 500
 
         finally:
             cursor.close()
