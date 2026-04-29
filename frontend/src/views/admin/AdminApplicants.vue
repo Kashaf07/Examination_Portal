@@ -154,23 +154,35 @@
               <td class="px-6 py-5">{{ a.Email }}</td>
               <td class="px-6 py-5">{{ a.Phone }}</td>
 
-              <td class="px-6 py-5 flex gap-2">
-                <button
-                  @click="openViewModal(a)"
-                  class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md shadow"
-                >
-                  View
-                </button>
+              <td class="px-6 py-5">
+                <div class="flex items-center justify-center gap-3">
+                  <button
+                    @click="openEditModal(a)"
+                    class="text-gray-800 hover:text-purple-600 transition-colors duration-200"
+                    title="Edit Student"
+                  >
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                    </svg>
+                  </button>
 
-                <button
-                  @click="toggleApplicantStatus(a)"
-                  :class="a.Is_Active === 1
-                    ? 'bg-red-500 hover:bg-red-600'
-                    : 'bg-green-500 hover:bg-green-600'"
-                  class="text-white px-4 py-2 rounded-md shadow transition hover:scale-105"
-                >
-                  {{ a.Is_Active === 1 ? 'Disable' : 'Enable' }}
-                </button>
+                  <button
+                    @click="openViewModal(a)"
+                    class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg text-sm shadow transition hover:scale-105"
+                  >
+                    View
+                  </button>
+
+                  <button
+                    @click="toggleApplicantStatus(a)"
+                    :class="a.Is_Active === 1
+                      ? 'bg-red-500 hover:bg-red-600'
+                      : 'bg-green-500 hover:bg-green-600'"
+                    class="text-white px-4 py-2 rounded-lg text-sm shadow transition hover:scale-105"
+                  >
+                    {{ a.Is_Active === 1 ? 'Disable' : 'Enable' }}
+                  </button>
+                </div>
               </td>
             </tr>
           </tbody>
@@ -318,6 +330,177 @@
       </div>
     </div>
 
+    <!-- Edit Modal -->
+    <div
+      v-if="showEditModal"
+      class="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 px-4"
+    >
+      <div
+        class="bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50 rounded-3xl shadow-2xl w-full max-w-2xl p-8 relative animate-fadeIn max-h-[90vh] overflow-y-auto border-2 border-purple-200"
+      >
+        <!-- Close Button -->
+        <button
+          @click="closeEditModal"
+          class="absolute top-4 right-4 w-10 h-10 flex items-center justify-center 
+                rounded-full bg-white/80 hover:bg-white shadow-lg hover:shadow-xl transition-all hover:rotate-90 duration-300"
+        >
+          <span class="text-gray-600 text-xl font-bold">✕</span>
+        </button>
+
+        <!-- Header with Icon -->
+        <div class="text-center mb-8">
+          <div class="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-purple-500 to-pink-500 rounded-full mb-4 shadow-lg">
+            <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+            </svg>
+          </div>
+          <h3 class="text-3xl font-semibold text-gray-800 tracking-tight">
+            Edit Student Details
+          </h3>
+          <p class="text-sm text-gray-600 mt-2">Update student information below</p>
+        </div>
+
+        <form @submit.prevent="updateApplicant" class="space-y-5">
+          <!-- Full Name -->
+          <div class="relative">
+            <label class="block text-sm font-bold text-gray-800 mb-2">
+              <span class="flex items-center gap-2">
+                <svg class="w-4 h-4 text-purple-500" fill="currentColor" viewBox="0 0 20 20">
+                  <path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd" />
+                </svg>
+                Full Name *
+              </span>
+            </label>
+            <input
+              v-model="editForm.Full_Name"
+              type="text"
+              required
+              class="w-full px-4 py-3 bg-white/80 backdrop-blur-sm border-2 border-purple-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all shadow-sm hover:shadow-md"
+              placeholder="Enter full name"
+            />
+          </div>
+
+          <!-- Email -->
+          <div class="relative">
+            <label class="block text-sm font-bold text-gray-800 mb-2">
+              <span class="flex items-center gap-2">
+                <svg class="w-4 h-4 text-purple-500" fill="currentColor" viewBox="0 0 20 20">
+                  <path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z" />
+                  <path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z" />
+                </svg>
+                Email *
+              </span>
+            </label>
+            <input
+              v-model="editForm.Email"
+              type="email"
+              required
+              class="w-full px-4 py-3 bg-white/80 backdrop-blur-sm border-2 border-purple-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all shadow-sm hover:shadow-md"
+              placeholder="Enter email"
+            />
+          </div>
+
+          <!-- Phone -->
+          <div class="relative">
+            <label class="block text-sm font-bold text-gray-800 mb-2">
+              <span class="flex items-center gap-2">
+                <svg class="w-4 h-4 text-purple-500" fill="currentColor" viewBox="0 0 20 20">
+                  <path d="M2 3a1 1 0 011-1h2.153a1 1 0 01.986.836l.74 4.435a1 1 0 01-.54 1.06l-1.548.773a11.037 11.037 0 006.105 6.105l.774-1.548a1 1 0 011.059-.54l4.435.74a1 1 0 01.836.986V17a1 1 0 01-1 1h-2C7.82 18 2 12.18 2 5V3z" />
+                </svg>
+                Phone *
+              </span>
+            </label>
+            <input
+              v-model="editForm.Phone"
+              type="tel"
+              required
+              pattern="[0-9]{10}"
+              class="w-full px-4 py-3 bg-white/80 backdrop-blur-sm border-2 border-purple-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all shadow-sm hover:shadow-md"
+              placeholder="Enter 10-digit phone number"
+            />
+          </div>
+
+          <!-- DOB and Gender in Grid -->
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+            <!-- DOB -->
+            <div class="relative">
+              <label class="block text-sm font-bold text-gray-800 mb-2">
+                <span class="flex items-center gap-2">
+                  <svg class="w-4 h-4 text-purple-500" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clip-rule="evenodd" />
+                  </svg>
+                  Date of Birth *
+                </span>
+              </label>
+              <input
+                v-model="editForm.DOB"
+                type="date"
+                required
+                class="w-full px-4 py-3 bg-white/80 backdrop-blur-sm border-2 border-purple-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all shadow-sm hover:shadow-md"
+              />
+            </div>
+
+            <!-- Gender -->
+            <div class="relative">
+              <label class="block text-sm font-bold text-gray-800 mb-2">
+                <span class="flex items-center gap-2">
+                  <svg class="w-4 h-4 text-purple-500" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd" />
+                  </svg>
+                  Gender *
+                </span>
+              </label>
+              <select
+                v-model="editForm.Gender"
+                required
+                class="w-full px-4 py-3 bg-white/80 backdrop-blur-sm border-2 border-purple-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all shadow-sm hover:shadow-md"
+              >
+                <option value="">Select Gender</option>
+                <option value="Male">Male</option>
+                <option value="Female">Female</option>
+                <option value="Other">Other</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Address -->
+          <div class="relative">
+            <label class="block text-sm font-bold text-gray-800 mb-2">
+              <span class="flex items-center gap-2">
+                <svg class="w-4 h-4 text-purple-500" fill="currentColor" viewBox="0 0 20 20">
+                  <path fill-rule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clip-rule="evenodd" />
+                </svg>
+                Address
+              </span>
+            </label>
+            <textarea
+              v-model="editForm.Address"
+              rows="3"
+              class="w-full px-4 py-3 bg-white/80 backdrop-blur-sm border-2 border-purple-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all shadow-sm hover:shadow-md resize-none"
+              placeholder="Enter address"
+            ></textarea>
+          </div>
+
+          <!-- Action Buttons -->
+          <div class="flex gap-4 mt-8 pt-4">
+            <button
+              type="button"
+              @click="closeEditModal"
+              class="flex-1 bg-white hover:bg-gray-50 text-gray-700 font-bold px-6 py-3.5 rounded-xl shadow-md hover:shadow-lg transition-all border-2 border-gray-300 hover:border-gray-400"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              class="flex-1 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white font-bold px-6 py-3.5 rounded-xl shadow-lg hover:shadow-xl transition-all transform hover:scale-105"
+            >
+              Update Student
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
     <!-- Confirmation Modal -->
     <ConfirmationModal
       :is-open="showConfirmModal"
@@ -351,6 +534,18 @@ const showUploadPage = ref(false);
 const filterMode = ref('active'); // 'active', 'all', or 'inactive'
 const searchQuery = ref("");
 const studentSavedToast = ref(false)
+
+// Edit Modal State
+const showEditModal = ref(false);
+const editForm = ref({
+  Applicant_Id: null,
+  Full_Name: '',
+  Email: '',
+  Phone: '',
+  DOB: '',
+  Gender: '',
+  Address: ''
+});
 
 // Confirmation Modal State
 const showConfirmModal = ref(false);
@@ -496,6 +691,50 @@ const navigateUpload = () => {
 const openViewModal = (a) => {
   selectedApplicant.value = a;
   showViewModal.value = true;
+};
+
+// Edit
+const openEditModal = (applicant) => {
+  editForm.value = {
+    Applicant_Id: applicant.Applicant_Id,
+    Full_Name: applicant.Full_Name,
+    Email: applicant.Email,
+    Phone: applicant.Phone,
+    DOB: applicant.DOB ? new Date(applicant.DOB).toISOString().split('T')[0] : '',
+    Gender: applicant.Gender,
+    Address: applicant.Address || ''
+  };
+  showEditModal.value = true;
+};
+
+const closeEditModal = () => {
+  showEditModal.value = false;
+  editForm.value = {
+    Applicant_Id: null,
+    Full_Name: '',
+    Email: '',
+    Phone: '',
+    DOB: '',
+    Gender: '',
+    Address: ''
+  };
+};
+
+const updateApplicant = async () => {
+  try {
+    await axios.put(`/admin/applicants/${editForm.value.Applicant_Id}`, editForm.value);
+    emit("toast", {
+      message: "Student updated successfully",
+      type: "success"
+    });
+    closeEditModal();
+    fetchApplicants();
+  } catch (err) {
+    emit("toast", {
+      message: err.response?.data?.error || "Failed to update student",
+      type: "error"
+    });
+  }
 };
 
 // Enable/Disable

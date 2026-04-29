@@ -64,6 +64,8 @@ const routes = [
 
       { path: 'applicants/add', name: 'AddApplicant', component: () => import('@/views/AddApplicantsPage.vue') },
       { path: 'exams', name: 'AdminExams', component: () => import('../views/admin/AdminExams.vue') },
+      { path: 'notes', name: 'GenerateNotes', component: () => import('../views/admin/GenerateNotes.vue') },
+      { path: 'llm', name: 'ManageLLMs', component: () => import('../views/admin/ManageLLMs.vue') },
       { path: 'admins', name: 'AdminAdmins', component: () => import('../views/admin/AdminAdmins.vue') },
       { path: 'logs', name: 'AdminLogs', component: () => import('../views/admin/AdminLogs.vue') },
       {
@@ -93,6 +95,18 @@ const routes = [
     path: '/faculty/groups',
     name: 'FacultyApplicantGroups',
     component: () => import('../views/Groups.vue'),
+    meta: { requiresAuth: true, role: 'Faculty' }
+  },
+  {
+    path: '/faculty/notes',
+    name: 'FacultyGenerateNotes',
+    component: () => import('../views/admin/GenerateNotes.vue'),
+    meta: { requiresAuth: true, role: 'Faculty' }
+  },
+  {
+    path: '/faculty/llm',
+    name: 'FacultyManageLLMs',
+    component: () => import('../views/admin/ManageLLMs.vue'),
     meta: { requiresAuth: true, role: 'Faculty' }
   },
 

@@ -528,6 +528,44 @@ def create_admin_routes(mysql):
             mysql.connection.rollback()
             return jsonify({"error": str(e)}), 500
 
+    @admin_bp.route('/applicants/<int:applicant_id>', methods=['PUT'])
+    def update_applicant(applicant_id):
+        try:
+            data = request.get_json()
+            cursor = mysql.connection.cursor()
+            
+            # Check if email already exists for another applicant
+            cursor.execute(
+                "SELECT COUNT(*) FROM applicants WHERE Email = %s AND Applicant_Id != %s", 
+                (data['Email'], applicant_id)
+            )
+            if cursor.fetchone()[0] > 0:
+                cursor.close()
+                return jsonify({"error": "Email already exists for another student"}), 400
+            
+            # Update applicant details
+            cursor.execute("""
+                UPDATE applicants 
+                SET Full_Name = %s, Email = %s, Phone = %s, DOB = %s, Gender = %s, Address = %s
+                WHERE Applicant_Id = %s
+            """, (
+                data['Full_Name'], 
+                data['Email'], 
+                data['Phone'], 
+                data['DOB'], 
+                data['Gender'], 
+                data.get('Address', ''),
+                applicant_id
+            ))
+            
+            mysql.connection.commit()
+            cursor.close()
+            return jsonify({"message": "Student updated successfully"}), 200
+        except Exception as e:
+            mysql.connection.rollback()
+            print("Error updating applicant:", e)
+            return jsonify({"error": "Unable to update student"}), 500
+
     # Exam Attempts Routes
     @admin_bp.route('/attempts', methods=['GET'])
     def get_attempts():
