@@ -78,13 +78,13 @@
       </div>
 
       <!-- Navigation Menu -->
-      <nav class="flex-1 py-4 px-3 space-y-1.5">
+      <nav class="flex-1 py-3 px-3 space-y-1 overflow-y-auto">
         <button
           v-for="tab in visibleTabs"
           :key="tab.id"
           @click="goToTab(tab.id)"
           :class="[
-            'w-full flex items-center gap-3 px-4 py-2.5 rounded-xl transition-all duration-200 group relative',
+            'w-full flex items-center gap-3 px-3 py-2 rounded-xl transition-all duration-200 group relative',
             activeTab === tab.id 
               ? 'bg-blue-100 text-blue-700 shadow-sm' 
               : 'hover:bg-white hover:bg-opacity-40 text-gray-700 hover:text-gray-900'
@@ -102,7 +102,7 @@
           <!-- Label -->
           <span 
             v-if="sidebarOpen" 
-            class="font-semibold text-sm"
+            class="font-semibold text-sm truncate"
           >
             {{ tab.name }}
           </span>
@@ -688,6 +688,22 @@
           <div v-else-if="activeTab === 'upload-students'" class="min-h-[85vh]">
             <UploadStudents />
           </div>
+
+          <!-- Generate Notes View -->
+          <div v-else-if="activeTab === 'notes'" class="min-h-[85vh]">
+            <div class="bg-white rounded-2xl shadow-xl p-8">
+              <h1 class="text-3xl font-bold text-gray-800 mb-4">Generate Notes</h1>
+              <p class="text-gray-600">This page is under construction.</p>
+            </div>
+          </div>
+
+          <!-- Manage LLMs View -->
+          <div v-else-if="activeTab === 'llm'" class="min-h-[85vh]">
+            <div class="bg-white rounded-2xl shadow-xl p-8">
+              <h1 class="text-3xl font-bold text-gray-800 mb-4">Manage LLMs</h1>
+              <p class="text-gray-600">This page is under construction.</p>
+            </div>
+          </div>
         </div>
       </div>
     </main>
@@ -1147,14 +1163,18 @@ const allTabs = [
   { id: "my-exams", name: "My Exams", icon: "exams", access: "create_exam" },
   { id: "groups", name: "Groups", icon: "groups", access: "view_groups" },
   { id: "add-applicants", name: "Add Student", icon: "applicants", access: "add_applicants" },
-  { id: "upload-students", name: "Upload Students", icon: "students", access: "upload_students" }
+  { id: "upload-students", name: "Upload Students", icon: "students", access: "upload_students" },
+  { id: "notes", name: "Generate Notes", icon: "notes", access: "generate_notes" },
+  { id: "llm", name: "Manage LLMs", icon: "llm", access: "manage_llms" }
 ]
 
 const facultyPermissions = ref({
   create_exam: true,
   view_groups: true,
   add_applicants: true,
-  upload_students: true
+  upload_students: true,
+  generate_notes: true,
+  manage_llms: true
 })
 
 const visibleTabs = computed(() =>
