@@ -673,7 +673,7 @@
 
           <!-- Groups View -->
           <div v-else-if="activeTab === 'groups'" class="min-h-[85vh]">
-            <Groups />
+            <Groups @toast="handleToast" />
           </div>
 
           <!-- Add Applicants View -->
@@ -1055,6 +1055,10 @@ const clearToast = () => {
 
 const handleApplicantSaved = () => {
   showToast("Student added successfully!", "success")
+}
+
+const handleToast = (event) => {
+  showToast(event.message, event.type)
 }
 
 // QR Code Modal State

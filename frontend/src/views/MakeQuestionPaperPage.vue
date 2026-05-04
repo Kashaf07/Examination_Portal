@@ -398,10 +398,12 @@ export default {
         this.showError(`Total marks would exceed the allowed ${this.examTotalMarks}.`);
         return;
       }
-        this.selectedQuestions.push(question);
-      },
+      this.selectedQuestions.push(question);
+      this.showToast('Question added successfully!', 'success');
+    },
     removeQuestion(id) {
-    this.selectedQuestions = this.selectedQuestions.filter(q => q.Question_Id !== id);
+      this.selectedQuestions = this.selectedQuestions.filter(q => q.Question_Id !== id);
+      this.showToast('Question removed successfully!', 'success');
     },
     savePaper() {
       // client-side guard: only allow save if exact equality

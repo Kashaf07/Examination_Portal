@@ -1,6 +1,43 @@
 <template>
   <div class="min-h-screen w-full bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 flex flex-col items-center py-10">
     
+    <!-- Toast Notification -->
+    <transition name="toast-slide">
+      <div
+        v-if="toast.show"
+        class="fixed right-4 z-[9999] max-w-md"
+        style="top: 80px;"
+      >
+        <div
+          :class="[
+            'p-4 rounded-xl shadow-2xl border-l-4',
+            toast.type === 'error'
+              ? 'bg-red-50 text-red-800 border-red-500'
+              : 'bg-green-50 text-green-800 border-green-500'
+          ]"
+        >
+          <div class="flex justify-between items-center">
+            <div class="flex items-center gap-3">
+              <!-- Error icon -->
+              <svg v-if="toast.type === 'error'" class="h-5 w-5 text-red-500 shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM7.293 7.293a1 1 0 011.414 0L10 8.586l1.293-1.293a1 1 0 111.414 1.414L11.414 10l1.293 1.293a1 1 0 01-1.414 1.414L10 11.414l-1.293 1.293a1 1 0 01-1.414-1.414L8.586 10 7.293 8.707a1 1 0 010-1.414z"/>
+              </svg>
+              <!-- Success icon -->
+              <svg v-else class="h-5 w-5 text-green-500 shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"/>
+              </svg>
+              <p class="text-sm font-medium">{{ toast.message }}</p>
+            </div>
+            <button @click="toast.show = false" class="text-gray-400 hover:text-gray-600 ml-4">
+              <svg class="h-4 w-4" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 011.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"/>
+              </svg>
+            </button>
+          </div>
+        </div>
+      </div>
+    </transition>
+
     <!-- Unarchive Confirmation Modal -->
     <div
       v-if="showUnarchiveModal"
@@ -139,6 +176,7 @@ const exams = ref([])
 const searchQuery = ref('')
 const showUnarchiveModal = ref(false)
 const examToUnarchive = ref(null)
+const toast = ref({ show: false, message: '', type: 'success' })
 const callerRole = computed(() => route.query.role || 'Admin')
 
 onMounted(fetchArchived)
@@ -159,10 +197,19 @@ async function unarchiveExam(id) {
     const isfaculty = callerRole.value === 'Faculty'
     const url = isfaculty ? `/faculty/exam/restore/${id}` : `/admin/exam/restore/${id}`
     await axios.put(url)
+    showToast('Exam unarchived successfully!', 'success')
     fetchArchived()
   } catch (e) {
     console.error("Failed to unarchive exam:", e)
+    showToast('Failed to unarchive exam', 'error')
   }
+}
+
+function showToast(message, type = 'success') {
+  toast.value.message = message
+  toast.value.type = type
+  toast.value.show = true
+  setTimeout(() => { toast.value.show = false }, 3000)
 }
 
 /* 🔥 SMART SEARCH (LIKE VIEW RESPONSES) */
@@ -218,5 +265,13 @@ async function confirmUnarchive() {
 @keyframes fadeIn {
   from { opacity: 0; transform: scale(0.95); }
   to   { opacity: 1; transform: scale(1); }
+}
+
+.toast-slide-enter-active, .toast-slide-leave-active { 
+  transition: all 0.3s ease; 
+}
+.toast-slide-enter-from, .toast-slide-leave-to { 
+  opacity: 0; 
+  transform: translateX(60px); 
 }
 </style>
