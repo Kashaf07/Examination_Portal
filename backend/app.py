@@ -42,6 +42,7 @@ from routes.exam_result_routes import create_exam_result_routes
 from routes.exam_analytics_routes import create_exam_analytics_routes
 from routes.profile_routes import create_profile_routes
 from routes.keystroke_routes import create_keystroke_routes
+from routes.notes_routes import create_notes_routes
 
 # ---------------- APP ----------------
 app = Flask(__name__)
@@ -111,6 +112,7 @@ app.register_blueprint(student_bp, url_prefix="/api/student")
 
 app.register_blueprint(create_profile_routes(mysql), url_prefix="/api/profile")
 app.register_blueprint(create_keystroke_routes(mysql), url_prefix="/api/keystroke")
+app.register_blueprint(create_notes_routes(mysql), url_prefix="/api/notes")
 
 # ---------------- AI QUESTION GENERATION ROUTES ----------------
 @app.route("/generate-paper", methods=["POST"])

@@ -896,7 +896,26 @@ CREATE TABLE `exam_archived` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 -- ============================================================
--- 24. Schema additions
+-- 24. generated_notes (AI-powered notes generation)
+-- ============================================================
+DROP TABLE IF EXISTS `generated_notes`;
+CREATE TABLE `generated_notes` (
+  `id` INT AUTO_INCREMENT PRIMARY KEY,
+  `faculty_email` VARCHAR(255) NOT NULL,
+  `subject` VARCHAR(255) NOT NULL,
+  `topics` TEXT NOT NULL,
+  `difficulty` ENUM('Low', 'Medium', 'High') DEFAULT 'Medium',
+  `note_type` VARCHAR(100) NOT NULL,
+  `length` VARCHAR(50) NOT NULL,
+  `content` LONGTEXT NOT NULL,
+  `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  INDEX `idx_faculty_email` (`faculty_email`),
+  INDEX `idx_created_at` (`created_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ============================================================
+-- 25. Schema additions
 -- ============================================================
 ALTER TABLE entrance_exam ADD COLUMN is_archived TINYINT(1) DEFAULT 0;
 UPDATE entrance_exam SET is_archived = 0 WHERE is_archived IS NULL;

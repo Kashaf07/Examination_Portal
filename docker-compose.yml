@@ -37,7 +37,7 @@ services:
       - MAIL_USERNAME=examinationportal2025@gmail.com
       - MAIL_PASSWORD=zwdp rwro piku dwib
       - FRONTEND_URL=http://69.49.230.69:1111
-      - GROQ_API_KEY=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
+      - GROQ_API_KEY=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
     volumes:
       - profile_pics:/app/profile_pics
     networks:
