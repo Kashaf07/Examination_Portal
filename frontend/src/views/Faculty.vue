@@ -673,7 +673,7 @@
 
           <!-- Groups View -->
           <div v-else-if="activeTab === 'groups'" class="min-h-[85vh]">
-            <Groups />
+            <Groups @toast="handleToast" />
           </div>
 
           <!-- Add Applicants View -->
@@ -691,10 +691,7 @@
 
           <!-- Generate Notes View -->
           <div v-else-if="activeTab === 'notes'" class="min-h-[85vh]">
-            <div class="bg-white rounded-2xl shadow-xl p-8">
-              <h1 class="text-3xl font-bold text-gray-800 mb-4">Generate Notes</h1>
-              <p class="text-gray-600">This page is under construction.</p>
-            </div>
+            <GenerateNotesPage />
           </div>
 
           <!-- Manage LLMs View -->
@@ -966,6 +963,7 @@ import QRCodeModal from '../components/QRCodeModal.vue'
 import NotificationToast from "@/components/admin/NotificationToast.vue"
 import ConfirmationModal from '@/components/ConfirmationModal.vue'
 import ProfilePicUpload from '@/components/ProfilePicUpload.vue'
+import GenerateNotesPage from '@/components/GenerateNotesPage.vue'
 
 const now = ref(new Date())
 let countdownTimer = null
@@ -1055,6 +1053,10 @@ const clearToast = () => {
 
 const handleApplicantSaved = () => {
   showToast("Student added successfully!", "success")
+}
+
+const handleToast = (event) => {
+  showToast(event.message, event.type)
 }
 
 // QR Code Modal State

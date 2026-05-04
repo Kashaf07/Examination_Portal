@@ -131,13 +131,13 @@ const generateQRCode = async () => {
       // Clear previous QR code
       qrContainer.value.innerHTML = ''
       
-      // Generate new QR code with BLACK color and NO white background
+      // Generate new QR code with BLACK color and WHITE background
       qrCodeInstance.value = new window.QRCode(qrContainer.value, {
         text: examLink.value,
         width: 256,
         height: 256,
         colorDark: '#000000',  // BLACK QR code
-        colorLight: 'rgba(0,0,0,0)',  // TRANSPARENT background
+        colorLight: '#FFFFFF',  // WHITE background
         correctLevel: window.QRCode.CorrectLevel.H
       })
     }
@@ -166,8 +166,22 @@ const copyQRCode = async () => {
       return
     }
 
+    // Add padding around QR code
+    const padding = 40 // 40px padding on all sides
+    const newCanvas = document.createElement('canvas')
+    newCanvas.width = canvas.width + (padding * 2)
+    newCanvas.height = canvas.height + (padding * 2)
+    const ctx = newCanvas.getContext('2d')
+    
+    // Fill entire canvas with white background
+    ctx.fillStyle = '#FFFFFF'
+    ctx.fillRect(0, 0, newCanvas.width, newCanvas.height)
+    
+    // Draw the QR code in the center with padding
+    ctx.drawImage(canvas, padding, padding)
+
     // Convert canvas to blob
-    canvas.toBlob(async (blob) => {
+    newCanvas.toBlob(async (blob) => {
       try {
         await navigator.clipboard.write([
           new ClipboardItem({ 'image/png': blob })
@@ -194,7 +208,21 @@ const downloadQRCode = () => {
       return
     }
 
-    const url = canvas.toDataURL('image/png')
+    // Add padding around QR code
+    const padding = 40 // 40px padding on all sides
+    const newCanvas = document.createElement('canvas')
+    newCanvas.width = canvas.width + (padding * 2)
+    newCanvas.height = canvas.height + (padding * 2)
+    const ctx = newCanvas.getContext('2d')
+    
+    // Fill entire canvas with white background
+    ctx.fillStyle = '#FFFFFF'
+    ctx.fillRect(0, 0, newCanvas.width, newCanvas.height)
+    
+    // Draw the QR code in the center with padding
+    ctx.drawImage(canvas, padding, padding)
+    
+    const url = newCanvas.toDataURL('image/png')
     const link = document.createElement('a')
     // Replace spaces and special characters with underscores for clean filename
     const cleanExamName = props.examName.replace(/[^a-zA-Z0-9]/g, '_')
