@@ -677,7 +677,23 @@ def create_admin_routes(mysql):
     def get_admins():
         try:
             cursor = mysql.connection.cursor()
-            cursor.execute("SELECT Admin_ID, Name, Email, Is_Active, Is_Super_Admin FROM mst_admin ORDER BY Is_Active DESC, Name ASC")
+            
+            # Check if Is_Super_Admin column exists
+            cursor.execute("""
+                SELECT COUNT(*) 
+                FROM INFORMATION_SCHEMA.COLUMNS 
+                WHERE TABLE_SCHEMA = DATABASE() 
+                AND TABLE_NAME = 'mst_admin' 
+                AND COLUMN_NAME = 'Is_Super_Admin'
+            """)
+            column_exists = cursor.fetchone()[0] > 0
+            
+            # Build query based on column existence
+            if column_exists:
+                cursor.execute("SELECT Admin_ID, Name, Email, Is_Active, Is_Super_Admin FROM mst_admin ORDER BY Is_Active DESC, Name ASC")
+            else:
+                cursor.execute("SELECT Admin_ID, Name, Email, Is_Active, 0 as Is_Super_Admin FROM mst_admin ORDER BY Is_Active DESC, Name ASC")
+            
             admins = cursor.fetchall()
             columns = [desc[0] for desc in cursor.description]
             result = [dict(zip(columns, row)) for row in admins]
@@ -685,6 +701,8 @@ def create_admin_routes(mysql):
             return jsonify(result), 200
         except Exception as e:
             print("Error fetching admins:", e)
+            import traceback
+            traceback.print_exc()
             return jsonify({"error": "Unable to fetch admins"}), 500
 
     @admin_bp.route('/admins/toggle-status/<int:admin_id>', methods=['PUT'])
@@ -692,15 +710,26 @@ def create_admin_routes(mysql):
         try:
             cursor = mysql.connection.cursor()
             
-            # Prevent disabling SUPER ADMIN
-            cursor.execute("SELECT Is_Super_Admin FROM mst_admin WHERE Admin_ID = %s", (admin_id,))
-            admin = cursor.fetchone()
+            # Check if Is_Super_Admin column exists
+            cursor.execute("""
+                SELECT COUNT(*) 
+                FROM INFORMATION_SCHEMA.COLUMNS 
+                WHERE TABLE_SCHEMA = DATABASE() 
+                AND TABLE_NAME = 'mst_admin' 
+                AND COLUMN_NAME = 'Is_Super_Admin'
+            """)
+            column_exists = cursor.fetchone()[0] > 0
+            
+            # Prevent disabling SUPER ADMIN (only if column exists)
+            if column_exists:
+                cursor.execute("SELECT Is_Super_Admin FROM mst_admin WHERE Admin_ID = %s", (admin_id,))
+                admin = cursor.fetchone()
 
-            if admin and admin[0] == 1:
-                cursor.close()
-                return jsonify({
-                    "error": "Super Admin cannot be disabled"
-                }), 400
+                if admin and admin[0] == 1:
+                    cursor.close()
+                    return jsonify({
+                        "error": "Super Admin cannot be disabled"
+                    }), 400
 
             # ❗ Prevent disabling last active admin
             cursor.execute("SELECT COUNT(*) FROM mst_admin WHERE Is_Active = 1")
@@ -823,15 +852,26 @@ def create_admin_routes(mysql):
         try:
             cursor = mysql.connection.cursor()
             
-            # 🚫 Prevent deleting SUPER ADMIN
-            cursor.execute("SELECT Is_Super_Admin FROM mst_admin WHERE Admin_ID = %s", (admin_id,))
-            admin = cursor.fetchone()
+            # Check if Is_Super_Admin column exists
+            cursor.execute("""
+                SELECT COUNT(*) 
+                FROM INFORMATION_SCHEMA.COLUMNS 
+                WHERE TABLE_SCHEMA = DATABASE() 
+                AND TABLE_NAME = 'mst_admin' 
+                AND COLUMN_NAME = 'Is_Super_Admin'
+            """)
+            column_exists = cursor.fetchone()[0] > 0
+            
+            # 🚫 Prevent deleting SUPER ADMIN (only if column exists)
+            if column_exists:
+                cursor.execute("SELECT Is_Super_Admin FROM mst_admin WHERE Admin_ID = %s", (admin_id,))
+                admin = cursor.fetchone()
 
-            if admin and admin[0] == 1:
-                cursor.close()
-                return jsonify({
-                    "error": "Super Admin cannot be disabled"
-                }), 400
+                if admin and admin[0] == 1:
+                    cursor.close()
+                    return jsonify({
+                        "error": "Super Admin cannot be deleted"
+                    }), 400
             
             # Check if this is the last admin
             cursor.execute("SELECT COUNT(*) FROM mst_admin")
@@ -856,6 +896,20 @@ def create_admin_routes(mysql):
             requested_by_email = data.get('requested_by')
 
             cursor = mysql.connection.cursor()
+            
+            # Check if Is_Super_Admin column exists
+            cursor.execute("""
+                SELECT COUNT(*) 
+                FROM INFORMATION_SCHEMA.COLUMNS 
+                WHERE TABLE_SCHEMA = DATABASE() 
+                AND TABLE_NAME = 'mst_admin' 
+                AND COLUMN_NAME = 'Is_Super_Admin'
+            """)
+            column_exists = cursor.fetchone()[0] > 0
+            
+            if not column_exists:
+                cursor.close()
+                return jsonify({"error": "Super Admin feature not available. Please run database migration."}), 400
 
             # Check if the requester is a Super Admin
             cursor.execute("SELECT Is_Super_Admin FROM mst_admin WHERE Email = %s", (requested_by_email,))
